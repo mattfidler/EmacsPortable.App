@@ -1,0 +1,7 @@
+*.el
+*.elc
+*~
+*#
+*.png
+*.html
+*.pdf

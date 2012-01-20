@@ -1,0 +1,1191 @@
+#+TITLE: EmacsPortable.App
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsPortableApp.nsi
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+;AutoCloseWindow true
+OutFile "..\..\..\EmacsPortableApp.exe"
+Icon "..\img\ico\appicon.ico"
+#+END_SRC
+
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis
+;ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+
+** Headers and Plug ins
+#+BEGIN_SRC nsis
+  !include "FileFunc.nsh"
+  !include "ReadINIStrWithDefault.nsh"
+  !include "blowfish.nsh"
+  !include "logiclib.nsh"
+  !include "WinMessages.nsh"
+  !include "emacsproxy.nsh"
+#+END_SRC
+
+** Variables
+#+BEGIN_SRC nsis
+  Var INSTALL_FONT
+  Var FONT_REG
+  Var home
+  Var usb
+  Var usbs
+  Var mount
+  Var cygwin
+  Var msys
+  Var found_gdb
+  Var emacs
+  Var cnt
+  
+  Var Rpath
+
+  Var server_file
+  var cmdLineParams
+  
+  
+  Var option_debug
+  var option_dos
+  var option_emacs
+  var option_emacsclient
+  var option_q
+  var option_version
+  var option_home
+  var option_home_usb
+  var option_toolbar
+  var option_menubar
+  var option_minibuffer
+  var option_scrollbar
+  var option_background
+  var option_foreground
+  var option_daemon
+  
+  var option_font
+  var option_font_size
+  
+  var option_geometry
+  var option_maximized
+  var option_fullwidth
+  var option_fullheight
+  
+  Var nini
+  
+#+END_SRC
+
+* Macros/Functions
+** File Time Differences
+
+This came from [[http://nsis.sourceforge.net/FileTimeDiff][here]].
+#+BEGIN_SRC nsis
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Get the difference between two file times
+;; P1 :out: Number of seconds between the two files, can be negative of positive
+;; P2 :in:  File name A.
+;; P3 :in:  File name B.
+;; P4 :in:  Query mode : 1=creation, 2=access, 3=modification (""=3)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+!define FileTimeDiff "!insertmacro _FileTimeDiff"
+!macro _FileTimeDiff _Diff_ _File1_ _File2_ _Mode_
+  Push ${_Mode_}
+  Push ${_File2_}
+  Push ${_File1_}
+  Call FileTimeDiff
+  Pop ${_Diff_}
+!macroend
+/*\*/
+!macro ___FileTimeUTCSeconds _File_
+  System::Call 'kernel32::FindFirstFileA(t "${_File_}", i r3) i .r5'  ;; Find file info
+  IntCmp $5 -1 0 0 +4  ;; If handle <= -1 : not ok
+  Push ""
+  Pop $1
+  Goto _ftdexit     ;; skip the other file
+  ;; Else (valid handle)
+  System::Call 'kernel32::FindClose(i) i(r5)'  ;; Close file search
+  IntCmp $2 2 +3 +5 0  ;; Switch ${_Mode_}
+  ;; Case .>2 (3) - Last Write
+  System::Call '*$3(i, l, l, l .r5, i, i, i, i, &t260, &t14)'  ;; Get File time (w)
+  Goto +4 ;break
+  ;; Case .=2 (2) - Last Access
+  System::Call '*$3(i, l, l .r5, l, i, i, i, i, &t260, &t14)'  ;; Get File time (a)
+  Goto +2 ;break
+  ;; Case .<2 (1) - Creation
+  System::Call '*$3(i, l .r5, l, l, i, i, i, i, &t260, &t14)'  ;; Get File time (c)
+  System::Int64Op $5 / 10000000  ;; Conversion From '100 ns' >TO> '1 sec' unit
+!macroend
+/*\*/
+Function FileTimeDiff  ;; $0:File_1, $1:File_2, $2:Mode(1=create, 2=access, 3=modif)
+  Exch $0  ;; File 1 
+  Exch
+  Exch $1  ;; File 2 / Return value
+  Exch 2
+  Exch $2  ;; Mode
+  
+  Push $3  ;; File Info (struct) / File-2 Time (UTC) (Seconds)
+  Push $4  ;; File-1 Time (UTC) (Seconds)
+  Push $5  ;; File Search Handle / File Time (UTC) (100 ns unit, Int64)
+  
+  System::Call '*(i, l, l, l, i, i, i, i, &t260, &t14) i .r3'  ;; Create WIN32_FIND_DATA Struct
+  
+  StrCmp "" "$2" 0 +2
+  StrCpy $2 3  ;; default mode (if="") = 3
+  !insertmacro ___FileTimeUTCSeconds "$0"  ;; Get File1 UTC Time in Seconds
+  Pop $4
+  !insertmacro ___FileTimeUTCSeconds "$1"  ;; Get File2 UTC Time in Seconds
+  Pop $3
+  System::Int64Op $4 - $3 ;; Calculate File Time Difference
+  Pop $1
+  
+  _ftdexit:
+    Pop $5
+    Pop $4
+    Pop $3
+    
+    Pop $2
+    Pop $0
+    Exch $1
+FunctionEnd
+#+END_SRC
+
+** Replace in String
+This came from [[http://nsis.sourceforge.net/Another_String_Replace_%28and_Slash/BackSlash_Converter%29][here]]
+#+BEGIN_SRC nsis
+!macro _StrReplaceConstructor ORIGINAL_STRING TO_REPLACE REPLACE_BY
+  Push "${ORIGINAL_STRING}"
+  Push "${TO_REPLACE}"
+  Push "${REPLACE_BY}"
+  Call StrRep
+  Pop $0
+!macroend
+
+
+Function StrRep
+  Exch $R4 ; $R4 = Replacement String
+  Exch
+  Exch $R3 ; $R3 = String to replace (needle)
+  Exch 2
+  Exch $R1 ; $R1 = String to do replacement in (haystack)
+  Push $R2 ; Replaced haystack
+  Push $R5 ; Len (needle)
+  Push $R6 ; len (haystack)
+  Push $R7 ; Scratch reg
+  StrCpy $R2 ""
+  StrLen $R5 $R3
+  StrLen $R6 $R1
+  loop:
+    StrCpy $R7 $R1 $R5
+    StrCmp $R7 $R3 found
+    StrCpy $R7 $R1 1 ; - optimization can be removed if U know len needle=1
+    StrCpy $R2 "$R2$R7"
+    StrCpy $R1 $R1 $R6 1
+    StrCmp $R1 "" done loop
+  found:
+    StrCpy $R2 "$R2$R4"
+    StrCpy $R1 $R1 $R6 $R5
+    StrCmp $R1 "" done loop
+  done:
+    StrCpy $R3 $R2
+    Pop $R7
+    Pop $R6
+    Pop $R5
+    Pop $R2
+    Pop $R1
+    Pop $R4
+    Exch $R3
+FunctionEnd
+
+!define StrReplace '!insertmacro "_StrReplaceConstructor"'
+
+#+END_SRC
+
+** Trim
+#+BEGIN_SRC nsis
+; Trim
+;   Removes leading & trailing whitespace from a string
+; Usage:
+;   Push
+;   Call Trim
+;   Pop
+
+!macro _Trim ORIGINAL_STRING
+  Push "${ORIGINAL_STRING}"
+  Call _Trim_
+  Pop $0
+!macroend
+
+!define Trim '!insertmacro "_Trim"'
+
+Function _Trim_
+  Exch $R1 ; Original string
+  Push $R2
+  
+  Loop:
+    StrCpy $R2 "$R1" 1
+    StrCmp "$R2" " " TrimLeft
+    StrCmp "$R2" "$\r" TrimLeft
+    StrCmp "$R2" "$\n" TrimLeft
+    StrCmp "$R2" "$\t" TrimLeft
+    GoTo Loop2
+  TrimLeft:
+    StrCpy $R1 "$R1" "" 1
+    Goto Loop
+    
+  Loop2:
+    StrCpy $R2 "$R1" 1 -1
+    StrCmp "$R2" " " TrimRight
+    StrCmp "$R2" "$\r" TrimRight
+    StrCmp "$R2" "$\n" TrimRight
+    StrCmp "$R2" "$\t" TrimRight
+    
+    GoTo Done
+  TrimRight:
+    StrCpy $R1 "$R1" -1
+    Goto Loop2
+    
+  Done:
+    Pop $R2
+    Exch $R1
+FunctionEnd
+#+END_SRC
+
+** Path If Exist
+#+BEGIN_SRC nsis
+  !macro _PathIfExist ARG1 GOTO
+    IfFileExists "${ARG1}" 0 +5
+    System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'
+    DetailPrint "Add ${ARG1} to Path"
+    Goto ${GOTO}
+  !macroend
+  
+  !define PathIfExist '!insertmacro "_PathIfExist"'
+  
+  !macro _PathIfExist__ ARG1 PLUS
+    IfFileExists "${ARG1}" 0 ${PLUS}
+    System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'
+  !macroend
+  
+  !define PathIfExist3 '!insertmacro "_PathIfExist__"'
+  
+#+END_SRC
+
+** StrSlash
+#+BEGIN_SRC nsis
+  ## StringSlash
+  !macro _StrSlash FILENAME SLASH
+    Push "${FILENAME}"
+    Push "${SLASH}"
+    Call StrSlashFn
+    Pop $R0
+  !macroend
+  !define StrSlash `!insertmacro _StrSlash`
+  ; Push $filenamestring (e.g. 'c:\this\and\that\filename.htm')
+  ; Push "\"
+  ; Call StrSlash
+  ; Pop $R0
+  ; ;Now $R0 contains 'c:/this/and/that/filename.htm'
+  Function StrSlashFn
+    Exch $R3 ; $R3 = needle ("\" or "/")
+    Exch
+    Exch $R1 ; $R1 = String to replacement in (haystack)
+    Push $R2 ; Replaced haystack
+    Push $R4 ; $R4 = not $R3 ("/" or "\")
+    Push $R6
+    Push $R7 ; Scratch reg
+    StrCpy $R2 ""
+    StrLen $R6 $R1
+    StrCpy $R4 "\"
+    StrCmp $R3 "/" loop
+    StrCpy $R4 "/"
+    
+    loop:
+      StrCpy $R7 $R1 1
+      StrCpy $R1 $R1 $R6 1
+      StrCmp $R7 $R3 found
+      StrCpy $R2 "$R2$R7"
+      StrCmp $R1 "" done loop
+      
+    found:
+      StrCpy $R2 "$R2$R4"
+      StrCmp $R1 "" done loop
+      
+    done:
+      StrCpy $R3 $R2
+      Pop $R7
+      Pop $R6
+      Pop $R4
+      Pop $R2
+      Pop $R1
+      Exch $R3
+  FunctionEnd
+#+END_SRC
+
+** Split at Equals
+#+BEGIN_SRC nsis
+## Split Equals
+!macro SPLIT_EQUALS INPUT PART
+  Push $R0
+  Push $R1
+  
+  StrCpy $R0 0
+  StrCmp ${PART} 1 getpart1_loop_${PART}
+  StrCmp ${PART} 2 getpart2_top_${PART}
+  Goto error_${PART}
+  
+  getpart1_loop_${PART}:
+    IntOp $R0 $R0 - 1
+    StrCpy $R1 ${INPUT} 1 $R0
+    StrCmp $R1 "" error_${PART}
+    StrCmp $R1 "=" 0 getpart1_loop_${PART}
+    
+    IntOp $R0 $R0 + 1
+    StrCpy $R0 ${INPUT} "" $R0
+    Goto done_${PART}
+    
+  getpart2_top_${PART}:
+    StrLen $R0 ${INPUT}
+  getpart2_loop_${PART}:
+    IntOp $R0 $R0 - 1
+    StrCpy $R1 ${INPUT} 1 -$R0
+    StrCmp $R1 "" error_${PART}
+    StrCmp $R1 "=" 0 getpart2_loop_${PART}
+    
+    StrCpy $R0 ${INPUT} -$R0
+    Goto done_${PART}
+    
+  error_${PART}:
+    StrCpy $R0 error
+    
+  done_${PART}:
+    
+    Pop $R1
+    Exch $R0
+!macroend
+#+END_SRC
+
+** Setup Emacs EXE
+#+BEGIN_SRC nsis
+Function SetupEmacsExe
+  StrCmp "" $option_dos setupwin setupdos
+  setupdos:
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bin\emacs-$option_version-dos.exe" end 
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bin\emacs.exe" 0 not_found
+    CopyFiles /SILENT "$EXEDIR\App\emacs-$option_version\bin\emacs.exe" "$EXEDIR\App\emacs-$option_version\bin\emacs-$option_version-dos.exe"
+    Goto end
+  setupwin:
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bin\emacs-$option_version.exe" end
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bin\emacs.exe" 0 not_found
+    CopyFiles /SILENT "$EXEDIR\App\emacs-$option_version\bin\emacs.exe" "$EXEDIR\App\emacs-$option_version\bin\emacs-$option_version.exe"
+    Goto end
+  not_found:
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
+    ExecWait "$EXEDIR\EmacsOptions.exe"
+    ExecWait "$EXEDIR\EmacsPortableApp.exe"
+    Abort
+  end:
+    #
+FunctionEnd
+!define SetupEmacsExe "Call SetupEmacsExe"
+#+END_SRC
+
+* Command Line Options
+** Get Command Line Options
+#+BEGIN_SRC nsis
+
+!define GetCmdOptions "!insertmacro GetCmdOptions"
+
+!macro GetCmdOptions
+  Call GetCmdOptions
+!macroend
+Function GetCmdOptions
+  ## Gets Command Line Functions
+  Push $R0
+  
+  ${GetParameters} $cmdLineParams
+  
+  ; /? param (help)
+  ClearErrors
+  ${GetOptions} $cmdLineParams '/?' $R0
+  IfErrors +3 0
+  MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-OR-FILENAME]...$\n$\n\
+      /?$\t$\tShow this help$\n\
+      /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
+      /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
+      /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
+      /VERSION=ver$\t$\tRun using Emacs versionver if exists.$\n"
+  Abort
+  
+  
+  Pop $R0
+  
+  ; Initialize options
+  
+  
+  StrCpy $option_fullwidth 0
+  StrCpy $option_fullheight 1
+  StrCpy $option_maximized 0
+  StrCpy $option_geometry "80x70+0+0"
+  StrCpy $option_background "black"
+  StrCpy $option_foreground "white"
+  StrCpy $option_daemon "1"             
+  StrCpy $option_debug ""
+  StrCpy $option_dos ""
+  StrCpy $option_q ""
+  StrCpy $option_version "24.0"
+  StrCpy $option_font "Inconsolata"
+  StrCpy $option_font_size 18
+  
+  StrCpy $option_emacsclient "emacsclientw.exe"
+  
+  ; Parse Parameters
+  Push $R0
+  Call parseParameters
+  Pop $R0
+FunctionEnd
+#+END_SRC
+** Parse Parameters
+#+BEGIN_SRC nsis
+Function parseParameters
+  emacs_start:
+    StrCmp "$EXEFILE" "EmacsPortableApp.exe" emacs_ver_from_ini emacs_ver_from_exe
+  emacs_ver_from_exe:
+    StrLen $R2 $EXEFILE
+    IntOp $R2 17 - $R2
+    StrCpy $R0 $EXEFILE "" $R2
+    StrLen $R2 $R0
+    IntOp $R2 $R2 - 4
+    StrCpy $option_version $R0 $R2
+    IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe 0 emacs_ver_from_ini
+    ## See if EmacsPortableApp.exe is newer.
+    ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
+    IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
+    Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$option_version'
+    Abort
+    Goto emacs_ver_skip 
+  emacs_ver_from_ini:
+    IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 emacs_ver
+    ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
+    IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 emacs_ver_skip  
+    ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
+    IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
+    Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
+    CopyFiles /SILENT "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe"
+    Goto emacs_ver_skip
+  emacs_ver:
+    ExecWait $EXEDIR\EmacsOptions.exe
+    Goto emacs_start
+  emacs_ver_skip:
+    
+    ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
+    
+    ${ReadINIStrWithDefault} $option_maximized $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Maximized" $option_maximized
+    
+    ${ReadINIStrWithDefault} $option_fullwidth $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
+    
+    ${ReadINIStrWithDefault} $option_fullheight $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullheight" $option_fullheight
+    
+    ${ReadINIStrWithDefault} $option_font $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Font" $option_font
+    ${ReadINIStrWithDefault} $option_font_size $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "FontSize" $option_font_size
+    ${ReadINIStrWithDefault} $option_toolbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Toolbar" $option_toolbar
+    ${ReadINIStrWithDefault} $option_menubar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Menubar" $option_menubar
+    ${ReadINIStrWithDefault} $option_scrollbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "ScrollBars" $option_scrollbar
+    ${ReadINIStrWithDefault} $option_minibuffer $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Minibuffer" $option_minibuffer
+    ${ReadINIStrWithDefault} $option_background $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
+    ${ReadINIStrWithDefault} $option_foreground $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
+    ${ReadINIStrWithDefault} $option_daemon $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
+    StrCmp "1" $option_daemon 0 +2
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
+    
+    ${GetOptions} $cmdLineParams '/VERSION=' $R0
+    IfErrors +2 0
+    StrCpy $option_version $R0
+    
+    StrCpy $option_emacs "emacs-$option_version.exe"
+    
+    
+    ${GetOptions} $cmdLineParams '/DEBUG' $R0
+    IfErrors +3 0
+    StrCpy $option_debug " --debug-init"
+    Goto +7
+    IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 +5
+    ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
+    StrCmp $option_debug "1" 0 +3
+    StrCpy $option_debug " --debug-init"
+    Goto +2
+    StrCpy $option_debug ""
+    
+    ${GetOptions} $cmdLineParams '/Q' $R0
+    IfErrors +2 0
+    StrCpy $option_q " -Q"
+    
+    
+    
+    ${GetOptions} $cmdLineParams '/DOS' $R0
+    IfErrors +4 0
+    StrCpy $option_dos " -nw"
+    StrCpy $option_emacs "emacs-$option_version-dos.exe"
+    StrCpy $option_emacsclient "emacsclient.exe"
+    
+    
+    
+    ;; Now take out all known parameters
+    
+    ${StrReplace} $cmdLineParams "/Q" ""
+    StrCpy $cmdLineParams $0
+    ${StrReplace} $cmdLineParams "/DOS" ""
+    StrCpy $cmdLineParams $0
+    ${StrReplace} $cmdLineParams "/DEBUG" ""
+    StrCpy $cmdLineParams $0
+    ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""
+    StrCpy $cmdLineParams $0
+    
+    ${Trim} $cmdLineParams
+    StrCpy $cmdLineParams $0
+    
+    ## Now Setup server
+    StrCmp "" $option_dos 0 +3
+    setupwin:
+      IfFileExists "$TEMP\EmacsPortable.App-Server-$option_version" +2 0
+      CreateDirectory "$TEMP\EmacsPortable.App-Server-$option_version"
+      StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
+      Goto end
+    setupdos:
+      IfFileExists "$TEMP\epd-$option_version" +2 0
+      CreateDirectory "$TEMP\epd-$option_version"
+      StrCpy $server_file "$TEMP\epd-$option_version\server"
+    end:
+FunctionEnd
+#+END_SRC
+
+* Setup Environment
+** Get Portable Apps Directories
+#+BEGIN_SRC nsis
+  Function GetDriveVars
+    StrCmp $9 "c:\" findcygwin
+    StrCmp $8 "HDD" gpa
+    StrCmp $9 "a:\" spa
+    StrCmp $9 "b:\" spa
+    
+    gpa:
+      StrCmp $option_home_usb "" set_usb 0
+      IfFileExists "$9$option_home_usb" 0 is_emacs_portable
+      IfFileExists "$9$option_home_usb\.emacs" set_home 0
+      IfFileExists "$9$option_home_usb\_emacs" set_home 0
+      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_home
+      IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_home
+      IfFileExists "$9PotableApps" set_home
+      Goto findcygwin
+      
+    set_home:
+      StrCpy $home "$9$option_home_usb"
+      Goto set_usb
+      
+    is_emacs_portable:
+      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_usb
+      IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_usb
+      IfFileExists "$9PortableApps" set_usb
+      Goto findcygwin
+      
+    set_usb:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPTXT", "EmacsPortable@$9").r0'
+      ${StrSlash} "$9" "\"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPUSB", "$R0").r0'
+      StrCpy $usb "$9"
+      StrCpy $usbs "$9" -1
+      Goto findcygwin
+      
+    findcygwin:
+      IfFileExists "$9mingw\bin\gdb.exe" 0 +3
+      StrCpy "$msys" "$9mingw"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$msys").r0'
+      IfFileExists "$9cygwin" 0 spa
+      IfFileExists "$9cygwin\bin\mount.exe" 0 spa
+      StrCpy "$cygwin" "$9cygwin"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("CYGWIN_DIR", "$cygwin").r0'
+      StrCpy "$mount" "$9cygwin\bin\mount.exe"
+      
+    spa:    
+      Push $0
+      
+  FunctionEnd
+  
+#+END_SRC
+
+** Get Home Path
+#+BEGIN_SRC nsis
+Function GetHomePath
+  Var /GLOBAL OHOME
+  System::Call 'Kernel32::GetEnvironmentVariable(t, t, i) i("HOME", .r0, ${NSIS_MAX_STRLEN}).r1'
+  StrCpy $OHOME $0
+  
+  ${ReadINIStrWithDefault} $option_home $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Home" "EXEDIR:\Data\Home"
+  ${StrSlash} "$option_home" "/"  
+  StrCpy $option_home_usb ""
+  StrCpy $option_home $R0
+  
+  ## Make sure doesn't end with /
+  StrCpy $R0 $option_home "" -1
+  StrCmp $R0 "\" 0 +2
+  StrCpy $option_home $option_home -1
+  
+  StrCpy $R0 $option_home 5
+  StrCmp "$R0" "USB:\" home_usb home_exe
+  
+  home_usb:
+    StrCpy $option_home_usb $option_home "" 5
+    Goto end
+  home_exe:
+    StrCpy $R0 $option_home 8
+    StrCmp "$R0" "EXEDIR:\" 0 leave_home
+    StrCpy $option_home $option_home "" 8
+    StrCpy $home "$EXEDIR\$option_home"
+    Goto end
+  leave_home:
+    StrCpy $home $OHOME
+  end:
+    ${GetDrives} "FDD+HDD" "GetDriveVars"
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HOME", "$home").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("OHOME", "$OHOME").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PWD", "$home").r0'
+FunctionEnd
+#+END_SRC
+
+** Setup Path Variables
+#+BEGIN_SRC nsis
+  !macro enumPathIni WHAT
+    ;; Parse ${WHAT}
+    EnumINI::Section "$EXEDIR\App\paths.ini" "${WHAT}"
+    Pop $R0
+    StrCmp $R0 "error" done_${WHAT}
+    loop_${WHAT}:
+      IntCmp $R0 "0" done_${WHAT} done_${WHAT} 0
+      Pop $R1
+      ReadINIStr $R2 "$EXEDIR\App\paths.ini" "${WHAT}" "$R1"
+  !macroend
+  !define enumPathIni `!insertmacro enumPathIni`
+  
+  !define enumPathEnd `!insertmacro enumPathEnd`
+  !macro enumPathEnd WHAT
+    path_${WHAT}:
+      EnumINI::Section "$EXEDIR\App\paths.ini" "${WHAT}.$R1.path"
+      Pop $R7
+      StrCmp $R7 "error" no_${WHAT}_path
+    loop_${WHAT}_path:
+      IntCmp $R7 "0" no_${WHAT}_path no_${WHAT}_path 0
+      Pop $R3
+      ReadINIStr $R4 "$EXEDIR\App\paths.ini" "${WHAT}.$R1.path" "$R3"
+      DetailPrint "Set $R3=$R6\$R4"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R6\$R4").r3'
+      IntOp $R7 $R7 - 1
+      Goto loop_${WHAT}_path
+    no_${WHAT}_path:
+      EnumINI::Section "$EXEDIR\App\paths.ini" "${WHAT}.$R1.set"
+      Pop $R7
+      StrCmp $R7 "error" no_${WHAT}
+    loop_${WHAT}_set:
+      IntCmp $R7 "0" no_${WHAT} no_${WHAT} 0
+      Pop $R3
+      ReadINIStr $R4 "$EXEDIR\App\paths.ini" "${WHAT}.$R1.set" "$R3"
+      DetailPrint "Set $R3=$R4"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R4").r3'
+      IntOp $R7 $R7 - 1
+      Goto loop_${WHAT}_set
+    no_${WHAT}:
+      IntOp $R0 $R0 - 1
+      Goto loop_${WHAT}
+    done_${WHAT}: 
+  !macroend
+  
+  Function SetupPath
+    StrCpy $nini 0
+    IfFileExists "$EXEDIR\App\paths.ini" 0 skip_data_paths
+    setup_paths:
+      ${enumPathIni} "exedir"
+      ${PathIfExist} "$EXEDIR\$R2" found_exedir
+      Goto no_exedir
+    found_exedir:
+      StrCpy "$R6" "$EXEDIR"
+      ${enumPathEnd} "exedir"
+      
+      ${enumPathIni} "portable"
+      ${PathIfExist} "$usbs\PortableApps\$R2" found_pa
+      ${PathIfExist} "$usbs\$R2" found_usb
+      Goto no_portable
+    found_pa:
+      StrCpy "$R6" "$usbs\PortableApps"
+      Goto path_portable
+    found_usb:
+      StrCpy "$R6" "$usbs"
+      ${enumPathEnd} "portable"
+      
+      ${enumPathIni} "local"
+      ${PathIfExist} "$PROGRAMFILES\$R2" found_p
+      ${PathIfExist} "$PROGRAMFILES32\$R2" found_p32
+      ${PathIfExist} "$PROGRAMFILES64\$R2" found_p64
+      ${PathIfExist} "c:\$R2" found_c
+      Goto no_local
+    found_p:
+      StrCpy "$R6" "$PROGRAMFILES"
+      Goto path_local
+    found_p32:
+      StrCpy "$R6" "$PROGRAMFILES32"
+      Goto path_local
+    found_p64:
+      StrCpy "$R6" "$PROGRAMFILES64"
+      Goto path_local
+    found_c:
+      StrCpy "$R6" "c:\"
+      Goto path_local
+      ${enumPathEnd} "local"
+      
+    skip_data_paths:
+      ## PythonPortable.
+      #${Locate} "$usbs\PortableApps\" "/L=D /M=*Python* /S= /G=0" "addpath"
+      #${Locate} "$usbs\" "/L=D /M=*Python* /S= /G=0" "addpath"
+      
+      ## Add R Portable if present
+      ${PathIfExist} $usbs\PortableApps\R-Portable\App\bin 0
+      ${PathIfExist} $usbs\PortableApps\RPortable\App\bin 0
+      
+      IfFileExists $usbs\PortableApps\R-Portable\R-Portable.ini 0 skipr
+      ${ReadINIStrWithDefault} $Rpath $usbs\PortableApps\R-Portable\R-Portable.ini "R-Portable" "ProgramDirectory" "App\R-2.11.0"
+      ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin 0
+      ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin\i386 0
+    skipr:
+      ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
+      #ok  
+  FunctionEnd
+  
+  
+#+END_SRC
+** Add To Environment
+#+BEGIN_SRC nsis
+  !macro AddToEnvironment
+    Call GetHomePath
+    ;; Add User-name to the USER variable
+    System::Call "advapi32::GetUserName(t .r0, *i ${NSIS_MAX_STRLEN} r1) i.r2"
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("USER", "$0").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSVER", "$option_version").r0'
+    
+    ;; Add My Documents to MYDOC variable
+    ReadRegStr $0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" \
+        Personal
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MYDOC", "$0").r0'
+    ;; Add Server file to environment
+    Call SetupPath
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_SERVER_FILE", "$server_file").r0'
+    ;; Add environment sections before loading.
+    IfFileExists "$EXEDIR\Data\ini\Environment.ini" 0 done_1
+    EnumINI::Section "$EXEDIR\Data\ini\Environment.ini" "Environment"
+    Pop $R0
+    StrCmp $R0 "error" done_1
+    loop_1:
+      IntCmp $R0 "0" done_1 done_1 0
+      Pop $R1
+      ReadINIStr $R2 "$EXEDIR\Data\ini\Environment.ini" "Environment" "$R1"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R1", "$R2").r0'
+      IntOp $R0 $R0 - 1
+      Goto loop_1
+    done_1:
+      
+      IfFileExists "$EXEDIR\Data\init\shared\Environment.ini" 0 done_2
+      
+      EnumINI::Section "$EXEDIR\Data\init\shared\Environment.ini" "Environment"
+      Pop $R0
+      StrCmp $R0 "error" done_1
+    loop_2:
+      IntCmp $R0 "0" done_2 done_2 0
+      Pop $R1
+      ReadINIStr $R2 "$EXEDIR\Data\init\shared\Environment.ini" "Environment" "$R1"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R1", "$R2").r0'
+      IntOp $R0 $R0 - 1
+      Goto loop_2
+    done_2:
+  !macroend
+  !define AddToEnvironment "!insertmacro AddToEnvironment"
+  
+#+END_SRC
+
+** Setup Emacs Specific Environment Variables
+#+BEGIN_SRC nsis
+Function SetupDirs
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\App\emacs-$option_version\etc").r0'
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\App\emacs-$option_version\etc").r0'
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\App\emacs-$option_version\lisp;$EXEDIR\App\site-lisp").r0'
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\App\emacs-$option_version\info").r0'
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\Other\").r0'
+FunctionEnd
+!define SetupDirs "Call SetupDirs"
+#+END_SRC
+
+* Setup Registry
+** Register Internet Explorer
+#+BEGIN_SRC nsis
+Function RegIE
+  ## Key: HKCR\mailto\shell\open\command\(Default) 
+  ## Value: emacsclientw -e "(message-mail (substring \"%1\" 7))"
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto" "" "URL:Org Protocol"
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto" "URL Protocol" ""
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell" "" ""
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell\open" "" ""
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell\open\command"
+  
+  ## News 
+  ## Key: HKCR\news\shell\open\command\(Default)
+  ## Value: emacsclientw -e "(gnus-fetch-group (substring \"%1\" 5)"
+  
+  ## View Source 
+  ## Key: HKCR\htmlfile\shell\edit\command\(Default)
+  ## Value: emacsclientw "%1"
+  
+  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name"
+  IfErrors 0 +2
+  StrCpy $0 ""
+  ClearErrors
+  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup" "$0"
+  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$\"$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe$\" -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+  
+  ReadRegStr $0 HKCR "htmlfile\shell\edit\command" ""
+  IfErrors 0 +2
+  StrCpy $0 ""
+  ClearErrors
+  WriteRegStr HKCR "htmlfile\shell\edit\command" "-backup" "$0"
+  WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$\"$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe$\" -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+FunctionEnd
+!define RegIE "Call RegIE"
+#+END_SRC
+
+** Register Org-Protocol
+#+BEGIN_SRC nsis
+Function RegOrgProtocol
+  ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
+  StrCmp $R0 "1" 0 end
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+    IfErrors look_for_acrobat 0
+    IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+    StrCpy $R0 "$R0\Javascripts"
+    Goto install_org_protocol_js
+    
+  look_for_acrobat:
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+    IfErrors register_protocol 0
+    IfFileExists "$R0\Javascripts" 0 register_protocol
+    StrCpy $R0 "$R0\Javascripts"
+    
+  install_org_protocol_js:
+    IfFileExists "$EXEDIR\App\js\org-capture.js" 0 +2
+    CopyFiles /SILENT "$EXEDIR\App\js\org-capture.js" "$R0\org-capture.js"
+    IfFileExists "$EXEDIR\App\js\org-remember.js" 0 +2
+    CopyFiles /SILENT "$EXEDIR\App\js\org-remember.js" "$R0\org-remember.js"
+    IfFileExists "$EXEDIR\App\js\org-store-link.js" 0 +2
+    CopyFiles /SILENT "$EXEDIR\App\js\org-store-link.js" "$R0\org-store-link.js"
+  register_protocol:
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "" "URL:Org Protocol"
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell" "" ""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open" "" ""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open\command" "" "$\"$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe$\" -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+    
+    ## Add Right Click org-protocol actions.
+    WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink" "" "Org Store &Link (org-protocol+wscript)"
+    WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink\command" "" "wscript.exe $\"$EXEDIR\App\vbs\org-link.vbs$\" $\"%1$\""
+  end:
+    # End
+FunctionEnd
+!define RegOrgProtocol "Call RegOrgProtocol"
+#+END_SRC
+
+** Register Edit With
+#+BEGIN_SRC nsis
+Function RegEditWith
+  ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "RightEdit"
+  StrCmp $R0 "1" 0 +3
+  WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs" "" "Edit with &EmacsPortable.App $option_version"
+  WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs\command" "" "$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+FunctionEnd
+!define RegEditWith "Call RegEditWith"
+#+END_SRC
+** Remove the Registry Settings on restart
+#+BEGIN_SRC nsis
+  Function RemRegSetup
+    CopyFiles /SILENT /FILESONLY '$EXEDIR\App\eps\RemoveReg.exe' '$TEMP\EP-RemoveReg.exe'
+    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\EP-RemoveReg.exe"
+  FunctionEnd
+  
+  !define RemRegSetup "Call RemRegSetup"
+#+END_SRC
+
+* Setup Files
+** Copy Dlls to the correct position
+#+BEGIN_SRC nsis
+!define dllcp `!insertmacro _dllcp`
+!macro _dllcp FILENAME
+  IfFileExists "$emacs\${FILENAME}" +3
+  IfFileExists "$EXEDIR\App\bin\${FILENAME}" 0 +2
+  CopyFiles /SILENT "$EXEDIR\App\bin\${FILENAME}" "$emacs\${FILENAME}"
+!macroend
+Function CpDll
+  ${dllcp} giflib4.dll
+  ${dllcp} glut32.dll
+  ${dllcp} jpeg62.dll
+  ${dllcp} libimage.dll
+  ${dllcp} libpng3.dll
+  ${dllcp} libpng12.dll
+  ${dllcp} libpng13.dll
+  ${dllcp} librle3.dll
+  ${dllcp} libtiff3.dll
+  ${dllcp} libXpm.dll
+  ${dllcp} zlib1.dll
+  ${dllcp} libgcrypt-11.dll
+  ${dllcp} libgnutls-26.dll
+  ${dllcp} libgpg-error-0.dll
+  ${dllcp} libtasn1-3.dll
+  ${dllcp} libungif4.dll
+  ${dllcp} xpm4.dll
+FunctionEnd
+!define CpDll "Call CpDll"
+#+END_SRC
+
+
+** Setup Fonts
+#+BEGIN_SRC nsis
+  Function InstallFonts
+    StrCpy $INSTALL_FONT "0"
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
+    IfErrors main-9x main-NT 
+    main-NT:
+      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+      goto main-go
+      
+    main-9x:
+      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
+      goto main-go
+      
+    main-go:
+      ClearErrors
+      IfFileExists "$EXEDIR\App\fonts\fonts.ini" 0 no_fonts
+      EnumIni::Section "$EXEDIR\App\fonts\fonts.ini" "fonts"
+      pop $R0
+      StrCmp $R0 "error" no_fonts
+    loop_fonts:
+      IntCmp $R0 "0" no_fonts no_fonts 0
+      Pop $R1
+      IfFileExists "$FONTS\$R1" no_install
+      IfFileExists "$EXEDIR\App\fonts\$R1" 0 no_install
+      ReadINIStr $R2 "$EXEDIR\App\fonts\fonts.ini" "fonts" "$R1"
+      DetailPrint "Temporarily Installing Font: $R2"
+      CopyFiles /SILENT "$EXEDIR\App\fonts\$R1" "$FONTS\$R1"
+      IfFileExists "$FONTS\$R1" 0 no_install
+      WriteRegStr HKLM "$FONT_REG" "$R2" "$FONTS\$R1"
+      WriteINIStr "$TEMP\ep-reg.ini" "font.tmp" "$R1" "$R2"
+    no_install:
+      IntOp $R0 $R0 - 1
+      Goto loop_fonts
+    no_fonts:
+      IfFileExists "$EXEDIR\App\fonts" 0 end
+      IfFileExists "$EXEDIR\App\eps\addfont.exe" 0 end
+      Exec "$\"$EXEDIR\App\eps\addfont.exe$\" $\"$EXEDIR\App\fonts$\""
+      WriteINIStr "$TEMP\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
+      CopyFiles /SILENT "$EXEDIR\App\eps\rmfont.exe" "$TEMP\ep-rmfont.exe"
+    end:
+      StrCmp $INSTALL_FONT "1" 0 +2
+      SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+  FunctionEnd
+  !define InstallFonts "Call InstallFonts"
+  
+#+END_SRC
+
+* Calling Commands
+** Configure Emacs Command
+#+BEGIN_SRC nsis
+  Function EmacsCmd
+    StrCmp $option_debug "" normal_exe debug_exe
+    StrCpy $found_gdb ""
+    normal_exe:
+      StrCpy $emacs `"$emacs\$option_emacs" $option_debug$option_dos$option_q $cmdLineParams`
+      Goto setup_options
+    debug_exe:
+      IfFileExists "$msys\bin\gdb.exe" msys_exe cygwin_exe
+    msys_exe:
+      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
+      StrCpy $emacs `""""$msys\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
+      Goto +2
+      StrCpy $emacs `""""$msys\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
+      StrCpy $found_gdb "1"
+      Goto setup_options
+    cygwin_exe:
+      IfFileExists "$cygwin\bin\gdb.exe" 0 normal_exe
+      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
+      StrCpy $emacs `""""$cygwin\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
+      Goto +2
+      StrCpy $emacs `""""$cygwin\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
+      StrCpy $found_gdb "1"
+      Goto setup_options
+    setup_options:
+      
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPRMREG","$EXEDIR\App\eps\RemoveReg.exe").r0'
+      ClearErrors
+      IfFileExists "$EXEDIR\App\fonts.ini" 0 skip_font
+      ReadINIStr $R0 $EXEDIR\App\fonts.ini "fonts1" "$option_font"
+      IfErrors skip_font
+      ReadINIStr $R1 $EXEDIR\App\fonts.ini "fonts2" "$option_font"
+      IfErrors 0 +2
+      StrCpy "$R1" "-*-*-*-c-*-iso8859-1"
+      ClearErrors
+      IntOp $R3 $option_font_size * 96
+      IntOp $R3 $R3 / 72
+      WriteRegStr HKCU "SOFTWARE\GNU\Emacs" "Emacs.Font"  "$R0$R3$R1"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPFONT", "$R0$R3$R1").r0'
+      StrCmp $found_gdb "" 0 +3
+      StrCpy $emacs '$emacs --font """"$R0$R3$R1""""'
+      Goto +2
+      StrCpy $emacs '$emacs --font \\""""$R0$R3$R1\\""""'
+    skip_font:                  
+      
+      StrCmp $found_gdb "" 0 +3
+      
+      StrCmp "$option_scrollbar" "1" 0 +2
+      StrCpy $emacs "$emacs -vb"
+  
+      StrCmp "" "$option_foreground" +2 0
+      StrCpy $emacs "$emacs -fg $option_foreground"
+      StrCmp "" "$option_background" +2 0
+      StrCpy $emacs "$emacs -bg $option_background"
+  
+      Strcmp "" "$option_geometry" +2 0
+      StrCpy $emacs "$emacs -g $option_geometry"
+      
+      StrCmp $option_maximized "1" 0 +2
+      StrCpy $emacs "$emacs -mm"
+      
+      StrCmp $option_fullwidth "1" 0 +2
+      StrCpy $emacs "$emacs -fw"
+      
+      StrCmp $option_fullheight "1" 0 +2
+      StrCpy $emacs "$emacs -fh"
+      
+      StrCmp $found_gdb "" +2 0
+      StrCpy $emacs `$emacs""""`
+  FunctionEnd
+  !define EmacsCmd "Call EmacsCmd"
+  
+#+END_SRC
+
+
+** Setup things necessary to call Emacs
+#+BEGIN_SRC nsis
+  !macro emacs_setup
+    DetailPrint "Setup Emacs EXE"
+    ${SetupEmacsExe}
+    DetailPrint "Setup Necessary DLLs"
+    ${CpDll}
+    DetailPrint "Install Fonts"
+    ${InstallFonts}
+    DetailPrint "Setup Proxy"
+    ${SetupProxy}
+    DetailPrint "Add to Environment Variables"
+    ${AddToEnvironment}
+    DetailPrint "Add Org-protocol"
+    ${RegOrgProtocol}
+    DetailPrint "Add Edit With..."
+    ${RegEditWith}
+    DetailPrint "Add IE registry entries"
+    ${RegIE}
+    DetailPrint "Add Registry Cleanup"
+    ${RemRegSetup}
+    DetailPrint "Setup where emacs should run from"
+    ${SetupDirs}
+    DetailPrint "Setup emacs options"
+    ${EmacsCmd}
+  !macroend
+  !define emacs_setup "!insertmacro emacs_setup"
+  
+#+END_SRC
+
+** Setup things necessary to call EmacsClient
+#+BEGIN_SRC nsis
+!macro emacsclient_setup
+  ${SetupDirs}
+  StrCmp "" $option_dos setupwin_client setupdos_client
+  setupdos_client:
+    StrCmp $cmdLineParams "" +3
+    StrCpy $emacs `"$emacs\$option_emacsclient" -d 0 --server-file "$TEMP\epd-$option_version\server" $cmdLineParams`
+    Goto +2
+    StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\epd-$option_version\server"`
+    goto end_client
+  setupwin_client:
+    StrCmp $cmdLineParams "" +3
+    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
+    Goto +2
+    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\EmacsPortable.App-Server-$option_version\server" -e "(new-emacs)"`
+  end_client:
+!macroend
+!define emacsclient_setup "!insertmacro emacsclient_setup"
+#+END_SRC
+
+* Callback Functions
+** Initialization
+#+BEGIN_SRC nsis
+Function .onInit
+  StrLen $R2 $EXEFILE
+  IntCmp 12 $R2 0 +3
+  Exec "$EXEDIR\EmacsPortableApp.exe"
+  Abort
+  ${GetCmdOptions}
+FunctionEnd
+#+END_SRC
+
+* Main Script
+ #+BEGIN_SRC nsis
+   Section "Main" sec_main
+     StrCpy "$emacs" "$EXEDIR\App\emacs-$option_version\bin"
+     FindProcDLL::FindProc "$option_emacs"
+     StrCmp $R0 "1" start_emacsclient start_emacs
+     start_emacs:
+       ${emacs_setup}
+       WriteIniStr "$TEMP\ep-reg.ini" "run" "$option_version" "1"
+       StrCmp "" $option_dos 0 start_emacs_dos
+       StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
+     start_emacs_gdb:
+       Exec "$EXEDIR\App\eps\run2.exe $emacs"
+       Goto loop
+     start_emacs_regular:
+       Exec "$EXEDIR\App\eps\run.exe $emacs"
+       Goto loop
+     start_emacs_dos:
+       Exec "$EXEDIR\App\eps\run2.exe $emacs"
+       Goto end
+     loop:
+       StrCmp "1" $option_daemon 0 end
+       StrCmp "" $option_q 0 end
+       StrCpy $cnt 300
+       IfFileExists "$EXEDIR/App/eps/EmacsPortableServer-$option_version.exe" +3 0
+       IfFileExists "$EXEDIR/App/eps/EmacsPortableServer.exe" 0 end
+       CopyFiles /SILENT "$EXEDIR/App/eps/EmacsPortableServer.exe" \
+           "$EXEDIR/App/eps/EmacsPortableServer-$option_version.exe"
+       Exec "$EXEDIR/App/eps/EmacsPortableServer-$option_version.exe $option_version"
+       Goto end
+     start_emacsclient:
+       ${emacsclient_setup}
+       Exec "$emacs"
+     end:    
+       #
+   SectionEnd
+   
+ #+END_SRC

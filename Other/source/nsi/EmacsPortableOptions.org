@@ -1,0 +1,296 @@
+#+TITLE: EmacsPortable Startup Options
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsPortableOptions.nsi
+* Introduction
+This provides an interface to the Emacs Startup options
+* Header
+** Compression and other options
+#+BEGIN_SRC nsis
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+#+END_SRC
+** Include files
+#+BEGIN_SRC nsis
+  !include "MUI2.nsh"
+  
+  !include "FileFunc.nsh"
+  !include ReadINIStrWithDefault.nsh
+  !include blowfish.nsh
+  !include "emacsproxy.nsh"
+  #+END_SRC
+** Name,Branding and Output file
+#+BEGIN_SRC nsis
+  Name "EmacsPortable.App Options"
+  OutFile "..\..\..\EmacsOptions.exe"
+  BrandingText "PortableEmacs.App"
+  
+  InstallDir "$EXEDIR"
+  #+END_SRC
+** Modern User Interface Options
+#+BEGIN_SRC nsis
+  !define MUI_ICON "..\img\ico\preferences_system.ico"
+  #!define MUI_UNICON
+  !define MUI_HEADERIMAGE
+  
+  !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+  !define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+  
+  !define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+  !define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+  
+  !define MUI_ABORTWARNING
+  !define MUI_UNABORTWARNING
+  !define MUI_PAGE_HEADER_TEXT "EmacsPortable.app"
+  !define MUI_PAGE_HEADER_SUBTEXT "Emacs on the Go"
+  
+  !define MUI_COMPONENTSPAGE_SMALLDESC
+  !define MUI_HEADERIMAGE_RIGHT
+  #+END_SRC
+** Definitions and Variables
+#+BEGIN_SRC nsis
+  !define TEMP1 $R0 ;Temp variable  
+  !define ep_version "Field 3"
+  !define ep_org "Field 9"
+  !define ep_right "Field 8"
+  !define ep_iemail "Field 6"
+  !define ep_iesrc "Field 7"
+  !define ep_ienews "Field 4"
+  !define ep_daemon "Field 5"
+  !define ep_font "Field 11"
+  !define ep_font_size "Field 14"
+  !define ep_bg "Field 16"
+  !define ep_fg "Field 18"
+  !define ep_g1 "Field 21"
+  !define ep_g2 "Field 22"
+  !define ep_g3 "Field 24"
+  !define ep_g4 "Field 25"
+  !define ep_mm "Field 28"
+  !define ep_fw "Field 29"
+  !define ep_fh "Field 30"
+  !define ep_debug "Field 31"
+  !define ep_home "Field 32"
+  !define ep_proxy_server "Field 34"
+  !define ep_proxy_port "Field 36"
+  !define ep_proxy_user "Field 38"
+  !define ep_proxy_password "Field 40"
+  #+END_SRC
+  
+** NSIS Pages
+#+BEGIN_SRC nsis
+  ;Order of pages
+  Page custom SetCustom ValidateCustom ": EmacsPortable Options" ;Custom page. InstallOptions gets called in SetCustom.
+  !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
+  !insertmacro MUI_LANGUAGE "English"
+  #+END_SRC
+* Macros
+** Read/Write Macros
+#+BEGIN_SRC nsis
+  !macro WR OPT EP
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${EP}" "State"
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" ${OPT} "$R0"
+  !macroend
+  !define WR "!insertmacro WR"
+  
+  
+  !macro RW OPT EP
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" ${OPT}
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${EP}" "State" "$R0"
+  !macroend
+  
+  !define RW "!insertmacro RW"
+#+END_SRC  
+* Functions
+** Callback Functions
+*** Initialization Function
+  #+BEGIN_SRC nsis
+  Function .onInit
+    var /GLOBAL versions
+    var /GLOBAL nemacs
+    var /GLOBAL lastversion
+    IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
+    CopyFiles /SILENT "$EXEDIR\App\ep.ini" "$EXEDIR\Data\ini\ep.ini"
+    StrCpy $versions ""
+    StrCpy $nemacs 0
+    StrCpy $lastversion ""
+    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+    StrCmp $versions "" 0 +4
+    ExecWait "$EXEDIR\EmacsDownload.exe"
+    ExecWait "$EXEDIR\EmacsOptions.exe"
+    Abort
+    StrCmp $nemacs 1 +2 0
+    CopyFiles /SILENT "$EXEDIR/EmacsPortableApp.exe" "$EXEDIR/EmacsPortableApp-$lastversion.exe"
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
+    ${SetupProxy}
+    
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State" ""
+    
+    
+    IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
+    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server"
+    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port"
+    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User"
+    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password"
+    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
+    end_proxy_init:
+      
+      ;; Put in some selected options
+      IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
+      ${RW} "OrgProtocol" "${ep_org}"
+      ${RW} "RightEdit" "${ep_right}"
+      ${RW} "IEmailto" "${ep_iemail}"
+      ${RW} "IEsource" "${ep_iesrc}"
+      ${RW} "IEnews" "${ep_ienews}"
+      ${RW} "Font" "${ep_font}"
+      ${RW} "FontSize" "${ep_font_size}"
+      ${RW} "Foreground" "${ep_fg}"
+      ${RW} "Background" "${ep_bg}"
+      ${RW} "Maximized" "${ep_mm}"
+      ${RW} "Fullwidth" "${ep_fw}"
+      ${RW} "Fullheight" "${ep_fh}"
+      ${RW} "Debug" "${ep_debug}"
+      ${RW} "Home" "${ep_home}"
+      ${RW} "Daemon" "${ep_daemon}"
+    end_init:
+      ClearErrors
+    FunctionEnd
+#+END_SRC
+*** Exit Function
+#+BEGIN_SRC nsis
+  Function .onGUIEnd
+    Delete "$EXEDIR\Data\ini\ep.ini"
+  FunctionEnd
+  
+#+END_SRC
+  
+** Figure out what Emacs versions are present with SetValues function
+    #+BEGIN_SRC nsis
+  Function SetValues
+    IntOp $nemacs $nemacs + 1
+    StrCmp $lastversion "" +2
+    CopyFiles /SILENT "$EXEDIR/EmacsPortableApp.exe" "$EXEDIR/EmacsPortableApp-$lastversion.exe"
+     StrLen $R1 "$EXEDIR\App\emacs-"
+     StrLen $R2 $R9
+     IntOp $R2 $R1 - $R2
+     StrCpy $R0 $R9 "" $R2
+     StrCpy $versions "$versions|$R0"
+     StrCpy $lastversion $R0
+     StrCpy $R0 $versions "" 1
+     WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "ListItems" "$R0"
+     Push $0
+  FunctionEnd
+  #+END_SRC
+  
+** Display the InstallOptions dialog
+#+BEGIN_SRC nsis
+  Function SetCustom
+    
+    ;Display the InstallOptions dialog
+    
+    Push ${TEMP1}
+    
+      InstallOptions::dialog "$EXEDIR\Data\ini\ep.ini"
+      Pop ${TEMP1}
+      
+    Pop ${TEMP1}
+    
+  FunctionEnd
+#+END_SRC
+  
+** Write the startup options to EmacsPortable.ini
+#+BEGIN_SRC nsis
+  
+  Function ValidateCustom
+  ;
+  ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 2" "State"
+  ;  StrCmp ${TEMP1} 1 done
+  
+  ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "${ep_version}" "State"
+  ;  StrCmp ${TEMP1} 1 done
+  
+  ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 4" "State"
+  ;  StrCmp ${TEMP1} 1 done
+  ;    MessageBox MB_ICONEXCLAMATION|MB_OK "You must select at least one install option!"
+  ;    Abort
+  
+  ;  done:
+     Delete $EXEDIR\Data\ini\EmacsPortableApp.ini
+     
+     
+     
+     ; Geometry
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
+     StrCpy $R1 "$R0"
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g2}" "State"
+     StrCpy $R1 "$R1x$R0"
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g3}" "State"
+     StrCpy $R1 "$R1+$R0"
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g4}" "State"
+     StrCpy $R1 "$R1+$R0"
+     WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" "$R1"
+  
+  
+     ${WR} "Version" "${ep_version}"
+     ${WR} "OrgProtocol" "${ep_org}"
+     ${WR} "RightEdit" "${ep_right}"
+     ${WR} "IEmailto" "${ep_iemail}"
+     ${WR} "IEsource" "${ep_iesrc}"
+     ${WR} "IEnews" "${ep_ienews}"
+     ${WR} "Font" "${ep_font}"
+     ${WR} "FontSize" "${ep_font_size}"
+     ${WR} "Foreground" "${ep_fg}"
+     ${WR} "Background" "${ep_bg}"
+     ${WR} "Maximized" "${ep_mm}"
+     ${WR} "Fullwidth" "${ep_fw}"
+     ${WR} "Fullheight" "${ep_fh}"
+     ${WR} "Debug" "${ep_debug}"
+     ${WR} "Home" "${ep_home}"
+     ${WR} "Daemon" "${ep_daemon}"
+     
+     
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
+     StrCmp $R0 "" skip_proxy
+     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server" "$R0"
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
+     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port" "$R0"
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
+     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User" "$R0"
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
+     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password" "$R0"
+     skip_proxy:
+       
+  FunctionEnd
+  #+END_SRC
+  
+* Obligatory Section
+#+BEGIN_SRC nsis
+  Section "Components" 
+    ;Get Install Options dialog user input
+    
+    
+  SectionEnd
+#+END_SRC  
+
+

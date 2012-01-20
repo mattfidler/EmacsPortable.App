@@ -1,0 +1,917 @@
+#+title: EmacsPortable.app startup
+#+AUTHOR: Matthew L. Fidler
+* Start EmacsPortable.App Startup timers
+This creates a timer to figure out how much time it takes to load EmacsPortable.App
+#+BEGIN_SRC emacs-lisp
+  (setq debug-on-error t)
+  (eval-when-compile
+    (require 'cl)) 
+  (defconst EmacsPortable-load-time-start (float-time))
+  (defvar EmacsPortable-last-time EmacsPortable-load-time-start)
+  (defun ep-m (txt)
+    "*Emacs Portable Time"
+    (message "[EmacsPortable] %s loaded in %1f seconds, %1f seconds elapsed"
+             txt
+             (- (float-time) EmacsPortable-last-time)
+             (- (float-time) EmacsPortable-load-time-start))
+    
+    (when (and nil (eq system-type 'windows-nt))
+      (with-temp-file (concat (getenv "TEMP") "/runningep.flg")
+        (insert "Loaded ")
+        (insert txt)))
+    (setq EmacsPortable-last-time (float-time)))
+#+END_SRC
+* Get the major and minor versions of emacs
+To start the pseudo-server appropriately, we need the major and minor
+emacs-version strings.
+#+BEGIN_SRC emacs-lisp
+  
+  ;; Need to have Major and minor version 23.3 for example.
+  (defvar emacs-ver (getenv "EMACSVER"))
+#+END_SRC
+* Set EmacsPortable.App variables
+This sets the variables for EmacsPortable.App
+
+#+BEGIN_SRC emacs-lisp
+  (defvar ep-server nil
+    "Defines if pseudo daemon is running")
+  
+  (ep-m "Required settings")
+  
+  
+  (defvar usb-drive-letter (if (getenv "EPUSB")
+                               (getenv "EPUSB")
+                             (substring data-directory 0 3)))
+  
+  
+  
+  (defvar usb-app-dir (if (getenv "EPOTHER")
+                          (expand-file-name (concat (getenv "EPOTHER") "/../App/"))
+                        (let ((ret data-directory))
+                          (when (string-match "EmacsPortable[.]App.*" ret)
+                            (setq ret (replace-match "EmacsPortable.App" nil nil ret)))
+                          (symbol-value 'ret))))
+  
+  (defvar usb-site-lisp-dir (or (and (getenv "EPOTHER")
+                                     (expand-file-name (getenv "EPOTHER")))
+                                (expand-file-name "Other" usb-app-dir)))
+  (defun ep-set-font ()
+    (when (getenv "EPFONT")
+      (set-frame-font (getenv "EPFONT"))
+      (set-default-font (getenv "EPFONT"))))
+  
+  (message "Drive:%s\nApp:%s\nLisp:%s\nData:%s" usb-drive-letter
+           usb-app-dir
+           usb-site-lisp-dir
+           data-directory)
+  
+#+END_SRC
+* Fancy Splash-screen to show EmacsPortable.app instead of Emacs
+:PROPERTIES:
+:ID: cb3ae3d6-4087-4d9d-bb6e-0bc6bb8012ff
+:END:
+#+begin_src emacs-lisp
+  (defun fancy-splash-head ()
+    "Insert the head part of the splash screen into the current buffer."
+    ;; Redefined this
+    (let* ((image-file (cond ((stringp fancy-splash-image)
+                              fancy-splash-image)
+                             ((display-color-p)
+                              (concat usb-app-dir "/img/"
+                                      (cond ((image-type-available-p 'svg)
+                                             "emacsportable.svg")
+                                            ((image-type-available-p 'png)
+                                             "emacsportable.png")
+                                            ((image-type-available-p 'jpeg)
+                                             "emacsportable.jpg")
+                                            ((image-type-available-p 'xpm)
+                                             "emacsportable.xpm")
+                                            ((<= (display-planes) 8)
+                                             (if (image-type-available-p 'xpm)
+                                                 "emacsportable.xpm"
+                                               "emacsportable.pbm"))
+                                            (t "emacsportable.pbm"))))
+                             (t (concat usb-app-dir "/img/emacsportable.pbm"))))
+           (img (create-image image-file))
+           (image-width (and img (car (image-size img))))
+           (window-width (window-width (selected-window))))
+      (when img
+        (when (> window-width image-width)
+          ;; Center the image in the window.
+          (insert (propertize " " 'display
+                              `(space :align-to (+ center (-0.5 . ,img)))))
+  
+          ;; Change the color of the XPM version of the splash image
+          ;; so that it is visible with a dark frame background.
+          (when (and (memq 'xpm img)
+                     (eq (frame-parameter nil 'background-mode) 'dark))
+            (setq img (append img '(:color-symbols (("#000000" . "gray30"))))))
+  
+          ;; Insert the image with a help-echo and a link.
+          (make-button (prog1 (point) (insert-image img)) (point)
+                       'face 'default
+                       'help-echo "mouse-2, RET: Browse https://github.com/mlf176f2/EmacsPortable.App/"
+                       'action (lambda (button) (browse-url "https://github.com/mlf176f2/EmacsPortable.App/"))
+                       'follow-link t)
+          (insert "\n\n")))))
+  
+  
+    (ep-m "Startup screen")
+  
+#+end_src
+
+* New frames in EmacsPortable.app
+:PROPERTIES:
+:ID: ff11d00d-fe0c-499f-9e35-1a3d703bf0c8
+:END:
+To use the NSIS daemon, we need to be able to start a frame on
+demand.  This is done with the =new-emacs= function:
+
+#+begin_src emacs-lisp
+  (defvar ep-kill-emacs-query-functions nil
+    "Variable to save `kill-emacs-query-functions'")
+  (defun new-emacs (&optional rename &rest arg)
+    "Starts a new emacs frame (called windows in the rest of the computing world)"
+    (interactive)
+    (when window-system
+      (let (tmp
+            (sf (selected-frame)))
+        (when ep-kill-emacs-query-functions
+          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+          (setq ep-kill-emacs-query-functions nil))
+        (select-frame (new-frame))
+        (when rename
+          (modify-frame-parameters (selected-frame) (list (cons 'name (concat "___EmacsPortableDaemon_" emacs-ver "___"))))
+          (select-frame sf))
+        (if (= 0 (length arg))
+            (cond
+             (t
+              (about-emacs)))
+          (mapc (lambda(x)
+                  (when (file-exists-p x)
+                    (find-file x)))
+                arg))
+        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
+          (ecb-minor-mode)))))
+   
+  
+#+end_src
+
+Which is called by the EmacsPortable launcher.
+
+* Start the Emacs Server
+#+BEGIN_SRC emacs-lisp
+    
+  ;; Start server and load-bar.
+  (when (and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
+    (setq server-auth-dir (concat (getenv "TEMP")
+                                  (if window-system 
+                                      "\\EmacsPortable.App-Server-"
+                                    "\\epd-") emacs-ver))
+    (when (not (file-exists-p server-auth-dir))
+      (make-directory server-auth-dir t))
+    (require 'server)
+      ;; Since this is in the temporary directory it should always be safe.
+    (defun server-ensure-safe-dir (&rest args)
+      t)
+    (server-start))
+  
+(ep-m "EmacsPortable.app")
+(require 'cl)
+#+end_src
+* Pseudo Daemon
+By using autohotkey emacs and nsis, I have implemented a psuedo-daemon
+mode for EmacsPortable.
+
+The components for this are:
+- The [[*NSIS%20loader%20script][NSIS loader script]]
+- The [[Autohotkey script][Autohotkey script]]
+- [[NSIS launcher script][NSIS launcher script]]
+- [[EmacsPortable.App loader script][EmacsPortable.App loader script]]
+** NSIS loader script
+:PROPERTIES:
+:ID: 918199a7-df18-4abe-a251-033926c0671e
+:END:
+The [[file:../../Other/source/nsi/loademacs.nsi::%3B%3B%3B%20loademacs.nsi%20---%20Loads%20Emacs][loademacs.nsi]] NSIS script implements a progress bar.  Currently it
+is just a psudo-progress bar that really doesn't know when Emacs will
+finish loading.  However, by looking at file =runningep.flg= in the
+temporary directory, it also tells the user what is loading.  This is
+already currently implemented in the emacs minibuffer.  However, if I
+am going to hide one of the frames to create a psudo-daemon, the user
+will not be able to see this.  Therefore, I implemented this
+interface.
+
+Currently it will continue the progress bar until it detects that
+=runninep.flg= is no longer in the temporary directory OR =emacs.exe=
+is no longer running.
+
+Currently this poses a problem if the site-wide initialization has some
+error.  It will continue to load indefinitely.  I'm not currently sure
+how to track this except for some large condition-case which deletes
+the file when loading.
+
+This has been suspended.  I like looking at emacs while it loads.
+There is more information for this type of display.
+** Autohotkey script
+:PROPERTIES:
+:ID: 850a5d6b-f80e-4a2c-b395-ced494a87750
+:END:
+The auto-hotkey [[file:source/ahk/EmacsPortableServer.ahk::%3B%3B%20(at%20your%20option)%20any%20later%20version.][EmacsPortableServer.ahk]] script keeps the psuedo-daemon
+frame from being displayed and subsequently closed on accident.
+** NSIS launcher script
+:PROPERTIES:
+:ID: 1d13200e-3329-4f3a-8320-58d413fe3fd0
+:END:
+The launcher script launches both the [[id:918199a7-df18-4abe-a251-033926c0671e][NSIS loader script]] and
+[[id:850a5d6b-f80e-4a2c-b395-ced494a87750][Autohotkey script]].  Its just a nsis launcher to call both at the same time.
+** Start the Psuedo-Daemon
+:PROPERTIES:
+:ID: 918f409a-aa5b-460d-aaee-5d05926605dd
+:END:
+#+begin_src emacs-lisp
+  ;; Deactivate message advice
+  ;;(ad-disable-advice 'message 'around 'ep-loadup-bar-advice)
+  (when window-system
+    (when (and (string-equal system-type "windows-nt")
+               (getenv "EMACS_DAEMON"))
+      (setq ep-server t)
+      (new-emacs t)))
+  
+#+end_src
+
+** Mimicking the kill-emacs behavior in the daemon
+:PROPERTIES:
+:ID: 30d39dde-8336-4c3b-93c4-ae49496c1e2b
+:END:
+
+While the Pseudo-Daemon shouldn't be exited, it should appear to the
+user that they have exited emacs. To do this, when only one frame is
+visible, the following is required:
+
+- Ask to save all buffers
+- Run the corresponding =kill-emacs-query-functions=
+- If these are successful, kill the current frame, and reassign the
+  hooks to nil (saving the value) so that a subsequent real kill-emacs
+  won't have to run these hooks again.
+
+To do this, I need to mimic =save-buffers-kill-emacs= when there is
+only one frame left other than the hidden =___EmacsPortableDaemon_%version___=
+frame.
+
+The first step is to create a special function that:
+
+ 1. Sets an external variable, =ep-emacs-kill-frame= to t
+ 2. Returns nil,
+
+By appending this function to the =kill-emacs-query-functions= hook and calling
+=save-buffers-kill-emacs=, Emacs should run all the appropriate
+functions and set =ep-emacs-kill-frame= if the Emacs frame should be
+killed. Using this we can create a function that:
+
+ - Adds and removes the special function
+   (=ep-save-buffers-pseudo-kill-emacs=) to the =kill-emacs-query-functions= so
+   that it can run =save-buffers-kill-emacs= without actually killing
+   emacs.
+ - If all the queries are successful,
+   + Save the =kill-emacs-query-functions= to an
+     external variable and set to nil
+   + Return t
+ - Otherwise return nil
+
+#+begin_src emacs-lisp
+  (defvar ep-emacs-kill-frame nil
+    "Variable that tells if the pseudo-kill-emacs run was sucessful.")
+  (defun ep-save-buffers-nil-fn ()
+    "This function returns nil and sets ep-emacs-kill-frame to t"
+    (setq ep-emacs-kill-frame t)
+    nil)
+  (defun ep-remove-reg ()
+    "Removes Registry settings on exit."
+    (when (file-readable-p (concat (getenv "TEMP") "/EP-RemoveReg.exe"))
+      (message "Removing Registry Settings.")
+      (shell-command-to-string (concat (getenv "TEMP") "/EP-RemoveReg.exe /VERSION=" emacs-ver))))
+  (add-hook 'kill-emacs-hook 'ep-remove-reg)
+  (defvar ep-saved-kill-emacs-hook nil)
+  (defun ep-save-buffers-pseudo-kill-emacs ()
+    "Faking `save-buffers-kill-emacs' when last visible frame is removed."
+    (let ((server (memq 'server-force-stop kill-emacs-hook)))
+      (setq ep-kill-emacs-query-functions nil)
+      (add-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn t)
+      (save-buffers-kill-emacs)
+      (remove-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn)
+      (remove-hook 'kill-emacs-hook 'ep-remove-reg)
+      (setq ep-saved-kill-emacs-hook kill-emacs-hook)
+      (when server
+        (remove-hook 'kill-emacs-hook 'server-force-stop))
+      (run-hooks 'kill-emacs-hook)
+      (setq kill-emacs-hook nil)
+      (when server
+        (add-hook 'kill-emacs-hook 'server-force-stop))
+      (add-hook 'kill-emacs-hook 'ep-remove-reg)
+      (if (not ep-emacs-kill-frame) nil
+        (setq ep-emacs-kill-frame nil)
+        (setq ep-kill-emacs-query-functions kill-emacs-query-functions)
+        (setq kill-emacs-query-functions nil)
+        t)))
+  
+  (defadvice save-buffers-kill-emacs (around ep-save-buffer-kill-emacs activate)
+    "Checks to see if `ep-kill-emacs-query-functions' has functions
+  stored in it.  If it does, do not try to save files again (they
+  should have already been prompted for)."
+    (cond
+     (ep-kill-emacs-query-functions
+         (kill-emacs))
+     (t
+      ad-do-it)))
+  
+#+end_src
+
+The last step is to call this when the last frame is being deleted.
+
+#+begin_src emacs-lisp
+  (defun ep-is-last-frame-p ()
+    "Determines if this is the last frame (only under Windows-nt)"
+    (when (and (getenv "EMACS_DAEMON") 
+               (string-equal system-type "windows-nt"))
+      (let ((frames (frame-list))
+            server-found
+            ret)
+        (when (and ep-server (= 2 (length frames)))
+          (mapc (lambda(frame)
+                  (setq server-found (or server-found (string= (concat "___EmacsPortableDaemon_" emacs-ver "___")
+                                                               (format "%s" (frame-parameter frame 'name))))))
+                frames)
+          (when server-found
+            (setq ret t)))
+        ret)))
+  
+  (defvar ep-delete-frame-hooks nil)
+  
+  (defun ep-del-frame-query ()
+    "Queries to delete frame."
+    (if (not (ep-is-last-frame-p)) t
+      (ep-save-buffers-pseudo-kill-emacs)))
+  
+  (add-hook 'ep-delete-frame-hooks 'ep-del-frame-query)
+  
+  (defadvice delete-frame (around ep-delete-frame activate)
+    "Advice to only call delete-frame if `ep-delete-frame-hooks'
+  are run successfully."
+    (when (run-hook-with-args-until-failure 'ep-delete-frame-hooks)
+      ad-do-it))
+  
+#+end_src
+* Keep from customization collision
+Try to set things in a way that dosen't affect customize.  Lifted from
+ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
+#+BEGIN_SRC emacs-lisp
+  (defmacro ep-tell (variable)
+    "Tell Customize to recognize that VARIABLE has been set (changed).
+  VARIABLE is a symbol that names a user option."
+    `(put ,variable 'customized-value (list (custom-quote (eval ,variable)))))
+  
+  (defmacro ep-saved-p (option)
+    "Return only not nil if OPTION is a defcustom-option and has a
+  saved value. Option is a variable and is literal \(not evaluated)."
+    `(and (get (quote ,option) 'custom-type)
+          (get (quote ,option) 'saved-value)))
+  
+  (defmacro ep-setq (option value)
+    "Sets OPTION to VALUE if and only if OPTION is not already saved
+  by customize. Option is a variable and is literal \(not evaluated)."
+    `(and (not (ep-saved-p ,option))
+          (set (quote ,option) ,value)
+          (ep-tell (quote ,option))))
+  
+#+END_SRC
+
+* EmacsPortable.App loader script
+:PROPERTIES:
+:ID: 35b325b3-dcd1-42cf-921f-ff98f8bb22d0
+:END:
+   This starts the pseudo-daemon.  If you are running Windows it:
+1. Waits for the server to start
+2. Changes the name of the current frame to
+   =___EmacsPortableDaemon_%version%___=
+3. Starts up the nsis psudo-loading bar.
+
+   
+
+#+BEGIN_SRC emacs-lisp
+  
+  (defun new-emacs (&rest arg)
+    "Starts a new emacs frame (called windows in the rest of the computing world)"
+    (interactive)
+    (when ep-saved-kill-emacs-hook
+      (mapc (lambda(x)
+              (add-hook 'kill-emacs-hook x))
+            ep-saved-kill-emacs-hook)
+      (setq ep-saved-kill-emacs-hook nil))
+    (when window-system
+      (let (tmp)
+        (when ep-kill-emacs-query-functions
+          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+          (setq ep-kill-emacs-query-functions nil))
+        (select-frame (new-frame))
+        (if (= 0 (length arg))
+            (cond
+             (t
+              (about-emacs)
+              (message "%s" (substitute-command-keys
+                             "When done with this frame, type \\[delete-frame]"))))
+          (mapc (lambda(x)
+                  (when (file-exists-p x)
+                    (find-file x)))
+                arg))
+        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
+          (ecb-minor-mode)))))  
+#+END_SRC
+    
+* Needed starting settings
+** Special path variables
+:PROPERTIES:
+:ID: a78ceacb-d6c7-4f8b-afb2-237db13b9b66
+:END:
+Moved to site-init.el
+
+#+begin_src emacs-lisp
+  
+#+end_src
+
+** Frame name
+:PROPERTIES:
+:ID: 883e8775-2cfc-4e44-b51f-800598e14c80
+:END:
+#+begin_src emacs-lisp
+  (if (eq system-type 'windows-nt)
+      (setq frame-title-format (list (with-temp-buffer
+                                       (insert "Emacs")
+                                       (insert (if (string= (downcase (substring usb-drive-letter 0 1))
+                                                            (downcase (substring data-directory 0 1)))
+                                                   (concat "Portable@"
+                                                           (downcase (substring usb-drive-letter 0 1)))
+                                                 "Local"
+                                                 ))
+                                       (insert "-")
+                                       (insert emacs-ver)
+                                       (insert " %b")
+                                       (buffer-substring (point-min) (point-max))
+                                       )
+                                     '(buffer-file-name ": %f")))
+    (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
+
+#+end_src
+* Paths and load-path
+** Set appropriate load paths
+** Add Path to Java if exists
+:PROPERTIES:
+:ID: a0a4e48f-1a05-4c30-a596-efcb90d5f395
+:END:
+If Java is available under =%USB%:/PortableApps/CommonFiles/Java/bin=,
+add it to path.
+Moved path-checking for Java to the [[./source/nsi/EmacsPortableApp.nsi][EmacsPortable Startup script.]]
+
+** Recent Files
+*** Setup Path Aliases 
+:PROPERTIES:
+:ID: bb44757d-6018-438b-88f9-eb00f6ae0c42
+:END:
+To use My dropbox, My documents needs to be set through the
+EmacsPortableApp.exe launcher.
+#+begin_src emacs-lisp
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Emacs Portable USB drive can be coded usb:/ or ~usb/
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  ;; On windows convert ~/Dropbox to %MY Documents% dropbox
+  (defun ep-usb-convert-file-name (name)
+    "Converts a usb filename to a regular file-name"
+    (let ((ret name)
+          (case-fold-search t))
+      (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
+        (setq ret (replace-match usb-drive-letter t t ret)))
+      
+      (when (string-match "^~pa[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-drive-letter "PortableApps/") t t ret)))
+      
+      (when (string-match "^~doc[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-drive-letter "Documents/") t t ret)))
+      
+      (when (string-match "^~[h~][/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat (getenv "OHOME")
+                                          (if (string-match "[/\\]"
+                                                            (substring (getenv "OHOME") -1))
+                                              ""
+                                            "/"))) t t ret)))
+      (when (string-match "^~ep[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../")) t t ret)))
+      (when (string-match "^~themes?[/\\\\]" ret)
+        (setq ret
+              (replace-match (concat usb-app-dir "../Data/themes/")
+                             t t ret)))
+      (when (string-match "^~elpa[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-app-dir "lisp/elpa/") t t ret)))
+      
+      (when (string-match "^~el-get[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-app-dir "lisp/el-get/") t t ret)))
+      
+      (when (string-match "^~site-lisp[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-app-dir "site-lisp/") t t ret)))
+      (when (string-match "^~app[/\\\\]" ret)
+        (setq ret (replace-match usb-app-dir t t ret)))
+      
+      (when (string-match "^~sk[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-app-dir "portable-starter-kit/")
+                                 t t ret)))
+      (when (string-match "^~data[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Data/")) t t ret)))
+      
+      (when (string-match "^~nsi[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Other/source/nsi/")) t t ret)))
+      (when (string-match "^~ahk[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                   (concat usb-app-dir "../Other/source/ahk/")) t t ret)))
+      (when (string-match "^~other[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Other/")) t t ret)))
+      
+      (when (string-match "^~init[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Data/init/")) t t ret)))
+      (when (string-match "^~ini[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Data/ini/")) t t ret)))
+      (when (string-match "^~src[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Data/src/")) t t ret)))
+      (when (string-match "^~snip\\(pet\\)?s?[/\\\\]" ret)
+        (setq ret (replace-match
+                   (expand-file-name
+                    (concat usb-app-dir "../Data/snippets/")) t t ret)))
+      (when (string-match "^~use?rs?[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir
+                                          "../Data/init/user/")) t t ret)))
+      (when (string-match "^~shared?[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Data/init/shared/")) t t ret)))
+      (when (string-match "^~system[/\\\\]" ret)
+        (setq ret (replace-match (expand-file-name
+                                  (concat usb-app-dir "../Data/init/system/")) t t ret)))
+      (when (and (eq system-type 'windows-nt)
+                 (getenv "TEMP")
+                 (file-readable-p (getenv "TEMP"))
+                 (string-match "^/tmp/" ret))
+        (setq ret (replace-match (concat (expand-file-name (getenv "TEMP")) "/") t t ret)))
+      (when (and (getenv "MYDOC")
+                 (string-match "^~mydoc[/\\\\]" ret))
+        (setq ret (replace-match (concat (expand-file-name (getenv "MYDOC")) "/") t t ret)))
+      (cond
+       ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
+             (getenv "MYDOC")
+             (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
+        (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox") t t ret)))
+       (t ret))
+      (symbol-value 'ret)))
+  
+  ;; Modified from cygwin-mount.
+  (defun ep-usb-file-name-handler (operation name &rest args)
+    "Run OPERATION on usb NAME with ARGS.
+    
+    Map USB name to the dos-type [A-Za-z]:/ and call OPERATION with
+    the remapped file-name\(s).  NAME must have the format that looks
+    like \"^usb:/\" OR \"^~usb/\"
+    
+    Also map default dropbox location of ~/Dropbox to
+    %MYDOCUMENTS%/My Dropbox under windows.
+    
+    "
+    (ep-usb-real-file-name-handler
+     operation
+     (cons (ep-usb-convert-file-name name)
+           (if (stringp (car args))
+               (cons (ep-usb-convert-file-name (car args))
+                     (cdr args))
+             args))))
+  
+  (defun ep-usb-real-file-name-handler (operation args)
+    "Run OPERATION with ARGS."
+    (let ((inhibit-file-name-handlers
+           (append '(ep-usb-file-name-handler)
+                   (and (eq inhibit-file-name-operation operation)
+                        inhibit-file-name-handlers)))
+          (inhibit-file-name-operation operation))
+      (apply operation args)))
+  
+  ;; Make abbreviate choose ~usb so that when saving recent files, this is also saved.
+  (setq directory-abbrev-alist `((,(concat "\\`"
+                                           (expand-file-name (getenv "HOME")))
+                                  . "~")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat (getenv "OHOME")
+                                                                     (if (string-match "[/\\]" (substring (getenv "OHOME") -1))
+                                                                         ""
+                                                                       "/"))))
+                                  . "~h/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "site-lisp/")))
+                                  . "~site-lisp/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "lisp/elpa/")))
+                                  . "~elpa/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "lisp/el-get/")))
+                                  . "~el-get/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "site-lisp/")))
+                                  . "~site-lisp/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Other/source/nsi/")))
+                                  . "~nsi/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Other/source/ahk/")))
+                                  . "~ahk/")
+                                 
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Other/")))
+                                  . "~other/")
+                                 
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/init/user/")))
+                                  . "~user/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/init/shared/")))
+                                  . "~shared/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/themes/")))
+                                  . "~themes/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/snippets/")))
+                                  . "~snips/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/init/system/")))
+                                  . "~system/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/init/")))
+                                  . "~init/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/ini/")))
+                                  . "~ini/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../Data/src/")))
+                                  . "~src/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "portable-starter-kit/")))
+                                  . "~sk/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "/")))
+                                  . "~app/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat
+                                                              usb-app-dir "../Data/") ))
+                                  . "~data/")
+                                 (,(concat "\\`"
+                                           (expand-file-name
+                                            (concat usb-app-dir "../")))
+                                  . "~ep/")
+                                 
+                                 (,(concat "\\`" usb-drive-letter "PortableApps/") . "~pa/")
+                                 (,(concat "\\`" usb-drive-letter "Documents/") . "~doc/")
+                                 (,(concat "\\`" usb-drive-letter) . "~usb/")
+                                 (,(if (and (getenv "MYDOC")
+                                            (file-readable-p (getenv "MYDOC")))
+                                       (concat "\\`"
+                                               (expand-file-name (getenv "MYDOC")) "/")
+                                     "~mydoc/") . "~mydoc/")
+                                 (,(if (and (eq system-type 'windows-nt)
+                                            (getenv "TEMP")
+                                            (file-readable-p (getenv "TEMP")))
+                                       (concat (expand-file-name (getenv "TEMP")) "")
+                                     "/tmp/") . "/tmp/")
+                                 (,(if (and (eq system-type 'windows-nt)
+                                            (getenv "MYDOC")
+                                            (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
+                                       (concat "\\`" (expand-file-name (concat (getenv "MYDOC") "\\My Dropbox")))
+                                     "\\`~/Dropbox") . "~/Dropbox")))
+  
+  (let* ((lst `(
+                "usb:/"
+                "~/Dropbox"
+                "~/dropbox"
+                "~ahk/"
+                "~app/"
+                "~data/"
+                "~ep/"
+                "~ini/"
+                "~init/"
+                "~nsi/"
+                "~sk/"
+                "~snip/"
+                "~snippets/"
+                "~snips/"
+                "~src/"
+                "~system/"
+                "~theme/"
+                "~themes/"
+                "~usb/"
+                "~user/"
+                "~users/"
+                "~other/"
+                "~site-lisp/" 
+                "/tmp/"
+                "~mydoc/"
+                "~shared/"
+                "~pa/"
+                "~doc/"
+                "~elpa/"
+                "~el-get/"
+                "~h/"
+                ))
+         (reg (concat "^"
+                      (regexp-opt (append lst
+                                          (mapcar (lambda(x)
+                                                    (upcase x))
+                                                  lst)) 't))))
+    (or (assoc reg file-name-handler-alist)
+        (setq file-name-handler-alist
+              (cons `(,reg . ep-usb-file-name-handler)
+                    file-name-handler-alist)))
+    (when t
+      (mapc (lambda(test)
+              (message "%s\t%s\t%s\t%s\t%s" test
+                       (expand-file-name test) (abbreviate-file-name (expand-file-name test))
+                       (expand-file-name (concat test "dummy")) (abbreviate-file-name (concat (expand-file-name test) "dummy"))))
+            lst)))
+  
+#+end_src
+**** TODO Add Custom abbreviations
+*** Recent Files
+Recent files are saved to the =Other/saves/= directory.  Additionally,
+the saves are based on the computer name so that system idiosyncrasies
+like mac vs pc file names do not affect the loading of files, and the
+files are saved per computer. 
+:PROPERTIES:
+:ID: e0e982b9-0651-4505-906c-ecb4c71d1a84
+:END:
+#+begin_src emacs-lisp
+  (defcustom EmacsPortable-start-recentf 't
+    "* Enables Recent Files starting"
+    :type 'boolean
+    :group 'EmacsPortable)
+  
+  (when EmacsPortable-start-recentf
+    (condition-case err
+        (progn
+          (setq recentf-auto-cleanup 'mode)
+          (setq recentf-max-menu-items 20)
+          (setq recentf-max-saved-items 1000)
+          (setq recentf-save-file (concat usb-site-lisp-dir "../Data/saves/recent-files-" system-name))
+          (require 'recentf)
+          (setq recentf-menu-filter 'recentf-arrange-by-mode)
+          (setq recentf-filename-handlers (quote (abbreviate-file-name)))
+          ;; recentf-expand-file-name
+          (recentf-mode 1))
+      (error nil)))
+  (ep-m "Recentf")
+  
+#+end_src
+* Bugs and Speed
+:PROPERTIES:
+:ID: 5f0b0410-d812-466d-a569-36ccd8442c86
+:END:
+
+** Still have clients, kill it?
+:PROPERTIES:
+:ID: 27645d3a-7bc9-4736-b340-a24d8c303f8e
+:END:
+This is really annoying.  See
+http://shreevatsa.wordpress.com/2007/01/06/using-emacsclient/
+
+#+begin_src emacs-lisp
+(remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function)
+#+end_src
+* Miscellaneous
+** Spell Checking
+*** Hunspell
+:PROPERTIES:
+:ID: 65a4feb0-5ec6-47aa-af4f-f99200144497
+:END:
+Hunspell is supposed to be a better spell-checker than apsell.  It is
+what firefox and open office use.
+#+begin_src emacs-lisp
+  (condition-case err
+      (progn
+        (setenv "LANG" "en")
+        (require 'rw-language-and-country-codes nil t)
+        (require 'rw-ispell nil t)
+        (require 'rw-hunspell nil t)
+        (setq rw-hunspell-make-dictionary-menu t)
+        (setq rw-hunspell-use-rw-ispell t)
+        (setq ispell-program-name (executable-find "hunspell"))
+  
+        (setq rw-hunspell-dicpath-list (list (getenv "DICPATH")))
+        (rw-hunspell-setup))
+    (error nil))
+  
+ 
+  
+#+end_src
+*** Flyspell
+:PROPERTIES:
+:ID: 5503a001-551f-4692-9b67-33a69832ea61
+:END:
+I prefer right-click for correct word.
+#+begin_src emacs-lisp
+  (require 'flyspell)
+  (define-key flyspell-mouse-map  [down-mouse-3] #'flyspell-correct-word)
+#+end_src
+** Other Options
+:PROPERTIES:
+:ID: fe11bef7-d27f-4fc1-a769-b02504d8a4dd
+:END:
+#+begin_src emacs-lisp
+  (setq message-log-max 10000)
+
+  ;; Keep cursor out of the prompt
+  (setq minibuffer-prompt-properties
+        (plist-put minibuffer-prompt-properties
+                   'point-entered 'minibuffer-avoid-prompt))
+
+#+end_src
+
+** Display Options
+:PROPERTIES:
+:ID: dc551326-c4b8-46a2-8a9c-21e872da6af6
+:END:
+#+begin_src emacs-lisp
+(setq default-indicate-empty-lines t)
+(setq mode-line-in-non-selected-windows  t)
+(setq default-indicate-buffer-boundaries  t)
+(setq overflow-newline-into-fringe  t)
+#+end_src
+*** Mode Line
+:PROPERTIES:
+:ID: 7f6f9885-e1eb-47af-bd32-2877aef7e2a7
+:END:
+Put current line number and column in the mode line
+#+begin_src emacs-lisp
+(line-number-mode 1)
+(setq column-number-mode t)
+#+end_src
+** Update Paths
+:PROPERTIES:
+:ID: 9f86eea2-d782-479e-b0ab-24360af6d529
+:END:
+Make sure the Emacs Path environment matches the command environment
+path.
+
+All paths should be in the nsis startup script.
+
+* Fix problems with some crossover problems.
+Unfortunately, running EmacsPortable.App from the same location on
+different systems can cause some problems for Mac OSX.  It doesn't
+understand certain file types, like =c:/autoexec.bat=.  Therefore it
+sends them to TRAMP. Certain things should just return nil.  This can
+be fixed by advices on some primitive functions
+
+#+BEGIN_SRC emacs-lisp
+  (defadvice file-readable-p (around emacs-portable-advice activate)
+    "This advice keeps Emacs from trying to call tramp on c:/ and othe windows-type files when running Mac OSX."
+    (if (and (eq system-type 'darwin)
+               (save-match-data
+                 (string-match "^[A-Za-z]:[/\\]" (nth 0 (ad-get-args 0))))) nil
+      ad-do-it))
+  
+  (defadvice file-exists-p (around emacs-portable-advice activate)
+    "This advice keeps Emacs from trying to call tramp on c:/ and othe windows-type files when running Mac OSX."
+    (if (and (eq system-type 'darwin)
+             (save-match-data
+               (string-match "^[A-Za-z]:[/\\]" (nth 0 (ad-get-args 0))))) nil
+      ad-do-it))
+#+END_SRC
+
+* Start the starter kit, if present
+The EmacsPortable.App starter kit is a fork from another starter kit
+and is located [[https://github.com/mlf176f2/emacs-portable-starter-kit][here]].
+#+BEGIN_SRC emacs-lisp
+  (let ((starter-kit (concat usb-app-dir "/portable-starter-kit/init.el")))
+    (when (file-readable-p starter-kit)
+      (load-file starter-kit)))
+  
+#+END_SRC
+

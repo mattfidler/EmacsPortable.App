@@ -1,0 +1,172 @@
+#+TITLE: Network Install
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle install-net.nsi
+* Introduction
+Install via the network
+* Header
+** Compression Options
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+;SetCompress off
+;automatically close the installer when done.
+AutoCloseWindow true 
+#+END_SRC
+** Modern User Interface Options
+#+BEGIN_SRC nsis
+; MUI2
+!include "MUI2.nsh"
+!include "FileFunc.nsh"
+#+END_SRC
+** Name and branding information & output options
+#+BEGIN_SRC nsis
+Name "EmacsPortable.App"
+BrandingText "EmacsPortable.App"
+
+OutFile "..\..\..\EmacsInstall.exe"
+#+END_SRC
+** Modern User Interface Options
+#+BEGIN_SRC nsis
+!define MUI_HEADERIMAGE
+
+!define MUI_HEADERIMAGE_BITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+!define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+
+!define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+
+!define MUI_ABORTWARNING
+!define MUI_UNABORTWARNING
+!define MUI_PAGE_HEADER_TEXT "EmacsPortable.app"
+!define MUI_PAGE_HEADER_SUBTEXT "Emacs on the Go"
+
+!define MUI_COMPONENTSPAGE_SMALLDESC
+!define MUI_HEADERIMAGE_RIGHT
+#+END_SRC
+** Installer Pages
+#+BEGIN_SRC nsis
+;Installer pages
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "..\gpl-3.0.rtf"
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_COMPONENTS
+
+;MUI_PAGE_STARTMENU pageid variable
+!insertmacro MUI_PAGE_INSTFILES
+
+
+!insertmacro MUI_LANGUAGE "English"
+#+END_SRC
+** Variables
+#+BEGIN_SRC nsis
+Var PA
+Var PG
+#+END_SRC
+* Functions
+** Get Portable Apps and GIT
+#+BEGIN_SRC nsis
+Function GetDriveVars
+  StrCmp $9 "c:\" git
+  StrCmp $8 "HDD" gpa
+  StrCmp $9 "a:\" spa
+  StrCmp $9 "b:\" spa
+  
+  gpa:
+    IfFileExists "$9PortableApps" 0 git
+    StrCpy $PA "$9PortableApps"
+  git:
+    IfFileExists "$9cygwin\bin\git.exe" 0 +2
+    StrCpy $PG "$9cygwin\bin\git.exe"
+    IfFileExists "$9msysgit\msysgit\cmd\git.cmd" 0 +2
+    StrCpy $PG "$9msysgit\msysgit\cmd\git.cmd"
+    IfFileExists "$9msysgit\cmd\git.cmd" 0 +2
+    StrCpy $PG "$9msysgit\cmd\git.cmd"
+    IfFileExists "$9PortableGit\cmd\git.cmd" 0 +2
+    StrCpy $PG "$9PortableGit\cmd\git.cmd"
+    IfFileExists "$9PortableApps\PortableGit\cmd\git.cmd" 0 +2
+    StrCpy $PG "$9PortableApps\PortableGit\cmd\git.cmd"
+    IfFileExists "$9GitPortable\cmd\git.cmd" 0 +2
+    StrCpy $PG "$9GitPortable\cmd\git.cmd"
+    IfFileExists "$9PortableApps\GitPortable\cmd\git.cmd" 0 +2
+    StrCpy $PG "$9PortableApps\GitPortable\cmd\git.cmd"
+  spa:
+    Push $0
+    
+FunctionEnd
+#+END_SRC
+** Fix Emacs Portable
+#+BEGIN_SRC nsis
+Function FixEp
+  IfFileExists "$INSTDIR" 0 +2
+  RmDir /r "$INSTDIR"
+  CopyFiles "$R9" "$INSTDIR"
+  RmDir /r "$R9"
+  Push $0
+FunctionEnd
+#+END_SRC
+* Sections
+#+BEGIN_SRC nsis
+Section /o "Use GIT instead of ZIP" sec_use_git_instead_of_zip ; Unchecked (/o)
+  ; Description:
+  ; Git Download of EmacsPortable.App
+  
+SectionEnd ; sec_use_git_instead_of_zip
+
+Section "EmacsPortable.App Net Installer" sec_emacsportable_app_net_installer 
+  ; Description:
+  ; Install EmacsPortable.App from the Internet
+  RmDir /r $INSTDIR
+  SectionGetFlags ${sec_use_git_instead_of_zip} $0
+  IntOp $0 $0 & ${SF_SELECTED}
+  StrCmp "0" $0 0 +2
+  StrCpy $PG ""
+  StrCmp "$PG" "" zip git
+  zip:
+    inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" \
+        "$TEMP\ep.zip"
+    ZipDLL::extractall "$TEMP\ep.zip" "$TEMP"
+    Delete "$TEMP\ep.zip"
+    ${Locate} "$TEMP" "/L=D /M=*-EmacsPortable.App-* /S= /G=0" "FixEP"
+    Goto exe
+  git:
+    ExecWait "$PG clone https://github.com/mlf176f2/EmacsPortable.App.git $INSTDIR"
+  exe:
+    Exec "$INSTDIR\EmacsDownload.exe"
+SectionEnd ; sec_emacsportable_app_net_installer
+#+END_SRC
+* Descriptions
+#+BEGIN_SRC nsis
+;--------------------------------
+;Description(s)
+LangString DESC_sec_emacsportable_app_net_installer ${LANG_ENGLISH} "Install EmacsPortable.App from the Internet"
+LangString DESC_sec_use_git_instead_of_zip ${LANG_ENGLISH} "Git Download of EmacsPortable.App. Requires installer to find GIT"
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+  !insertmacro MUI_DESCRIPTION_TEXT ${sec_use_git_instead_of_zip} $(DESC_sec_use_git_instead_of_zip)
+  !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_net_installer} $(DESC_sec_emacsportable_app_net_installer)
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
+#+END_SRC
+* Initialization Function
+#+BEGIN_SRC nsis
+Function .onInit
+  StrCpy $PA ""
+  StrCpy $PG ""
+  ${GetDrives} "FDD+HDD" "GetDriveVars"
+  StrCpy $INSTDIR "$PA\EmacsPortable.App"
+  StrCmp "$PG" "" cant_use_git can_use_git
+  cant_use_git:
+    SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_RO}
+    Goto end
+  can_use_git:
+    SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_SELECTED}
+    Goto end
+  end:
+    #
+FunctionEnd
+#+END_SRC

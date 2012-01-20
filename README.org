@@ -1,0 +1,403 @@
+#+TITLE: EmacsPortable.App
+#+AUTHOR: Matthew L. Fidler
+* EmacsPortable.App Introduction 
+EmacsPortable.App attempts to make a portable version of Emacs that
+runs off a USB drive under either Windows, or Mac OSX.  
+
+To install before a release, please follow [[*Using%20EmacsPortable.App%20before%20a%20release][the directions for using
+EmacsPortable.App before a release]]. 
+* EmacsPortable.App Idiosyncrasies
+** Home Directory configuration
+The =HOME= Directory is where Emacs stores the =.emacs= file;  Other
+emacs programs also store information here. EmacsPortable.App has a
+few options for home directories
+*** USB home directory
+If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
+#+BEGIN_SRC conf
+  [EmacsPortableApp]
+  Home=USB:/Documents/
+#+END_SRC
+The USB directory is changed for what EmacsPortableApp deems is the
+usb directory.  This setting uses the PortableApps Documents Directory
+as the home-directory.  This is slightly different depending on the
+platform. 
+
+The advantage of this methodology is that under windows, Emacs can be
+copied to the hard-drive to speed up the run-time, and the
+initialization from the hard drive 
+
+*** EXEDIR home directory
+If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
+#+BEGIN_SRC conf
+  [EmacsPortableApp]
+  Home=EXEDIR:/Data/Home
+#+END_SRC
+The EXEDIR directory is changed for the base directory that
+EmacsPortable.App is run from.
+
+The advantage to this methodology is that you can drag and drop Emacs
+and all your customizations will be dragged with it.
+*** System home directory
+If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry
+that doesn't start with either =EXEDIR:/= or =USB:/=, then the
+original home directory is maintained.
+#+BEGIN_SRC conf
+  [EmacsPortableApp]
+  Home=Set as original
+#+END_SRC
+** Emacs-only directory aliases
+Emacs has a list of aliases that are convinces, but do not correspond
+with an actual directory.  
+|-------------+--------------------------+-------------------------------------|
+| Alias       | True Directory           | Directory Purpose                   |
+|-------------+--------------------------+-------------------------------------|
+| =/tmp/=     | Temporary Directory      | Temporary Directory.                |
+| ~ahk/       | Other/source/ahk         | AHK Sources Directory               |
+| ~app/       | App/                     | EmacsPortable.App Application Files |
+| ~doc/       | USB Drive:/Documents     | Documents Directory                 |
+| ~el-get     | App/lisp/el-get          | El Git package Repository           |
+| ~elpa/      | App/lisp/elpa            | Elpa Package Repository             |
+| ~ep/        | .                        | EmacsPortable.App Directory         |
+| ~h/         | System Home Directory    | System Home Directory               |
+| ~ini/       | Data/ini                 | EmacsPortable.App ini files         |
+| ~init/      | Data/init                | EmacsPortable.App Customizations    |
+| ~nsi/       | Other/source/nsi         | NSIS Sources Directory              |
+| ~pa/        | USB Drive:/PortableApps  | Portable Apps                       |
+| ~saves/     | Data/saves               | EmacsPortable.App Saves             |
+| ~shared/    | Data/init/shared         | Shared Customizations               |
+| ~site-lisp/ | App/site-lisp            | Site Lisp Directory                 |
+| ~sk/        | App/portable-starter-kit | Starter Kit Directory               |
+| ~snips/     | Data/snippets            | YaSnippets                          |
+| ~src/       | Data/src                 | EmacsPortable.App lisp source files |
+| ~system/    | Data/init/system         | System-based Customizations         |
+| ~themes/    | Data/themes              | Emacs 24 Theme Directory            |
+| ~usb/       | USB Drive                | USB Drive                           |
+| ~user/      | Data/init/user           | User-based Customizations           |
+|-------------+--------------------------+-------------------------------------|
+
+** Font installation, if needed
+Will install specific fonts, if needed.
+*** STARTED Allow Mac to install specific fonts.
+* Running EmacsPortable.App
+** Running Debug under windows
+Under windows, debug mode starts =gdb= if found.  Additionally, if
+=App/gdbinit= is found, gdb sources this before running emacs.  You
+can download an appropriate gdbinit for emacs [[http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit][here]].
+
+* Customizing and using your own packages
+The settings in EmacsPortable.app are a fork of the literate starter
+kit by [[https://github.com/eschulte][Eric Schulte]]. The settings are described below.  This is copied
+and modified from the original starter-kit.
+
+The defaults built into the EmacsPortable.App are only the beginning
+of most users customization of Emacs to suite their needs.
+EmacsPortable.App provides provides a number of places for additional
+user and system specific customization.  These are designed in such a
+way that it will be easy for you to continue tracking your own
+personal customization inside EmacsPortable.App while retaining your
+ability to pull down general updates to EmacsPortable.App without conflict.
+** Startup Customization
+The =EmacsOptions.exe= allows you to set Emacs startup options via a
+GUI.  This is mirrored in the =App/EmacsPortable.ini= file.
+*** Emacs Version
+This selects the version of Emacs that EmacsPortable.App will be
+running.  This is useful if you run different versions of Emacs to
+possibly test lisp code, or use features not previously used.
+*** Register Org-protocol
+
+*** Handle IE Mailto
+
+*** Handle IE Viewsource
+
+*** Handle IE News
+
+*** Startup Font, Color, Geometry
+**** TODO Add Color-theme foreground/background color sync.
+*** Proxy
+
+*** Setting Startup Environment variables
+By creating or editing an environment ini file at
+=App/Environment.ini=, startup environmental variables may be set.
+For example, if you use the =colemak= keyboard with the ergoemacs
+package, the following ini-file will set the
+=ERGOEMACS_KEYBOARD_LAYOUT= to the proper value
+
+#+BEGIN_SRC conf
+[Environment]
+ERGOEMACS_KEYBOARD_LAYOUT=colemak
+#+END_SRC
+**** TODO Mac OS X recognizances environment options
+
+** General Customization
+
+- git branch :: The first step to user-specific customization is (like
+                in any git project) to MAKE A BRANCH FOR YOUR LOCAL
+                CHANGES.  Save the master branch for pulling down new
+                versions of the starter kit, and save all of your
+                personal information in a personal branch.  That way
+                you never have to worry about accidentally =git
+                push='ing up a patch with all of your gnus email
+                passwords.
+
+- Overall EmacsPortable.App configuration :: Your personal
+     EmacsPortable.App configuration can be placed in the =Data/init=
+     directory.  This directory will be added to the load-path it any
+     elisp or org-mode w/embedded elisp files in it will be loaded.
+
+- User specific config :: Your personal configuration information can
+     be stored in a user-specific-config file in
+     =Data/init/user/$USER.org= or =Data/init/user/$USER.el=.  This is
+     the file named after your user with the extensions =.el= or
+     =.org= [2].  This should be your windows log-in name, or under a
+     mac if you're unsure of your user name evaluate the
+     following code block to find out.
+
+#+begin_src sh
+echo $USER
+#+end_src
+
+     If your configuration starts to feel cramped in a single file
+     (although with the nested headlines of an Org-mode file, that
+     could take a while) and you want to stretch your config's legs,
+     you can also create a directory named after your system user
+     name, like =Data/init/user/$USER=.  If a such a directory exists,
+     it will be added to the load-path, and any elisp or org-mode
+     w/embedded elisp files in it will be loaded.
+
+- System specific config :: Finally, you may want to configure
+     different settings for different machines.  The Starter Kit will
+     look for a file named after the current hostname ending in =.el=
+     or =.org= in the =Data/init/system/= folder which will allow
+     host-specific configuration.  If you're unsure of your hostname
+     the following can be executed to find out.
+#+begin_src sh
+hostname
+#+end_src
+     In windows, the hostname is found by right-clicking on
+     my-computer and clicking on =Properties=.  After that, click on
+     the =Computer Name= tab.  This should have two properties:
+
+     *Full computer name:* bob.gnu.org
+
+     *Domain:* gnu.org
+
+     When the domain is removed from the Full computer name, the
+     hostname is found.  In this case, the host-name is bob.
+
+     If a specific setup for a host gets too cramped, you can also
+     create a directory named after your system user name, like
+     =Data/init/user/$USER=.  If a such a directory exists, it will be
+     added to the load-path, and any elisp or org-mode w/embedded
+     elisp files in it will be loaded.
+- Overall config :: If you wish to add literate/non-literate startup
+                    files, you may also put them in
+                    =Data/init/shared/=.  This should be loaded
+                    regardless of the user or system.
+
+[2012-01-04 Wed 13:30]
+** TODO Activating EmacsPortable Starter Kit Modules
+
+- Activating more of the starter kit :: By default, the starter kit
+only includes customizations which are likely to be useful across
+nearly any Emacs install (the only automatically loaded external
+files are those listed in [[#load-the-starter-kit-core][Load the rest of the starter kit core]]).
+You may have noticed that there are many other
+=starter-kit-*.org= files located in this directory.  A good
+first step is to browse these files and begin optionally loading
+those that look relevant to your workflow.  For example, if you
+often work with Python source code you will probably want to load
+=starter-kit-python.org= either by directly copying the sections
+that look useful into your personal config, or simply by loading
+the entire file directly with the following.
+
+** Installing Additional Libraries
+- Installing more elisp libraries :: The easiest way to install new
+libraries is through the Emacs Lisp Package Archive (see [[#emacs-lisp-package-archive][Emacs
+Lisp Package Archive]] below).  When a library is not available
+through ELPA you can grab it's source and place it directly in
+the =/Data/src= directory.  Any packages found there will automatically
+be added to your load-path when Emacs starts up, and are
+guaranteed not to conflict with future updates.
+** Using Pre-installed libraries
+- Making use of the two pre-installed libraries :: By default the
+starter kit downloads and installs two generally helpful elisp
+libraries.
+- color-themes :: The starter-kit comes pre-bundled with a variety
+of color themes.  See [[file:starter-kit-misc.org::*Color%20Themes][Color Themes]] for instructions on how to
+change the colors used by Emacs.
+
+- Misc :: Some additional miscellaneous configuration and getting
+started suggestions
+- First see the [[http://www.gnu.org/software/emacs/manual/html_node/emacs/Customization.html#Customization][Customization]] node in the Emacs manual.  Available
+online or through the =info= command (run with =C-h i=).
+- =grep='ing through the =starter-kit-*= files in this directory
+can provide useful examples for how to do things like install
+major modes, define keybindings, etc..
+- read the following [[http://www.gnu.org/software/emacs/elisp/html_node/Key-Binding-Conventions.html][Key-Binding-Conventions]] before defining too
+many personal key bindings
+
+** Load Path
+Load Path for source directory moved to either =App/lisp/src= or
+=Data/src=.
+** Literate Initialization
+When using EmacsPortable.App's startup mechanism, t
+1) Any =.org=, =.el= or =.elc= files in =Data/init= and loads them
+2) User-based =.org=, =.el=, or =.elc= files in =Data/init/user=.
+   
+3) System based =.org=, =.el= or =.elc= files in =Data/init/system=.
+** Home Directory
+
+[2011-12-13 Tue 11:35]
+
+* Using EmacsPortable.App before a release
+Using git, you can check out the latest EmacsPortable.App, as follows
+#+BEGIN_SRC sh
+  git clone https://mlf176f2@github.com/mlf176f2/EmacsPortable.App.git
+  cd EmacsPortable.App
+  cd EmacsPortable.App
+  git submodule init
+  git submodule update 
+#+END_SRC
+After that, you may wish to add [[http://www.nongnu.org/color-theme/][color theme]]  and [[http://ourcomments.org/Emacs/nXhtml/doc/nxhtml.html][nxhtml]] to the =App/lisp/src=
+
+** Windows Option
+To use EmacsPortable.App before a release:
+- Download the files from github
+- Download Emacs for windows from [[http://ftp.gnu.org/gnu/emacs/windows/][Gnu]]
+- Place the Emacs inside the =App= Subdirectory of EmacsPortable.  It
+  should be in the form:
+
+  =EmacsPortable.App/App/emacs-23.3=
+
+  Note this directory should be the root of the emacs distribution,
+  that is the included binaries should be in:
+
+  =EmacsPortable.App/App/emacs-23.3/bin=
+
+- Download the [[https://github.com/mlf176f2/emacs-portable-starter-kit][EmacsPortableApp Starter Kit]], and place it in the
+  directory:
+
+  =EmacsPortable.App/App/portable-starter-kit/=
+
+** Mac OS X Add On
+Add mac binaries to the emacs-XXX distribution as follows:
+- Assuming you have a windows emacs distribution unpacked, add the mac
+  OSX binaries in a sub-directory:
+
+  =EmacsPortable.App/App/emacs-23.3/MacOS=
+  
+  These binaries should include:
+  - =bin= directory.
+  - =libexec= directory.
+  - =Emacs= executable
+* How EmacsPortable.App Works
+** EmacsPortable.App Startup (Windows Only)
+The Pseudo-Daemon Start-up script among other things:
+ - Opens Emacs
+ - Renames the current Frame
+ - Creates a New frame
+ - Calls an external program (ahk) that hides the frame & puts an
+   Emacs icon in the task bar to allow this frame to be shown or
+   closed
+ - Once Emacs has started up, subsequent calls to the Emacs start-up script open a new frame.
+
+This allows you to "close" out of Emacs while maintaining a running Emacs.
+
+The startup script also sets the environment variable
+EMACS_SERVER_FILE to the temporary directory
+
+=$TEMP\EmacsPortable.App-Server-$EMACS_VERSION\server=
+
+Subsequent calls to emacsclientw.exe specify this server location.
+Therefore an emacs server can be run for each distinct emacs version
+
+More information about the startup is found in [[file:./App/site-lisp/site-start.org][site-start.org]]
+
+** Proxy Configuration (Windows Only)
+EmacsPortable.App will setup the =HTTPS_PROXY=, =HTTP_PROXY= and
+=FTP_PROXY= based on the connection specific setup.
+To use a proxy, set it up with =EmacsOptions.exe=.
+
+This is sufficient for some packages, but not for =gnus=.
+
+The information is stored by the blowfish encryption algorithm.
+However the =HTTP_PROXY= environment variable will contain the
+password in clear text.
+** Fonts
+*** Windows
+Under windows the fonts in the =App/fonts/= directory are temporarily
+installed by opening them using =fontview= (if they are not already
+installed on the base system).  This is done by a autohotkey script.
+Once Emacs Exits, the fonts are "uninstalled" by closing the fontview
+window.  Currently this is done by showing the window and then closing
+it.
+*** Mac OS X
+Currently unsupported.
+** DOS Version
+The dos version starts up emacs in a dos command prompt window. When
+trying to do anything with the =EmacsPortableDOS= command, it will
+attempt to do that command in the initial =DOS= box.  This is just a
+test environment, and is likely not very reasonable to use.
+* Using Specific Applications
+** Adding Paths (Windows Only)
+Most of the specific applications work by adding paths and changing
+environmental variables.  This is controlled by =App/paths.ini=.
+EmacsPortableApp looks at the following sections
+*** Local Paths [local]
+*** Portable Paths [portable]
+*** Relative Paths [exedir]
+** Java-based Apps
+EmacsPortable supports [[http://plantuml.sourceforge.net/download.html][PlantUML]] and [[http://ditaa.sourceforge.net/][ditaa]] for [[http://orgmode.org][org-mode]] assuming that
+[[http://portableapps.com/apps/utilities/java_portable_launcher][JavaPortable]] is installed. 
+
+[[http://plantuml.sourceforge.net/download.html][PlantUML]] requires =dot= from GraphViz.  Therefore, GraphVizPortable
+would need to be installed for [[http://plantuml.sourceforge.net/download.html][PlantUML]] to work. 
+
+** Python based Apps
+By installing [[http://www.portablepython.com][Python Portable]] into your =PortableApps= Directory,
+python is available to Emacs.  This is useful for installing Bazaar,
+which Emacs uses as its version control.
+*** Bazaar
+Look at https://launchpad.net/bzr-windows-installers
+
+Portable Python includes:
+- NetworkX 
+- PySerial 
+- PyScripter
+- PyWin32
+- RPyC
+
+In addition Bazaar requires
+
+** SumatraPDF Portable
+Using AUCTeX inverse-search and forward search is supported with
+[[http://portableapps.com/apps/office/sumatra_pdf_portable][SumatraPDFPortable]].  There should be no set-up, EmacsPortable.App with
+setup both Emacs and [[http://portableapps.com/apps/office/sumatra_pdf_portable][SumatraPDFPortable]].  
+** GPG for encryption
+EmacsPortableApp looks for the gpg package that is installed with
+Mozilla Thunderbird.  First install Thunderbird Portable:
+
+http://portableapps.com/support/thunderbird_portable
+
+Then install gpg from here
+
+http://portableapps.com/support/thunderbird_portable#encryption
+
+** MikTeX Portable
+If you extract MikTeX portable to =PortableApps/MikTexPortable/=,
+EmacsPortable.App will be recognized and used.
+** Cygwin
+** MSYS
+* EmacsPortable.App Wish List/TODO list
+** TODO Gnus behind a firewall/proxy server
+** TODO Add Mac support of Environment.ini
+:LOGBOOK:
+CLOCK: [2011-12-14 Wed 21:47]--[2011-12-14 Wed 21:48] =>  0:01
+:END:
+[2011-12-14 Wed 21:47]
+
+** TODO Add Mac Support of Daemon Mode
+[2011-12-14 Wed 21:48]
+** TODO Make a portable browser a selectable EmacsOption
+[2011-12-15 Thu 13:15]
+** TODO When Cygwin is found drop GnuWin32 Support, or make it secondary.

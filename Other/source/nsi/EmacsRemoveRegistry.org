@@ -1,0 +1,278 @@
+#+TITLE: Remove Registry etc after emacs exists
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsRemoveRegistry.nsi
+* Introduction
+This removes registry, fonts and other settings 
+* Header
+** Compression Options and silent installer options
+#+BEGIN_SRC  nsis
+; Runtime Switches
+CRCCheck On
+WindowIcon Off
+SilentInstall Silent
+AutoCloseWindow True
+RequestExecutionLevel user
+
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+#+END_SRC
+
+** Application settings, Output file
+
+#+BEGIN_SRC nsis
+!define APPNAME "Emacs"
+
+OutFile "..\..\..\App\eps\RemoveReg.exe"
+Icon "..\img\ico\appicon.ico"
+#+END_SRC
+** Header Functions
+#+BEGIN_SRC nsis 
+!include "FileFunc.nsh"
+!include "WinMessages.nsh"
+#+END_SRC
+** Variables
+#+BEGIN_SRC nsis
+Var nver
+var option_version
+var cmdLineParams
+var FONT_REG
+#+END_SRC
+* Functions
+** String Replace
+#+BEGIN_SRC nsis
+!macro _StrReplaceConstructor ORIGINAL_STRING TO_REPLACE REPLACE_BY
+  Push "${ORIGINAL_STRING}"
+  Push "${TO_REPLACE}"
+  Push "${REPLACE_BY}"
+  Call StrRep
+  Pop $0
+!macroend
+
+Function StrRep
+  Exch $R4 ; $R4 = Replacement String
+  Exch
+  Exch $R3 ; $R3 = String to replace (needle)
+  Exch 2
+  Exch $R1 ; $R1 = String to do replacement in (haystack)
+  Push $R2 ; Replaced haystack
+  Push $R5 ; Len (needle)
+  Push $R6 ; len (haystack)
+  Push $R7 ; Scratch reg
+  StrCpy $R2 ""
+  StrLen $R5 $R3
+  StrLen $R6 $R1
+  loop:
+    StrCpy $R7 $R1 $R5
+    StrCmp $R7 $R3 found
+    StrCpy $R7 $R1 1 ; - optimization can be removed if U know len needle=1
+    StrCpy $R2 "$R2$R7"
+    StrCpy $R1 $R1 $R6 1
+    StrCmp $R1 "" done loop
+  found:
+    StrCpy $R2 "$R2$R4"
+    StrCpy $R1 $R1 $R6 $R5
+    StrCmp $R1 "" done loop
+  done:
+    StrCpy $R3 $R2
+    Pop $R7
+    Pop $R6
+    Pop $R5
+    Pop $R2
+    Pop $R1
+    Pop $R4
+    Exch $R3
+FunctionEnd
+
+!define StrReplace '!insertmacro "_StrReplaceConstructor"'
+#+END_SRC
+** Split at Equals
+#+BEGIN_SRC nsis
+!macro SPLIT_EQUALS INPUT PART
+  Push $R0
+  Push $R1
+  
+  StrCpy $R0 0
+  StrCmp ${PART} 1 getpart1_loop_${PART}
+  StrCmp ${PART} 2 getpart2_top_${PART}
+  Goto error_${PART}
+  
+  getpart1_loop_${PART}:
+    IntOp $R0 $R0 - 1
+    StrCpy $R1 ${INPUT} 1 $R0
+    StrCmp $R1 "" error_${PART}
+    StrCmp $R1 "=" 0 getpart1_loop_${PART}
+
+    IntOp $R0 $R0 + 1
+    StrCpy $R0 ${INPUT} "" $R0
+    Goto done_${PART}
+    
+  getpart2_top_${PART}:
+    StrLen $R0 ${INPUT}
+  getpart2_loop_${PART}:
+    IntOp $R0 $R0 - 1
+    StrCpy $R1 ${INPUT} 1 -$R0
+    StrCmp $R1 "" error_${PART}
+    StrCmp $R1 "=" 0 getpart2_loop_${PART}
+    
+    StrCpy $R0 ${INPUT} -$R0
+    Goto done_${PART}
+    
+  error_${PART}:
+    StrCpy $R0 error
+    
+  done_${PART}:
+    
+    Pop $R1
+    Exch $R0
+!macroend
+#+END_SRC
+** Parse Parameters
+#+BEGIN_SRC nsis
+Function parseParameters
+  ${GetOptions} $cmdLineParams '/VERSION=' $R0
+  IfErrors +2 0
+  StrCpy "$option_version" "$R0"
+  ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""  
+FunctionEnd
+
+!define GetCmdOptions "!insertmacro GetCmdOptions"
+
+!macro GetCmdOptions
+  Call GetCmdOptions
+!macroend
+Function GetCmdOptions
+  ## Gets Command Line Functions
+  Push $R0
+  
+  ${GetParameters} $cmdLineParams
+  
+  
+  ClearErrors
+  
+  Pop $R0
+  
+  ; Initialize options
+  
+  StrCpy $option_version "0"
+  
+  ; Parse Parameters
+  Push $R0
+  Call parseParameters
+  Pop $R0
+FunctionEnd
+#+END_SRC
+** Initialization functions
+#+BEGIN_SRC nsis
+Function .onInit
+  ${GetCmdOptions}
+FunctionEnd
+#+END_SRC
+* Main Section
+#+BEGIN_SRC nsis
+Section "Main" sec_main ; Checked
+  ; Description:
+  ; Main
+  StrCpy $nver 0
+  EnumINI::Section "$TEMP\ep-reg.ini" "run"
+  Pop $R2
+  StrCmp "$R2" "error" done
+  loop_run:
+    IntCmp "0" "$R2" loop_end loop_end 0
+    Pop $R1
+    StrCmp "$R1" "$option_version" skip_cnt
+    FindProcDLL::FindProc "emacs-$option_version.exe"
+    StrCmp "$R0" "1"  skip_cnt
+    IntOp $nver $nver + 1
+  skip_cnt:
+    IntOp $R2 $R2 - 1
+    Goto loop_run
+  loop_end:
+    
+  StrCmp 0 $nver none_left done
+  none_left:
+    ClearErrors
+    IfFileExists "$TEMP\ep-rmfont.exe" 0 skip_font_rm
+    ReadIniStr $R0 "$TEMP\ep-reg.ini" "font.rm" "fontdir"
+    IfErrors 0 +3
+    Delete "$TEMP\ep-rmfont.exe"
+    Goto skip_font_rm
+    ExecWait "$\"$TEMP\ep-rmfont$\" $\"$R0$\""
+    Delete "$TEMP\ep-rmfont.exe"
+  skip_font_rm:
+    ClearErrors
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
+    IfErrors main-9x main-NT 
+  main-NT:
+    StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+    goto main-go
+    
+  main-9x:
+    StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
+    goto main-go
+    
+  main-go:
+    ClearErrors
+    EnumINI::Section "$TEMP\ep-reg.ini" "font.tmp"
+    Pop $R0
+    StrCmp $R0 "error" skip_font
+  loop_font:
+    IntCmp "0" "$R0" skip_font skip_font 0
+    Pop $R1
+    ReadIniStr $R2 "$TEMP\ep-reg.ini" "font.rm" "$R1"
+    System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
+    DeleteRegValue HKLM "$FONT_REG" "$R2"
+    Delete /REBOOTOK "$FONTS\$R2"
+    IntOp $R0 $R0 - 1
+    goto loop_font
+  skip_font:
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+    IfErrors look_for_acrobat 0
+    IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+    StrCpy $R0 "$R0\Javascripts"
+    Goto delete_org_protocol_js
+    
+  look_for_acrobat:
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+    IfErrors delete_open_with 0
+    IfFileExists "$R0\Javascripts" 0 delete_open_with
+    StrCpy $R0 "$R0\Javascripts"
+  delete_org_protocol_js:
+    IfFileExists "$R0\org-capture.js" 0 +2
+    Delete "$R0\org-capture.js"
+    IfFileExists "$R0\org-remember.js" 0 +2
+    Delete "$R0\org-remember.js"
+    IfFileExists "$R0\org-store-link.js" 0 +2
+    Delete "$R0\org-store-link.js"
+  delete_open_with:
+    ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\EP-RemoveReg.exe"
+    DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
+    DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"
+    DeleteRegKey HKEY_CLASSES_ROOT "org-protocol"
+    
+    ; Restore registry keys
+  viewsource_ie:
+    ClearErrors
+    ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup"
+    IfErrors viewsource 0
+    WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$0"
+    DeleteRegKey HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor\Editor Name-backup"
+    Goto viewsource
+  viewsource:
+    ClearErrors
+    ReadRegStr $0 HKCR "htmlfile\shell\edit\command" "-backup"
+    IfErrors done 0
+    WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$0"
+    DeleteRegKey HKCR "htmlfile\shell\edit\command\-backup"
+    Goto done
+    IfFileExists "$TEMP\ep-reg.ini" 0 done
+    Delete "$TEMP\ep-reg.ini"
+    Delete "$TEMP\ep-RemoveReg.exe"
+  done:
+    ClearErrors
+    SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+SectionEnd ; sec_main
+#+END_SRC
+

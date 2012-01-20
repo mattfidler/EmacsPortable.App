@@ -1,0 +1,191 @@
+#+TITLE: Set Proxy
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle SetProxy.nsi
+* Introduction
+This sets the proxy options without setting any other options
+* Header
+** Compression Options
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+AutoCloseWindow true
+#+END_SRC
+** Include Options
+#+BEGIN_SRC nsis
+!include "MUI2.nsh"
+
+!include "FileFunc.nsh"
+!include ReadINIStrWithDefault.nsh
+!include blowfish.nsh
+!include "emacsproxy.nsh"
+#+END_SRC
+** Name and output options
+#+BEGIN_SRC nsis
+Name "EmacsPortable.App Options"
+OutFile "..\..\..\App\eps\set-proxy.exe"
+BrandingText "PortableEmacs.App"
+
+InstallDir "$EXEDIR\..\..\"
+#+END_SRC
+** Modern User Interface Options
+#+BEGIN_SRC nsis
+!define MUI_ICON "..\img\ico\preferences_system.ico"
+#!define MUI_UNICON
+!define MUI_HEADERIMAGE
+
+!define MUI_HEADERIMAGE_BITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+!define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+
+!define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+
+!define MUI_ABORTWARNING
+!define MUI_UNABORTWARNING
+!define MUI_PAGE_HEADER_TEXT "EmacsPortable.app"
+!define MUI_PAGE_HEADER_SUBTEXT "Emacs on the Go"
+
+!define MUI_COMPONENTSPAGE_SMALLDESC
+!define MUI_HEADERIMAGE_RIGHT
+#+END_SRC
+** Definitions 
+#+BEGIN_SRC nsis
+!define TEMP1 $R0 ;Temp variable
+
+!define ep_proxy_server "Field 2"
+!define ep_proxy_port "Field 4"
+!define ep_proxy_user "Field 6"
+!define ep_proxy_password "Field 8"
+#+END_SRC
+** Pages
+#+BEGIN_SRC nsis
+;Order of pages
+Page custom SetCustom ValidateCustom ": EmacsPortable Options" ;Custom page. InstallOptions gets called in SetCustom.
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+#+END_SRC
+* Macros/Functions
+** Read/Write Macros
+#+BEGIN_SRC nsis
+!macro WR OPT EP
+  ReadINIStr $R0 "$EXEDIR\..\..\Data\ini\proxy.ini" "${EP}" "State"
+  WriteIniStr "$EXEDIR\..\..\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" ${OPT} "$R0"
+!macroend
+!define WR "!insertmacro WR"
+
+
+!macro RW OPT EP
+  ReadIniStr $R0 "$EXEDIR\..\..\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" ${OPT}
+  WriteINIStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${EP}" "State" "$R0"
+!macroend
+
+!define RW "!insertmacro RW"
+#+END_SRC
+** Initialization Function
+#+BEGIN_SRC nsis
+Function .onInit
+  var /GLOBAL versions
+  var /GLOBAL nemacs
+  var /GLOBAL lastversion
+  IfFileExists "$EXEDIR\..\..\Data\ini\proxy.ini" +2 0
+  CopyFiles /SILENT "$EXEDIR\..\..\App\proxy.ini" "$EXEDIR\..\..\Data\ini\proxy.ini"
+  ${SetupProxyFile} "$EXEDIR\..\..\Data\ini\"
+  WriteIniStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_server}" "State" ""
+  WriteIniStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_port}" "State" ""
+  WriteIniStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_user}" "State" ""
+  WriteIniStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_password}" "State" ""
+  
+  
+  IfFileExists "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
+  ReadINIStr $R0 "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server"
+  ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+  WriteINIStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_server}" "State" "$R0"
+  
+  ReadIniStr $R0 "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port"
+  ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+  WriteINIStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_port}" "State" "$R0"
+  
+  ReadIniStr $R0 "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User"
+  ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+  WriteINIStr "$EXEDIR\..\..\Data\ini\proxy.ini"  "${ep_proxy_user}" "State" "$R0"
+  
+  ReadIniStr $R0 "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password"
+  ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+  WriteINIStr "$EXEDIR\..\..\Data\ini\proxy.ini"  "${ep_proxy_password}" "State" "$R0"
+  end_proxy_init:
+    
+  end_init:
+    
+  FunctionEnd
+  #+END_SRC
+** Exit Function
+#+BEGIN_SRC
+Function .onGUIEnd
+  Delete "$EXEDIR\..\..\Data\ini\proxy.ini"
+FunctionEnd
+#+END_SRC
+** Display Install Options Dialog
+#+BEGIN_SRC nsis
+  Function SetCustom
+    
+    ;Display the InstallOptions dialog
+    
+    Push ${TEMP1}
+    
+    InstallOptions::dialog "$EXEDIR\..\..\Data\ini\proxy.ini"
+    Pop ${TEMP1}
+    
+    Pop ${TEMP1}
+  FunctionEnd
+  
+#+END_SRC
+FunctionEnd
+** Validate Form and write proxy values
+#+BEGIN_SRC nsis
+Function ValidateCustom
+;
+;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 2" "State"
+;  StrCmp ${TEMP1} 1 done
+
+;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "${ep_version}" "State"
+;  StrCmp ${TEMP1} 1 done
+
+;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 4" "State"
+;  StrCmp ${TEMP1} 1 done
+;    MessageBox MB_ICONEXCLAMATION|MB_OK "You must select at least one install option!"
+;    Abort
+
+;  done:
+   
+   
+   
+   ReadINIStr $R0 "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_server}" "State"
+   StrCmp $R0 "" skip_proxy
+   ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+   WriteIniStr "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server" "$R0"
+   ReadINIStr $R0 "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_port}" "State"
+   ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+   WriteIniStr "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port" "$R0"
+   ReadINIStr $R0 "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_user}" "State"
+   ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+   WriteIniStr "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User" "$R0"
+   ReadINIStr $R0 "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_password}" "State"
+   ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+   WriteIniStr "$EXEDIR\..\..\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password" "$R0"
+   skip_proxy:
+     
+FunctionEnd
+#+END_SRC
+* Required Section
+#+BEGIN_SRC nsis
+Section "Components" 
+  ;Get Install Options dialog user input
+  
+  
+SectionEnd
+#+END_SRC
