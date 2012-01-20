@@ -1,0 +1,257 @@
+#+TITLE: Shared Download Code
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsDownloadShared.nsh
+* Macros
+** Download Emacs Binaries
+#+BEGIN_SRC nsis
+  !define getEmacsWin `!insertmacro getEmacsWin`
+  !macro getEmacsWin VER
+    ReadINIStr $R0 "${mirror}" "${VER}" "win"
+    inetc::get  $R0 "$TEMP\emacs.zip"
+    ZipDLL::extractall "$TEMP\emacs.zip" "$INSTDIR\App\"
+    Delete "$TEMP\emacs.zip"
+  !macroend
+  !define getEmacsMac `!insertmacro getEmacsMac`
+  !macro getEmacsMac VER
+    IfFileExists "$INSTDIR\App\emacs-${VER}" +3
+    DetailPrint "Cannot Locate Windows Emacs Binaries for Emacs ${VER}, Skipping Mac install."
+    Goto end
+    ReadINIStr $R0 "${mirror}" "${VER}" "mac"
+    inetc::get $R0 "$TEMP\emacsMac.zip"
+    ZipDLL::extractall "$TEMP\emacsMac.zip" "$INSTDIR\App\emacs-${VER}"
+    Delete "$TEMP\emacsMac.zip"
+    end:
+  !macroend
+  
+#+END_SRC
+
+
+** Mark Installed Macros
+This marks a section as installed and makes it read-only
+#+BEGIN_SRC nsis
+  !define ifSecNotRO `!insertmacro ifSecNotRO`
+  !macro ifSecNotRO SEC JMP_IF_TRUE
+    SectionGetFlags ${SEC} $0
+    IntOp $0 $0 & ${SF_RO}
+    StrCmp "0" "$0" ${JMP_IF_TRUE}
+  !macroend
+  
+  !define ifSecNotHidden `!insertmacro ifSecNotHidden`
+  !macro ifSecNotHidden SEC JMP
+    SectionGetText ${SEC} $0
+    StrCmp "" "$0" 0 ${JMP}
+  !macroend
+  
+  !define setInstallIfExists `!insertmacro setInstallIfExists`
+  !macro setInstallIfExists FILE SEC
+    IfFileExists "${FILE}" 0 +7
+    SectionGetFlags ${SEC} $0
+    IntOp $0 ${SF_RO} | $0
+    SectionSetFlags ${SEC} $0
+    SectionGetText ${SEC} $0
+    StrCpy $0 "$0 (Installed)"
+    SectionSetText ${SEC} $0
+  !macroend
+  
+  !define setInstall `!insertmacro setInstall`
+  !macro setInstall SEC
+    SectionGetFlags ${SEC} $0
+    IntOp $0 ${SF_RO} | $0
+    SectionSetFlags ${SEC} $0
+    SectionGetText ${SEC} $0
+    StrCpy $0 "$0 (Installed)"
+    SectionSetText ${SEC} $0
+  !macroend
+  
+  !define setInstallGroup `!insertmacro setInstallGroup`
+  !macro setInstallGroup SEC
+    SectionGetFlags ${SEC} $0
+    IntOp $0 ${SF_RO} | $0
+    SectionSetFlags ${SEC} $0
+    SectionGetText ${SEC} $0
+    StrCpy $0 "$0 (Installed)"
+    SectionSetText ${SEC} $0
+  !macroend
+  
+  
+#+END_SRC
+** Select Section If Other section is selected
+When this a section SEC is selected, either check OTHER_SEC or leave
+it alone when OTHER_SEC is read-only.
+#+BEGIN_SRC nsis
+  !define selectSectionIf `!insertmacro selectSectionIf`
+  !macro selectSectionIf SEC_CHECKED SEC_TO_SELECT
+    SectionGetFlags ${SEC_CHECKED} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    StrCmp "$0" "0" +5 0
+    SectionGetFlags ${SEC_TO_SELECT} $0
+    IntOp $0 $0 & ${SF_RO}
+    StrCmp "$0" "0" 0 +2
+    SectionSetFlags ${SEC_TO_SELECT} ${SF_SELECTED}
+  !macroend
+  
+#+END_SRC
+
+
+** Portable App Macro
+#+BEGIN_SRC nsis
+  !macro installPortableApp WHAT
+    ReadINIStr $R0 "${mirror}" "${WHAT}" "url"
+    IfErrors end
+    ReadINIStr $R9 "${mirror}" "${WHAT}" "type"
+    IfErrors exe_type
+    StrCpy $R9 ".$R9"
+    Goto use_inetc
+    exe_type:
+      ClearErrors
+      StrCpy $R9 ".exe"
+    use_inetc:
+      inetc::get /CONNECTTIMEOUT 20 /NOCOOKIES /TRANSLATE "Downloading ..." \
+          "Connecting..." second minute hour s "%dkB (%d%%) of %dkB @ %d.%01dkB/s" \
+          " (%d %s%s remaining)" $R0 "$TEMP\portable$R9" /END
+      IfFileExists "$TEMP\portable$R9" found not_found
+    not_found:
+      IfFileExists "$INSTDIR\App\gw32\wget.exe" +3 0
+      DetailPrint "Wget not found in App\gw32"
+      Goto end
+      DetailPrint "Download of ${WHAT} failed, trying wget with proxy setting set"
+    check_proxy:
+      ${SetupProxy}
+      IfFileExists "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" read_proxy set_proxy
+    set_proxy:
+      IfFileExists "$INSTDIR\App\eps\set-proxy.exe" +3 0
+      DetailPrint "Could not set proxy, assume no proxy settings are needed"
+      Goto wget
+      ExecWait "$INSTDIR\App\eps\set-proxy.exe"
+      goto read_proxy
+    read_proxy:
+      IfFileExists "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 wget
+      ReadIniStr $R0 "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      StrCmp "$R0" "" end
+      StrCpy "$R1" "$R0"
+      ReadIniStr "$R0" "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      StrCmp "$R0" "" +2 0
+      StrCpy "$R1" "$R1:$R0"
+      ReadIniStr "$R0" "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      StrCmp "$R0" "" +2 0
+      StrCpy "$R2" "$R0"
+      ReadIniStr "$R0" "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      StrCmp "$R0" "" +3 0
+      StrCmp "$R2" "" +2 0
+      StrCpy "$R2" "$R2:$R0"
+      StrCmp "$R2" "" +2 0
+      StrCpy "$R1" "$R2@$R1"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTP_PROXY","http://$R1").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTPS_PROXY","http://$R1").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
+      ${PathIfExist} "$INSTDIR\App\gw32"
+    wget:
+      ReadINIStr $R0 "${mirror}" "${WHAT}" "url"
+      ExecWait "$INSTDIR\App\gw32\wget.exe $R0 -O$TEMP\portable$R9"
+      IfFileExists "$TEMP\portable$R9" found 0
+      DetailPrint "Could not get file with wget either, skipping."
+    found:
+      StrCmp "$R9" ".exe" is_exe
+      StrCmp "$R9" ".7z" is_7z
+      Goto end
+    is_7z:
+      ReadINIStr $R0 "${mirror}" "${WHAT}" "out"
+      ClearErrors
+      MessageBox MB_OK "$PA\$R0"
+      SetOutPath "$PA\$R0"
+      Nsis7z::ExtractWithDetails "$TEMP\portable.7z" "Installing package ${WHAT}..."
+      Delete "$TEMP\portable.7z"
+      Goto end
+    is_exe:
+      ExecWait "$TEMP\portable.exe"
+      Delete "$TEMP\portable.exe"
+    end:
+      ClearErrors
+  !macroend
+  !define installPA `!insertmacro installPortableApp`
+  
+#+END_SRC
+** Emacs Version Initialization 
+#+BEGIN_SRC nsis
+  !macro INI_VERS
+    StrCpy $nemacs 0
+    ${Locate} "$INSTDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+    StrCmp "$INSTDIR" "$EXEDIR" +2
+    StrCpy $nemacs 0
+    StrCmp "$nemacs" "0" 0 +3
+    SectionSetFlags ${sec_emacs_default} ${SF_SELECTED}
+    SectionSetFlags ${sec_emacs_default_mac} ${SF_SELECTED}
+  !macroend
+  !define INI_VERS `!insertmacro INI_VERS`
+  
+#+END_SRC
+
+** Get Full Plugin Macro
+#+BEGIN_SRC nsis
+!macro getPluginFull NAME
+    StrCmp "$PA" "" 0 download
+    ${GetDrives} "FDD+HDD" "GetDriveVars"
+    StrCmp "$PA" "" 0 download
+    MessageBox MB_OK "Cannot Install ${NAME} Plugin; Can't determine PortableApps Location."
+    download:
+      ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "nsis:${NAME}" "url"
+      inetc::get $R0 "$TEMP\${NAME}.zip"
+      ZipDLL::extractall "$TEMP\${NAME}.zip" "$PA\NSISPortable\App\NSIS"
+      Delete "$TEMP\${NAME}.zip"
+    end:
+      #
+  !macroend
+#+END_SRC
+
+
+** Path if Exist Macro
+#+BEGIN_SRC nsis
+!macro _PathIfExist ARG1
+  DetailPrint "Checking for ${ARG1}"
+  StrCpy $9 ""
+  IfFileExists "${ARG1}" 0 +4
+  System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'StrCpy $9 "1"
+!macroend
+
+!define PathIfExist '!insertmacro "_PathIfExist"'
+#+END_SRC
+** Download Zip File Macro
+#+BEGIN_SRC nsis
+  !define DOWN '!insertmacro DOWN'  
+  !macro DOWN VAL OUT
+    SectionGetFlags ${sec_use_git_instead_of_zip} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    StrCmp "0" $0 zip git
+    zip:
+      ReadIniStr $R1 "$EXEDIR\App\mirrors.ini" "${VAL}" "ver"
+      ReadIniStr $R0 "$EXEDIR\App\mirrors.ini" "${VAL}" "base"
+      ReadIniStr $R2 "$EXEDIR\App\mirrors.ini" "${VAL}" "ext"
+      inetc::get "$R0$R1$R2" "$TEMP\${VAL}.zip"
+      IfFileExists "$TEMP\${VAL}.zip" +3 0
+      DetailPrint "Could not Download ${VAL}, skipping."
+      Goto +2
+      ZipDLL::extractall "$TEMP\${VAL}.zip" "${OUT}"
+      Delete "$TEMP\${VAL}.zip"
+      Goto end
+    git:
+      ReadIniStr $R0 "$EXEDIR\App\mirrors.ini" "${VAL}" "git"
+      ReadIniStr $R1 "$EXEDIR\App\mirrors.ini" "${VAL}" "gitout"
+      IfErrors 0 +3
+      ClearErrors
+      Goto zip
+      ClearErrors
+      DetailPrint "Using GIT"
+      ExecWait "$PG clone $R0 ${OUT}\$R1"
+      Goto end
+    end:
+      
+  !macroend
+  
+#+END_SRC
+
+

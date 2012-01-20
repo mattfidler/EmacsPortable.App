@@ -22,11 +22,17 @@ Modern UI2 user interface
 #+BEGIN_SRC nsis
 !include "MUI2.nsh"
 #+END_SRC
+** Defines
+#+BEGIN_SRC nsis
+!define mirror $EXEDIR\App\mirrors.ini
+#+END_SRC
+
 ** Headers and Plugins
 #+BEGIN_SRC nsis
   !include "FileFunc.nsh"
   !include blowfish.nsh
   !include "emacsproxy.nsh"
+  !include "EmacsDownloadShared.nsh"
 #+END_SRC
 
 ** Output Executable
@@ -67,236 +73,6 @@ var PG
 #+END_SRC
 
 * Macros
-** Download Zip File Macro
-#+BEGIN_SRC nsis
-  !define DOWN '!insertmacro DOWN'  
-  !macro DOWN VAL OUT
-    SectionGetFlags ${sec_use_git_instead_of_zip} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    StrCmp "0" $0 zip git
-    zip:
-      ReadIniStr $R1 "$EXEDIR\App\mirrors.ini" "${VAL}" "ver"
-      ReadIniStr $R0 "$EXEDIR\App\mirrors.ini" "${VAL}" "base"
-      ReadIniStr $R2 "$EXEDIR\App\mirrors.ini" "${VAL}" "ext"
-      inetc::get "$R0$R1$R2" "$TEMP\${VAL}.zip"
-      IfFileExists "$TEMP\${VAL}.zip" +3 0
-      DetailPrint "Could not Download ${VAL}, skipping."
-      Goto +2
-      ZipDLL::extractall "$TEMP\${VAL}.zip" "${OUT}"
-      Delete "$TEMP\${VAL}.zip"
-      Goto end
-    git:
-      ReadIniStr $R0 "$EXEDIR\App\mirrors.ini" "${VAL}" "git"
-      ReadIniStr $R1 "$EXEDIR\App\mirrors.ini" "${VAL}" "gitout"
-      IfErrors 0 +3
-      ClearErrors
-      Goto zip
-      ClearErrors
-      DetailPrint "Using GIT"
-      ExecWait "$PG clone $R0 ${OUT}\$R1"
-      Goto end
-    end:
-      
-  !macroend
-  
-#+END_SRC
-** Download Emacs Binaries
-#+BEGIN_SRC nsis
-  !define getEmacsWin `!insertmacro getEmacsWin`
-  !macro getEmacsWin VER
-    ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "${VER}" "win"
-    inetc::get  $R0 "$TEMP\emacs.zip"
-    ZipDLL::extractall "$TEMP\emacs.zip" "$EXEDIR\App\"
-    Delete "$TEMP\emacs.zip"
-  !macroend
-  !define getEmacsMac `!insertmacro getEmacsMac`
-  !macro getEmacsMac VER
-    IfFileExists "$EXEDIR\App\emacs-${VER}" +3
-    DetailPrint "Cannot Locate Windows Emacs Binaries for Emacs ${VER}, Skipping Mac install."
-    Goto end
-    ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "${VER}" "mac"
-    inetc::get $R0 "$TEMP\emacsMac.zip"
-    ZipDLL::extractall "$TEMP\emacsMac.zip" "$EXEDIR\App\emacs-${VER}"
-    Delete "$TEMP\emacsMac.zip"
-    end:
-  !macroend
-  
-#+END_SRC
-
-** Mark Installed Macros
-This marks a section as installed and makes it read-only
-#+BEGIN_SRC nsis
-  !define ifSecNotRO `!insertmacro ifSecNotRO`
-  !macro ifSecNotRO SEC JMP_IF_TRUE
-    SectionGetFlags ${SEC} $0
-    IntOp $0 $0 & ${SF_RO}
-    StrCmp "0" "$0" ${JMP_IF_TRUE}
-  !macroend
-  
-  !define ifSecNotHidden `!insertmacro ifSecNotHidden`
-  !macro ifSecNotHidden SEC JMP
-    SectionGetText ${SEC} $0
-    StrCmp "" "$0" 0 ${JMP}
-  !macroend
-  
-  !define setInstallIfExists `!insertmacro setInstallIfExists`
-  !macro setInstallIfExists FILE SEC
-    IfFileExists "${FILE}" 0 +5
-    SectionSetFlags ${SEC} ${SF_RO}
-    SectionGetText ${SEC} $0
-    StrCpy $0 "$0 (Installed)"
-    SectionSetText ${SEC} $0
-  !macroend
-  
-  !define setInstall `!insertmacro setInstall`
-  !macro setInstall SEC
-    SectionSetFlags ${SEC} ${SF_RO}
-    SectionGetText ${SEC} $0
-    StrCpy $0 "$0 (Installed)"
-    SectionSetText ${SEC} $0
-  !macroend
-  
-  !define setInstallGroup `!insertmacro setInstallGroup`
-  !macro setInstallGroup SEC
-    SectionGetFlags ${SEC} $0
-    IntOp $0 ${SF_RO} | $0
-    SectionSetFlags ${SEC} $0
-    SectionGetText ${SEC} $0
-    StrCpy $0 "$0 (Installed)"
-    SectionSetText ${SEC} $0
-  !macroend
-  
-  
-#+END_SRC
-** Select Section If Other section is selected
-When this a section SEC is selected, either check OTHER_SEC or leave
-it alone when OTHER_SEC is read-only.
-#+BEGIN_SRC nsis
-  !define selectSectionIf `!insertmacro selectSectionIf`
-  !macro selectSectionIf SEC_CHECKED SEC_TO_SELECT
-    SectionGetFlags ${SEC_CHECKED} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    StrCmp "$0" "0" +5 0
-    SectionGetFlags ${SEC_TO_SELECT} $0
-    IntOp $0 $0 & ${SF_RO}
-    StrCmp "$0" "0" 0 +2
-    SectionSetFlags ${SEC_TO_SELECT} ${SF_SELECTED}
-  !macroend
-  
-#+END_SRC
-
-** Portable App Macro
-#+BEGIN_SRC nsis
-  !macro installPortableApp WHAT
-    ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "${WHAT}" "url"
-    IfErrors end
-    ReadINIStr $R9 "$EXEDIR\App\mirrors.ini" "${WHAT}" "type"
-    IfErrors exe_type
-    StrCpy $R9 ".$R9"
-    Goto use_inetc
-    exe_type:
-      ClearErrors
-      StrCpy $R9 ".exe"
-    use_inetc:
-      inetc::get /CONNECTTIMEOUT 20 /NOCOOKIES /TRANSLATE "Downloading ..." \
-          "Connecting..." second minute hour s "%dkB (%d%%) of %dkB @ %d.%01dkB/s" \
-          " (%d %s%s remaining)" $R0 "$TEMP\portable$R9" /END
-      IfFileExists "$TEMP\portable$R9" found not_found
-    not_found:
-      DetailPrint "Download of ${WHAT} failed, trying wget with proxy setting set"
-    check_proxy:
-      ${SetupProxy}
-      IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" read_proxy set_proxy
-    set_proxy:
-      IfFileExists "$EXEDIR\App\eps\set-proxy.exe" +3 0
-      DetailPrint "Could not set proxy, assume no proxy settings are needed"
-      Goto wget
-      ExecWait "$EXEDIR\App\eps\set-proxy.exe"
-      goto read_proxy
-    read_proxy:
-      IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 wget
-      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-      StrCmp "$R0" "" end
-      StrCpy "$R1" "$R0"
-      ReadIniStr "$R0" "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-      StrCmp "$R0" "" +2 0
-      StrCpy "$R1" "$R1:$R0"
-      ReadIniStr "$R0" "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-      StrCmp "$R0" "" +2 0
-      StrCpy "$R2" "$R0"
-      ReadIniStr "$R0" "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-      StrCmp "$R0" "" +3 0
-      StrCmp "$R2" "" +2 0
-      StrCpy "$R2" "$R2:$R0"
-      StrCmp "$R2" "" +2 0
-      StrCpy "$R1" "$R2@$R1"
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTP_PROXY","http://$R1").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTPS_PROXY","http://$R1").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
-      ${PathIfExist} "$EXEDIR\App\gw32"
-    wget:
-      IfFileExists "$EXEDIR\App\gw32\wget.exe" +3 0
-      DetailPrint "Wget not found in App\gw32"
-      Goto end
-      ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "${WHAT}" "url"
-      ExecWait "$EXEDIR\App\gw32\wget.exe $R0 -O$TEMP\portable$R9"
-      IfFileExists "$TEMP\portable$R9" found 0
-      DetailPrint "Could not get file with wget either, skipping."
-    found:
-      StrCmp "$R9" ".exe" is_exe
-      StrCmp "$R9" ".7z" is_7z
-      Goto end
-    is_7z:
-      ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "${WHAT}" "out"
-      ClearErrors
-      MessageBox MB_OK "$PA\$R0"
-      SetOutPath "$PA\$R0"
-      Nsis7z::ExtractWithDetails "$TEMP\portable.7z" "Installing package ${WHAT}..."
-      Delete "$TEMP\portable.7z"
-      Goto end
-    is_exe:
-      ExecWait "$TEMP\portable.exe"
-      Delete "$TEMP\portable.exe"
-    end:
-      ClearErrors
-  !macroend
-  !define installPA `!insertmacro installPortableApp`
-  
-#+END_SRC
-
-** Path if Exist Macro
-#+BEGIN_SRC nsis
-!macro _PathIfExist ARG1
-  DetailPrint "Checking for ${ARG1}"
-  StrCpy $9 ""
-  IfFileExists "${ARG1}" 0 +4
-  System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
-  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'StrCpy $9 "1"
-!macroend
-
-!define PathIfExist '!insertmacro "_PathIfExist"'
-#+END_SRC
-
-** Get Full Plugin Macro
-#+BEGIN_SRC nsis
-!macro getPluginFull NAME
-    StrCmp "$PA" "" 0 download
-    ${GetDrives} "FDD+HDD" "GetDriveVars"
-    StrCmp "$PA" "" 0 download
-    MessageBox MB_OK "Cannot Install ${NAME} Plugin; Can't determine PortableApps Location."
-    download:
-      ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "nsis:${NAME}" "url"
-      inetc::get $R0 "$TEMP\${NAME}.zip"
-      ZipDLL::extractall "$TEMP\${NAME}.zip" "$PA\NSISPortableANSI\App\NSIS"
-      Delete "$TEMP\${NAME}.zip"
-    end:
-      #
-  !macroend
-#+END_SRC
 
 * Installation Sections
 ** Use Git when available 
@@ -306,130 +82,6 @@ Section /o "Use GIT instead of ZIP" sec_use_git_instead_of_zip ; Unchecked (/o)
   ; Git Download of EmacsPortable.App
   
 SectionEnd ; sec_use_git_instead_of_zip
-#+END_SRC
-
-** Compile Tools Download
-#+BEGIN_SRC nsis
-  SectionGroup "EmacsPortable.App Build Tools" sec_emacsportable_app_build_tools 
-    ; Description:
-    ; Tools needed to build EmacsPortable.App
-    
-  Section /o "AutoHotKey Portable" sec_autohotkey_portable ; Unchecked (/o)
-    ; Description:
-    ; Portable Autohotkey, used to implement daemon
-    ${installPA} "ahk"
-  SectionEnd ; sec_autohotkey_portable  
-  
-  SectionGroup "NSIS Portable Components" sec_nsis_portable_components ; Collapsed
-    ; Description:
-    ; Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App
-    Section /o "NSIS Portable ANSI" sec_nsis_portable_ansi ; Unchecked (/o)
-      ; Description:
-      ; Download the ANSI version of NSIS portable
-      ${installPA} "nsis"
-    SectionEnd ; sec_nsis_portable_ansi
-    Section /o "7Zip Plugin" sec_7zip_plugin ; Unchecked (/o)
-      ; Description:
-      ; 7Zip Plugin
-      ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "nsis:7z" "url"
-      inetc::get $R0 "$TEMP\7z.zip"
-      ZipDLL::extractfile "$TEMP\7z.zip" "$PA\NSISPortableANSI\App\NSIS\Plugins" "nsis7z.dll"
-      Delete "$TEMP\7z.zip"
-    SectionEnd ; sec_7zip_plugin
-    Section /o "Blowfish Plugin" sec_blowfish_plugin ; Unchecked (/o)
-      ; Description:
-      ; Blowfish plugin used to unsecurly encrypt the proxy password
-      ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "nsis:blowfish" "url"
-      inetc::get $R0 "$TEMP\blowfish.zip"
-      ZipDLL::extractfile "$TEMP\blowfish.zip" "$PA\NSISPortableANSI\App\NSIS\Plugins" "blowfish.dll"
-      Delete "$TEMP\blowfish.zip"
-    SectionEnd ; sec_blowfish_plugin
-    Section "EnumINI" sec_enumini ; Checked
-      ; Description:
-      ; Enumerates INI keys
-      !insertmacro getPluginFull "enumINI"
-    SectionEnd ; sec_enumini
-    Section /o "ExecDos" sec_execdos ; Unchecked (/o)
-      ; Description:
-      ; Allows dos-based programs that open a terminal and then open a GUI to just show the gui.
-      !insertmacro getPluginFull "execdos"
-    SectionEnd ; sec_execdos
-    Section /o "Inetc" sec_inetc ; Unchecked (/o)
-      ; Description:
-      ; Plugin to allow downloading of Files over the internet
-      !insertmacro getPluginFull "inetc"
-    SectionEnd ; sec_inetc
-    Section /o "IpConfig" sec_ipconfig ; Unchecked (/o)
-      ; Description:
-      ; IP Config get connection information, allowing proxy settings to be saved for each connection type
-      !insertmacro getPluginFull "ipconfig"
-    SectionEnd ; sec_ipconfig
-    Section /o "Loading Bar UI" sec_loading_bar_ui ; Unchecked (/o)
-      ; Description:
-      ; Emacs Loading Bar support
-      StrCmp "$PA" "" 0 download
-      ${GetDrives} "FDD+HDD" "GetDriveVars"
-      StrCmp "$PA" "" 0 download
-      MessageBox MB_OK "Cannot Install Loading Bar UI Plugin; Can't determine PortableApps Location."
-      download:
-        ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "nsis:loadingbarui" "url"
-        inetc::get $R0 "$TEMP\lb.zip"
-        ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs" "LoadingBar.exe"
-        ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs" "LoadingBar_Icon.exe"
-        ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs" "LoadingBar_NoDesc.exe"
-        Delete "$TEMP\lb.zip"
-      end:      
-      SectionEnd ; sec_loading_bar_ui
-    Section /o "ZipDLL" sec_zipdll ; Unchecked (/o)
-      ; Description:
-      ; Plugin to allow zip file extraction
-      StrCmp "$PA" "" 0 download
-      ${GetDrives} "FDD+HDD" "GetDriveVars"
-      StrCmp "$PA" "" 0 download
-      MessageBox MB_OK "Cannot Install Loading Bar UI Plugin; Can't determine PortableApps Location."
-      download:
-        ReadINIStr $R0 "$EXEDIR\App\mirrors.ini" "nsis:zipdll" "url"
-        inetc::get $R0 "$TEMP\z.zip"
-        ZipDLL::extractfile "$TEMP\z.zip" "$PA\NSISPortableANSI\App\NSIS\Plugins" "ZipDLL.dll"
-        ZipDLL::extractfile "$TEMP\z.zip" "$PA\NSISPortableANSI\App\NSIS\Include" "zipdll.nsh"
-        Delete "$TEMP\z.zip"
-      end: 
-      SectionEnd ; sec_zipdll
-  SectionGroupEnd ; sec_nsis_portable_components
-  SectionGroupEnd ; sec_emacsportable_app_build_tools
-  ;--------------------------------
-  ;Description(s)
-  LangString DESC_sec_nsis_portable_components ${LANG_ENGLISH} "Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App"
-  LangString DESC_sec_enumini ${LANG_ENGLISH} "Enumerates INI keys"
-  LangString DESC_sec_execdos ${LANG_ENGLISH} "Allows dos-based programs that open a terminal and then open a GUI to just show the gui."
-  LangString DESC_sec_7zip_plugin ${LANG_ENGLISH} "7Zip Plugin"
-  LangString DESC_sec_blowfish_plugin ${LANG_ENGLISH} "Blowfish plugin used to unsecurly encrypt the proxy password"
-  LangString DESC_sec_autohotkey_portable ${LANG_ENGLISH} "Portable Autohotkey, used to implement daemon"
-  LangString DESC_sec_emacsportable_app_build_tools ${LANG_ENGLISH} "Tools needed to build EmacsPortable.App"
-  LangString DESC_sec_ipconfig ${LANG_ENGLISH} "IP Config get connection information, allowing proxy settings to be saved for each connection type"
-  LangString DESC_sec_loading_bar_ui ${LANG_ENGLISH} "Emacs Loading Bar support"
-  LangString DESC_sec_zipdll ${LANG_ENGLISH} "Plugin to allow zip file extraction"
-  LangString DESC_sec_inetc ${LANG_ENGLISH} "Plugin to allow downloading of Files over the internet"
-  LangString DESC_sec_nsis_portable_ansi ${LANG_ENGLISH} "Download the ANSI version of NSIS portable"
-  
-  !define NSIS_DESC `!insertmacro NSIS_DESC`
-  !macro NSIS_DESC
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_ipconfig} $(DESC_sec_ipconfig)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_loading_bar_ui} $(DESC_sec_loading_bar_ui)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_zipdll} $(DESC_sec_zipdll)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_inetc} $(DESC_sec_inetc)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_nsis_portable_ansi} $(DESC_sec_nsis_portable_ansi)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_nsis_portable_components} $(DESC_sec_nsis_portable_components)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_build_tools} $(DESC_sec_emacsportable_app_build_tools)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_autohotkey_portable} $(DESC_sec_autohotkey_portable)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_blowfish_plugin} $(DESC_sec_blowfish_plugin)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_7zip_plugin} $(DESC_sec_7zip_plugin)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_execdos} $(DESC_sec_execdos)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_enumini} $(DESC_sec_enumini)
-  !macroend
-    
-    
-  
 #+END_SRC
 
 ** Emacs Versions Sections
@@ -443,6 +95,10 @@ SectionEnd ; sec_use_git_instead_of_zip
 !include "EmacsDownload-vers.nsi"
 #+END_SRC
 
+** Emacs Compile Tools
+#+BEGIN_SRC nsis
+!include "emacsCompileTools.nsi"
+#+END_SRC
 ** Non-ELPA Packages
 *** Fix Functions
 #+BEGIN_SRC nsis
@@ -508,8 +164,10 @@ SectionEnd ; sec_use_git_instead_of_zip
     Section /o "Org Mode" sec_org_mode ; Unchecked (/o)
       ; Description:
       ; Org Mode
+      StrCmp $org_installed "1" skip_org
       ${DOWN} "org" "$EXEDIR\App\lisp\src"
-      
+      skip_org:
+        ClearErrors
     SectionEnd ; sec_org_mode
     Section /o "Yasnippet" sec_yasnippet ; Unchecked (/o)
       ; Description:
@@ -599,7 +257,7 @@ FunctionEnd
 #+END_SRC
 *** Org-Mode
 #+BEGIN_SRC nsis
-  Function SetORG_RO
+  Function SetORG_RO 
     IfFileExists "$R9\lisp\org.el" 0 +2
     ${setInstall} ${sec_org_mode}
   FunctionEnd
@@ -608,6 +266,7 @@ FunctionEnd
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
+    StrCpy $INSTDIR $EXEDIR
     StrCpy $PA ""
     StrCpy $PROXY_ID ""
     ${GetDrives} "FDD+HDD" "GetDriveVars"
@@ -619,43 +278,16 @@ FunctionEnd
       SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_SELECTED}
       Goto after_git
     after_git:
-      StrCpy $nemacs 0
-      ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+      ${INI_VERS}
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=color-theme-* /S= /G=0" "SetCT_RO"
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=ess-* /S= /G=0" "SetESS_RO"
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=org* /S= /G=0" "SetORG_RO"
-      StrCmp "$nemacs" "0" 0 +3
-      SectionSetFlags ${sec_emacs_default} ${SF_SELECTED}
-      SectionSetFlags ${sec_emacs_default_mac} ${SF_SELECTED}
+      
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\esn" ${sec_emacs_speaks_nonmem}
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\nxhtml" ${sec_nxhtml}
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\yasnippet" ${sec_yasnippet}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\NSISPortableANSI.exe" ${sec_nsis_portable_ansi}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\inetc.dll" ${sec_inetc}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\IpConfig.dll" ${sec_ipconfig}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs\LoadingBar_Icon.exe" ${sec_loading_bar_ui}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ZipDLL.dll" ${sec_zipdll}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\blowfish.dll" ${sec_blowfish_plugin}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\EnumINI.dll" ${sec_enumini}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ExecDos.dll" ${sec_execdos}
-      ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\nsis7z.dll" ${sec_7zip_plugin}
-      ${setInstallIfExists} "$PA\AutoHotKeyPortable\AHKCompilerPortable.exe" ${sec_autohotkey_portable}
-      ${ifSecNotRO} ${sec_nsis_portable_ansi} skip_nsis_group_ro 
-      ${ifSecNotRO} ${sec_inetc} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_ipconfig} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_loading_bar_ui} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_zipdll} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_blowfish_plugin} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_enumini} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_7zip_plugin} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_execdos} skip_nsis_group_ro
-      ${setInstallGroup} ${sec_nsis_portable_components}
-    skip_nsis_group_ro:
+      !insertmacro REQ_INI
       ${PA_INI}
-      ${ifSecNotRO} ${sec_nsis_portable_components} skip_build_tools 
-      ${ifSecNotRO} ${sec_autohotkey_portable} skip_build_tools 
-      ${setInstallGroup} ${sec_emacsportable_app_build_tools}
-    skip_build_tools:
       ${ifSecNotRO} ${sec_color_theme}           skip_emacs_packages 
       ${ifSecNotRO} ${sec_emacs_speaks_statistics} skip_emacs_packages 
       ${ifSecNotRO} ${sec_emacs_speaks_nonmem}   skip_emacs_packages 

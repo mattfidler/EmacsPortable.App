@@ -135,19 +135,19 @@ This provides an interface to the Emacs Startup options
     
     
     IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
     WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
     
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port"
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
     WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
     
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User"
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
     WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
     
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password"
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
     WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
     end_proxy_init:
@@ -269,16 +269,16 @@ This provides an interface to the Emacs Startup options
      ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
      StrCmp $R0 "" skip_proxy
      ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server" "$R0"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
      ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
      ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port" "$R0"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
      ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
      ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User" "$R0"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
      ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
      ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password" "$R0"
+     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
      skip_proxy:
        
   FunctionEnd

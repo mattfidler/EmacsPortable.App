@@ -1,4 +1,4 @@
-download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi
+download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh
 
 all: ../../../EmacsPortableApp.exe ../../../EmacsDownload.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe
 
@@ -41,10 +41,13 @@ EmacsDebug.nsi: EmacsShortcuts.el
 EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh
 	cmd /c "set ORG_FILE=""EmacsPortableOptions.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
-EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh
+EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh
 	cmd /c "set ORG_FILE=""EmacsPortableApp.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
-EmacsDownload.nsi: EmacsDownload.org emacsproxy.nsh ${download_extras}
+emacsPathIfExists.nsh: emacsPathIfExists.org
+	cmd /c "set ORG_FILE=""emacsPathIfExists.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+
+EmacsDownload.nsi: EmacsDownload.org ${download_extras}
 	cmd /c "set ORG_FILE=""EmacsDownload.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
 emacsproxy.nsh: emacsproxy.org 
@@ -62,10 +65,18 @@ EmacsRemoveRegistry.nsi: EmacsRemoveRegistry.org emacsproxy.nsh
 SetProxy.nsi: SetProxy.org emacsproxy.nsh
 	cmd /c "set ORG_FILE=""SetProxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
-install-net.nsi: install-net.org
+install-net.nsi: install-net.org ${download_extras}
 	cmd /c "set ORG_FILE=""install-net.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
+EmacsDownloadShared.nsh: EmacsDownloadShared.org
+	cmd /c "set ORG_FILE=""EmacsDownloadShared.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+
+EmacsCompileTools.nsh: emacsCompileTools.org
+	cmd /c "set ORG_FILE=""emacsCompileTools.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+
 clean:
+	rm EmacsCompileTools.nsi
+	rm EmacsDownloadShared.nsh
 	rm EmacsDos.nsi
 	rm EmacsDebug.nsi
 	rm Emacs-Q.nsi

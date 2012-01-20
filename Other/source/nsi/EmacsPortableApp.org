@@ -18,7 +18,6 @@ SetDatablockOptimize On
 Caption "Loading EmacsPortable.App"
 Subcaption 3 " "
 XPStyle on
-AutoCloseWindow true
 OutFile "..\..\..\EmacsPortableApp.exe"
 Icon "..\img\ico\appicon.ico"
 #+END_SRC
@@ -26,7 +25,8 @@ Icon "..\img\ico\appicon.ico"
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
 #+BEGIN_SRC nsis
-ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
 
 ** Headers and Plug ins
@@ -37,6 +37,7 @@ ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
   !include "logiclib.nsh"
   !include "WinMessages.nsh"
   !include "emacsproxy.nsh"
+  !include "emacspathifexists.nsh"
 #+END_SRC
 
 ** Variables
@@ -262,27 +263,6 @@ Function _Trim_
 FunctionEnd
 #+END_SRC
 
-** Path If Exist
-#+BEGIN_SRC nsis
-  !macro _PathIfExist ARG1 GOTO
-    IfFileExists "${ARG1}" 0 +5
-    System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'
-    DetailPrint "Add ${ARG1} to Path"
-    Goto ${GOTO}
-  !macroend
-  
-  !define PathIfExist '!insertmacro "_PathIfExist"'
-  
-  !macro _PathIfExist__ ARG1 PLUS
-    IfFileExists "${ARG1}" 0 ${PLUS}
-    System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'
-  !macroend
-  
-  !define PathIfExist3 '!insertmacro "_PathIfExist__"'
-  
-#+END_SRC
 
 ** StrSlash
 #+BEGIN_SRC nsis
@@ -713,6 +693,7 @@ FunctionEnd
   
   Function SetupPath
     StrCpy $nini 0
+    StrCpy $npath 0
     IfFileExists "$EXEDIR\App\paths.ini" 0 skip_data_paths
     setup_paths:
       ${enumPathIni} "exedir"
@@ -768,6 +749,7 @@ FunctionEnd
       ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin\i386 0
     skipr:
       ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
+      WriteINIStr "$TEMP\ep-env.ini" "path" "n" "$npath"
       #ok  
   FunctionEnd
   

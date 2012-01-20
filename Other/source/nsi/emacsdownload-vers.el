@@ -3,12 +3,12 @@
 ;; Filename: emacsdownload-vers.el
 ;; Description: 
 ;; Author: Matthew L. Fidler
-;; Maintainer: 
+;; Maintainer:
 ;; Created: Thu Jan 19 21:51:16 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Thu Jan 19 21:52:16 2012 (-0600)
+;; Last-Updated: Fri Jan 20 08:44:03 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 1
+;;     Update #: 3
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -26,6 +26,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
 ;;; Change Log:
+;; 20-Jan-2012    Matthew L. Fidler  
+;;    Last-Updated: Fri Jan 20 08:41:41 2012 (-0600) #2 (Matthew L. Fidler)
+;;    Changed EXEDIR to INSTDIR so it can be used by EmacsInstall.nsi
 ;; 
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,7 +93,7 @@
   StrCpy $0 \"$0 (Installed)\"
   SectionSetText ${sec_emacs_%s} $0
 
-  IfFileExists \"$EXEDIR\\App\\emacs-%s\\MacOS\" 0 +10
+  IfFileExists \"$INSTDIR\\App\\emacs-%s\\MacOS\" 0 +10
   SectionSetFlags ${sec_emacs_%s_mac} ${SF_RO}
   SectionGetText ${sec_emacs_%s_mac} $0
   StrCpy $0 \"$0 (Installed)\"

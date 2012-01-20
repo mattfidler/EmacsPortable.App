@@ -1,0 +1,23 @@
+#+TITLE: Add To Path If Exists
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsPathIfExists.nsh
+* Intro
+Add to path if directory exists macro that tries to overcome the
+${NSIS_MAX_STRLEN} when the Path is lonegr than ${NSIS_MAX_STRLEN}...
+
+This is done by calling emacs from autohotkey and setting the
+PATH there.
+** Path If Exist
+#+BEGIN_SRC nsis
+Var npath
+!macro _PathIfExist ARG1 GOTO
+  IfFileExists "${ARG1}" 0 +5
+  IntOp $npath $npath + 1
+  WriteINIStr "$TEMP\ep-env.ini" "path" "$npath" "${ARG1}"
+  DetailPrint "Add ${ARG1} to Path"
+  Goto ${GOTO}
+!macroend
+
+!define PathIfExist '!insertmacro "_PathIfExist"'
+
+#+END_SRC

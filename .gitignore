@@ -137,3 +137,6 @@ Readme.org_archive
 /Other/source/nsi/install-net.nsi
 /Emacs-Q.exe
 /EmacsDos.exe
+/Other/source/nsi/EmacsCompileTools.nsi
+/Other/source/nsi/EmacsDownloadShared.nsh
+/Other/source/nsi/emacsPathIfExists.nsh

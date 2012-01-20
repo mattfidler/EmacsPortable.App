@@ -18,11 +18,16 @@ SetDatablockOptimize On
 ;automatically close the installer when done.
 AutoCloseWindow true 
 #+END_SRC
-** Modern User Interface Options
+** Modern User Interface Options & Includes
 #+BEGIN_SRC nsis
-; MUI2
-!include "MUI2.nsh"
-!include "FileFunc.nsh"
+  ; MUI2
+  !define mirror $PLUGINSDIR\mirrors.ini
+  !include "MUI2.nsh"
+  !include "FileFunc.nsh"
+  !include blowfish.nsh
+  !include "emacsproxy.nsh"
+  !include "emacsdownloadshared.nsh"
+  
 #+END_SRC
 ** Name and branding information & output options
 #+BEGIN_SRC nsis
@@ -69,6 +74,52 @@ OutFile "..\..\..\EmacsInstall.exe"
 Var PA
 Var PG
 #+END_SRC
+* Sections
+** EmacsPortable.App
+#+BEGIN_SRC nsis
+Section /o "Use GIT instead of ZIP" sec_use_git_instead_of_zip ; Unchecked (/o)
+  ; Description:
+  ; Git Download of EmacsPortable.App
+  
+SectionEnd ; sec_use_git_instead_of_zip
+
+Section "EmacsPortable.App Net Installer" sec_emacsportable_app_net_installer 
+  ; Description:
+  ; Install EmacsPortable.App from the Internet
+  RmDir /r $INSTDIR
+  SectionGetFlags ${sec_use_git_instead_of_zip} $0
+  IntOp $0 $0 & ${SF_SELECTED}
+  StrCmp "0" $0 0 +2
+  StrCpy $PG ""
+  StrCmp "$PG" "" zip git
+  zip:
+    inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" \
+        "$TEMP\ep.zip"
+    ZipDLL::extractall "$TEMP\ep.zip" "$TEMP"
+    Delete "$TEMP\ep.zip"
+    ${Locate} "$TEMP" "/L=D /M=*-EmacsPortable.App-* /S= /G=0" "FixEP"
+    Goto exe
+  git:
+    ExecWait "$PG clone https://github.com/mlf176f2/EmacsPortable.App.git $INSTDIR"
+  exe:
+    Exec "$INSTDIR\EmacsDownload.exe"
+SectionEnd ; sec_emacsportable_app_net_installer
+#+END_SRC
+** Emacs Versions Sections
+ This should be based on the mirror ini file and generated from emacs
+ lisp and ported to a NSI install script.  It generates the chekbox
+ toggle depending on what is installed.
+ 
+ [[./EmacsDownload-vers.el]]
+
+#+BEGIN_SRC nsis
+!include "EmacsDownload-vers.nsi"
+#+END_SRC
+
+** Emacs Compile Tools
+#+BEGIN_SRC nsis
+!include "emacsCompileTools.nsi"
+#+END_SRC
 * Functions
 ** Get Portable Apps and GIT
 #+BEGIN_SRC nsis
@@ -111,62 +162,46 @@ Function FixEp
   Push $0
 FunctionEnd
 #+END_SRC
-* Sections
+** Initialization Function
 #+BEGIN_SRC nsis
-Section /o "Use GIT instead of ZIP" sec_use_git_instead_of_zip ; Unchecked (/o)
-  ; Description:
-  ; Git Download of EmacsPortable.App
-  
-SectionEnd ; sec_use_git_instead_of_zip
+  Function .onInit
+    InitPluginsDir
+    SetOutPath "$PLUGINSDIR"
+    File "..\..\..\App\mirrors.ini"
+    StrCpy $PA ""
+    StrCpy $PG ""
+    ${GetDrives} "FDD+HDD" "GetDriveVars"
+    StrCpy $INSTDIR "$PA\EmacsPortable.App"
+    ${INI_VERS}
+    !insertmacro REQ_INI
+    StrCmp "$PG" "" cant_use_git can_use_git
+    cant_use_git:
+      SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_RO}
+      Goto end
+    can_use_git:
+      SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_SELECTED}
+      Goto end
+    end:
+      #
+  FunctionEnd
+#+END_SRC
 
-Section "EmacsPortable.App Net Installer" sec_emacsportable_app_net_installer 
-  ; Description:
-  ; Install EmacsPortable.App from the Internet
-  RmDir /r $INSTDIR
-  SectionGetFlags ${sec_use_git_instead_of_zip} $0
-  IntOp $0 $0 & ${SF_SELECTED}
-  StrCmp "0" $0 0 +2
-  StrCpy $PG ""
-  StrCmp "$PG" "" zip git
-  zip:
-    inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" \
-        "$TEMP\ep.zip"
-    ZipDLL::extractall "$TEMP\ep.zip" "$TEMP"
-    Delete "$TEMP\ep.zip"
-    ${Locate} "$TEMP" "/L=D /M=*-EmacsPortable.App-* /S= /G=0" "FixEP"
-    Goto exe
-  git:
-    ExecWait "$PG clone https://github.com/mlf176f2/EmacsPortable.App.git $INSTDIR"
-  exe:
-    Exec "$INSTDIR\EmacsDownload.exe"
-SectionEnd ; sec_emacsportable_app_net_installer
+** On Selection Change
+#+BEGIN_SRC nsis
+  Function .onSelChange
+    ${VER_SEL}
+  FunctionEnd  
 #+END_SRC
 * Descriptions
 #+BEGIN_SRC nsis
-;--------------------------------
-;Description(s)
-LangString DESC_sec_emacsportable_app_net_installer ${LANG_ENGLISH} "Install EmacsPortable.App from the Internet"
-LangString DESC_sec_use_git_instead_of_zip ${LANG_ENGLISH} "Git Download of EmacsPortable.App. Requires installer to find GIT"
-!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${sec_use_git_instead_of_zip} $(DESC_sec_use_git_instead_of_zip)
-  !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_net_installer} $(DESC_sec_emacsportable_app_net_installer)
-!insertmacro MUI_FUNCTION_DESCRIPTION_END
-#+END_SRC
-* Initialization Function
-#+BEGIN_SRC nsis
-Function .onInit
-  StrCpy $PA ""
-  StrCpy $PG ""
-  ${GetDrives} "FDD+HDD" "GetDriveVars"
-  StrCpy $INSTDIR "$PA\EmacsPortable.App"
-  StrCmp "$PG" "" cant_use_git can_use_git
-  cant_use_git:
-    SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_RO}
-    Goto end
-  can_use_git:
-    SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_SELECTED}
-    Goto end
-  end:
-    #
-FunctionEnd
+  ;--------------------------------
+  ;Description(s)
+  LangString DESC_sec_emacsportable_app_net_installer ${LANG_ENGLISH} "Install EmacsPortable.App from the Internet"
+  LangString DESC_sec_use_git_instead_of_zip ${LANG_ENGLISH} "Git Download of EmacsPortable.App. Requires installer to find GIT"
+  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    ${EMACS_DESC}
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_use_git_instead_of_zip} $(DESC_sec_use_git_instead_of_zip)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_net_installer} $(DESC_sec_emacsportable_app_net_installer)
+  !insertmacro MUI_FUNCTION_DESCRIPTION_END
+  
 #+END_SRC
