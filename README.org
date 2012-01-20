@@ -98,7 +98,7 @@ personal customization inside EmacsPortable.App while retaining your
 ability to pull down general updates to EmacsPortable.App without conflict.
 ** Startup Customization
 The =EmacsOptions.exe= allows you to set Emacs startup options via a
-GUI.  This is mirrored in the =App/EmacsPortable.ini= file.
+GUI.  This is mirrored in the =Data/ini/EmacsPortable.ini= file.
 *** Emacs Version
 This selects the version of Emacs that EmacsPortable.App will be
 running.  This is useful if you run different versions of Emacs to

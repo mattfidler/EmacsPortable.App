@@ -18,7 +18,7 @@ SetDatablockOptimize On
 Caption "Loading EmacsPortable.App"
 Subcaption 3 " "
 XPStyle on
-;AutoCloseWindow true
+AutoCloseWindow true
 OutFile "..\..\..\EmacsPortableApp.exe"
 Icon "..\img\ico\appicon.ico"
 #+END_SRC
@@ -26,7 +26,7 @@ Icon "..\img\ico\appicon.ico"
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
 #+BEGIN_SRC nsis
-;ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
 
 ** Headers and Plug ins
