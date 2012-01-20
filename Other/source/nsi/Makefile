@@ -1,6 +1,6 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsDownload.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsDownload.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	makensis SetProxy.nsi
@@ -19,6 +19,24 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsDownload.exe ../../../EmacsOpti
 
 ../../../EmacsInstall.exe: install-net.nsi
 	makensis install-net.nsi
+
+../../../EmacsDos.exe: EmacsDos.nsi
+	makensis EmacsDos.nsi
+
+../../../EmacsDebug.exe: EmacsDebug.nsi
+	makensis EmacsDebug.nsi
+
+../../../Emacs-Q.exe: Emacs-Q.nsi
+	makensis Emacs-Q.nsi
+
+EmacsDos.nsi: EmacsShortcuts.el
+	cmd /c "emacs -Q --batch -l ./EmacsShortcuts.el"
+
+Emacs-Q.nsi: EmacsShortcuts.el
+	cmd /c "emacs -Q --batch -l ./EmacsShortcuts.el"
+
+EmacsDebug.nsi: EmacsShortcuts.el
+	cmd /c "emacs -Q --batch -l ./EmacsShortcuts.el"
 
 EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh
 	cmd /c "set ORG_FILE=""EmacsPortableOptions.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
@@ -48,6 +66,12 @@ install-net.nsi: install-net.org
 	cmd /c "set ORG_FILE=""install-net.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
 clean:
+	rm EmacsDos.nsi
+	rm EmacsDebug.nsi
+	rm Emacs-Q.nsi
+	rm ../../../EmacsDos.exe
+	rm ../../../EmacsDebug.exe
+	rm ../../../Emacs-Q.exe
 	rm ../../../EmacsInstall.exe
 	rm ./install-net.nsi
 	rm ./SetProxy.nsi
