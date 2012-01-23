@@ -16,6 +16,7 @@ If (FileExist(epenv)){
     }  
   }
 }
+  FileDelete, %epenv%
 exe = 
   
   

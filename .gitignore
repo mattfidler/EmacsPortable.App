@@ -140,3 +140,7 @@ Readme.org_archive
 /Other/source/nsi/EmacsCompileTools.nsi
 /Other/source/nsi/EmacsDownloadShared.nsh
 /Other/source/nsi/emacsPathIfExists.nsh
+/App/gw32.ini
+/Other/source/nsi/emacsdownload-gw32.nsi
+/Other/source/nsi/emacsdownload-rgw32.nsi
+/README.html

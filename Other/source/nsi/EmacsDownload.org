@@ -84,7 +84,15 @@ Section /o "Use GIT instead of ZIP" sec_use_git_instead_of_zip ; Unchecked (/o)
 SectionEnd ; sec_use_git_instead_of_zip
 #+END_SRC
 
-** Emacs Versions Sections
+** Download
+#+BEGIN_SRC nsis
+  SectionGroup  "Download and Add" sec_download_and_add ; Collapsed
+    ; Description:
+    ; Download and add these items to the curret EmacsPortable.App
+    
+#+END_SRC
+
+*** Emacs Versions Sections
  This should be based on the mirror ini file and generated from emacs
  lisp and ported to a NSI install script.  It generates the chekbox
  toggle depending on what is installed.
@@ -95,12 +103,12 @@ SectionEnd ; sec_use_git_instead_of_zip
 !include "EmacsDownload-vers.nsi"
 #+END_SRC
 
-** Emacs Compile Tools
+*** Emacs Compile Tools
 #+BEGIN_SRC nsis
 !include "emacsCompileTools.nsi"
 #+END_SRC
-** Non-ELPA Packages
-*** Fix Functions
+*** Non-ELPA Packages
+**** Fix Functions
 #+BEGIN_SRC nsis
   Function FixNxhtml
     IfFileExists "$EXEDIR\App\lisp\src\nxhtml" 0 +2
@@ -134,7 +142,7 @@ SectionEnd ; sec_use_git_instead_of_zip
       Push $0
   FunctionEnd
 #+END_SRC
-*** Sections
+**** Sections
 #+BEGIN_SRC nsis
   SectionGroup "Emacs Packages" sec_emacs_packages 
     ; Description:
@@ -198,7 +206,12 @@ SectionEnd ; sec_use_git_instead_of_zip
   !macroend
   
 #+END_SRC
-** Portable Apps that Emacs Recognizes
+*** GnuWin32 Applications
+#+BEGIN_SRC nsis
+!include "emacsdownload-gw32.nsi"
+#+END_SRC
+
+*** Portable Apps that Emacs Recognizes
 Using list, the portable apps that Emacs recognizes are generated from
 the mirrors.ini file
 [[file:./EmacsDownload-pae.el]]
@@ -207,6 +220,30 @@ the mirrors.ini file
 #+BEGIN_SRC nsis
 !include "EmacsDownload-pae.nsi"
 #+END_SRC
+
+*** End Download and Add Section
+#+BEGIN_SRC nsis
+  SectionGroupEnd ; sec_download_and_add
+  LangString DESC_sec_download_and_add ${LANG_ENGLISH} "Download and add these items to the curret EmacsPortable.App"
+#+END_SRC
+** Remove
+#+BEGIN_SRC nsis
+  SectionGroup "Remove From EmacsPortable.App" sec_remove_from_emacsportable_app ; Collapsed
+    ; Description:
+    ; Remove Packages and Settings from EmacsPortable.App
+#+END_SRC
+*** Remove GnuWin32 Applications 
+#+BEGIN_SRC nsis
+!include "emacsdownload-rgw32.nsi"
+#+END_SRC
+
+*** End Remove Section
+#+BEGIN_SRC nsis
+  SectionGroupEnd ; sec_remove_from_emacsportable_app
+  ;Description(s)
+  LangString DESC_sec_remove_from_emacsportable_app ${LANG_ENGLISH} "Remove Packages and Settings from EmacsPortable.App"
+#+END_SRC
+
 
 * Installer Functions
 ** Determine Portable Apps and GIT Location
@@ -258,8 +295,11 @@ FunctionEnd
 *** Org-Mode
 #+BEGIN_SRC nsis
   Function SetORG_RO 
-    IfFileExists "$R9\lisp\org.el" 0 +2
+    IfFileExists "$R9\lisp\org.el" 0 org_ro
     ${setInstall} ${sec_org_mode}
+    ${setInstall} ${sec_ct1}
+    org_ro:
+      ClearErrors
   FunctionEnd
   
 #+END_SRC
@@ -279,15 +319,17 @@ FunctionEnd
       Goto after_git
     after_git:
       ${INI_VERS}
+      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=org* /S= /G=0" "SetORG_RO"
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=color-theme-* /S= /G=0" "SetCT_RO"
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=ess-* /S= /G=0" "SetESS_RO"
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=org* /S= /G=0" "SetORG_RO"
       
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\esn" ${sec_emacs_speaks_nonmem}
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\nxhtml" ${sec_nxhtml}
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\yasnippet" ${sec_yasnippet}
       !insertmacro REQ_INI
       ${PA_INI}
+      ${G32_INI}
+      ${RG32_INI}
       ${ifSecNotRO} ${sec_color_theme}           skip_emacs_packages 
       ${ifSecNotRO} ${sec_emacs_speaks_statistics} skip_emacs_packages 
       ${ifSecNotRO} ${sec_emacs_speaks_nonmem}   skip_emacs_packages 
@@ -317,10 +359,18 @@ FunctionEnd
 ** Languages
 #+BEGIN_SRC nsis
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_from_emacsportable_app} $(DESC_sec_remove_from_emacsportable_app)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_download_and_add} $(DESC_sec_download_and_add)
     ${EMACS_DESC}
     ${NSIS_DESC}
     ${ELPA}
     ${PA_DESC}
+    ${GW32_DESC}
+    ${GW32E_DESC}
+    ${RGW32_DESC}
+    ${RGW32E_DESC}
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
+  
+    
   
 #+END_SRC

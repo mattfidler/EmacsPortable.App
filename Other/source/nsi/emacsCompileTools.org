@@ -16,18 +16,26 @@ executables.
       ${installPA} "ahk"
     SectionEnd ; sec_autohotkey_portable
     
-  
+    
     Section /o "Org-mode" sec_ct1 ; Unchecked (/o)
       ; Description:
       ; Org mode is required to build EmacsPortable.App since the sorce code is in org files
       ${DOWN} "org" "$EXEDIR\App\lisp\src"
-      Var /GLOBAL org_installed
-      StrCpy $org_installed "1"
+  
     SectionEnd ; sec_ct1
     
+    SectionGroup "Required Gnu32 Utilities" sec_required_gnu32_utilities ; Collapsed
+      ; Description:
+      ; Required Gnu32 Utilities
+      Section /o "Make" sec_make ; Checked
+        ; Description:
+        ; Gnu Make to geneate executables from soruce files
+        !insertmacro g32down "make"
+      SectionEnd ; sec_make
+      
+    SectionGroupEnd ; sec_required_gnu32_utilities  
     
-  
-  
+    
     SectionGroup "NSIS Portable Components" sec_nsis_portable_components ; Collapsed
       ; Description:
       ; Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App
@@ -41,7 +49,7 @@ executables.
         ; 7Zip Plugin
         ReadINIStr $R0 "${mirror}" "nsis:7z" "url"
         inetc::get $R0 "$TEMP\7z.zip"
-        ZipDLL::extractfile "$TEMP\7z.zip" "$PA\NSISPortable\App\NSIS\Plugins" "nsis7z.dll"
+        ZipDLL::extractfile "$TEMP\7z.zip" "$PA\NSISPortableANSI\App\NSIS\Plugins" "nsis7z.dll"
         Delete "$TEMP\7z.zip"
       SectionEnd ; sec_7zip_plugin
       Section /o "Blowfish Plugin" sec_blowfish_plugin ; Unchecked (/o)
@@ -49,10 +57,10 @@ executables.
         ; Blowfish plugin used to unsecurly encrypt the proxy password
         ReadINIStr $R0 "${mirror}" "nsis:blowfish" "url"
         inetc::get $R0 "$TEMP\blowfish.zip"
-        ZipDLL::extractfile "$TEMP\blowfish.zip" "$PA\NSISPortable\App\NSIS\Plugins" "blowfish.dll"
+        ZipDLL::extractfile "$TEMP\blowfish.zip" "$PA\NSISPortableANSI\App\NSIS\Plugins" "blowfish.dll"
         Delete "$TEMP\blowfish.zip"
       SectionEnd ; sec_blowfish_plugin
-      Section "EnumINI" sec_enumini ; Checked
+      Section /o "EnumINI" sec_enumini ; Checked
         ; Description:
         ; Enumerates INI keys
         !insertmacro getPluginFull "enumINI"
@@ -82,9 +90,9 @@ executables.
         download:
           ReadINIStr $R0 "${mirror}" "nsis:loadingbarui" "url"
           inetc::get $R0 "$TEMP\lb.zip"
-          ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortable\App\NSIS\Contrib\UIs" "LoadingBar.exe"
-          ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortable\App\NSIS\Contrib\UIs" "LoadingBar_Icon.exe"
-          ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortable\App\NSIS\Contrib\UIs" "LoadingBar_NoDesc.exe"
+          ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs" "LoadingBar.exe"
+          ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs" "LoadingBar_Icon.exe"
+          ZipDLL::extractfile "$TEMP\lb.zip" "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs" "LoadingBar_NoDesc.exe"
           Delete "$TEMP\lb.zip"
         end:      
         SectionEnd ; sec_loading_bar_ui
@@ -98,8 +106,8 @@ executables.
           download:
             ReadINIStr $R0 "${mirror}" "nsis:zipdll" "url"
             inetc::get $R0 "$TEMP\z.zip"
-            ZipDLL::extractfile "$TEMP\z.zip" "$PA\NSISPortable\App\NSIS\Plugins" "ZipDLL.dll"
-            ZipDLL::extractfile "$TEMP\z.zip" "$PA\NSISPortable\App\NSIS\Include" "zipdll.nsh"
+            ZipDLL::extractfile "$TEMP\z.zip" "$PA\NSISPortableANSI\App\NSIS\Plugins" "ZipDLL.dll"
+            ZipDLL::extractfile "$TEMP\z.zip" "$PA\NSISPortableANSI\App\NSIS\Include" "zipdll.nsh"
             Delete "$TEMP\z.zip"
           end: 
           SectionEnd ; sec_zipdll
@@ -108,6 +116,8 @@ executables.
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_nsis_portable_components ${LANG_ENGLISH} "Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App"  
+  LangString DESC_sec_make ${LANG_ENGLISH} "Gnu Make to geneate executables from soruce files"
+  LangString DESC_sec_required_gnu32_utilities ${LANG_ENGLISH} "Required Gnu32 Utilities"
   LangString DESC_sec_ct1 ${LANG_ENGLISH} "Org mode is required to build EmacsPortable.App since the sorce code is in org files"
   
   
@@ -138,35 +148,41 @@ executables.
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_execdos} $(DESC_sec_execdos)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_enumini} $(DESC_sec_enumini)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_ct1} $(DESC_sec_ct1)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_required_gnu32_utilities} $(DESC_sec_required_gnu32_utilities)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_make} $(DESC_sec_make)
   !macroend
-  
-  
   
 #+END_SRC
 
 ** Initialization Macro
 #+BEGIN_SRC nsis
   !macro REQ_INI
-    ${setInstallIfExists} "$PA\NSISPortable\NSISPortable.exe" ${sec_nsis_portable_ansi}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\inetc.dll" ${sec_inetc}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\IpConfig.dll" ${sec_ipconfig}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Contrib\UIs\LoadingBar_Icon.exe" ${sec_loading_bar_ui}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\ZipDLL.dll" ${sec_zipdll}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\blowfish.dll" ${sec_blowfish_plugin}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\EnumINI.dll" ${sec_enumini}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\ExecDos.dll" ${sec_execdos}
-    ${setInstallIfExists} "$PA\NSISPortable\App\NSIS\Plugins\nsis7z.dll" ${sec_7zip_plugin}
+    ${g32installed} "make" ${sec_make}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\NSISPortableANSI.exe" ${sec_nsis_portable_ansi}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\inetc.dll" ${sec_inetc}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\IpConfig.dll" ${sec_ipconfig}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs\LoadingBar_Icon.exe" ${sec_loading_bar_ui}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ZipDLL.dll" ${sec_zipdll}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\blowfish.dll" ${sec_blowfish_plugin}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\EnumINI.dll" ${sec_enumini}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ExecDos.dll" ${sec_execdos}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\nsis7z.dll" ${sec_7zip_plugin}
     ${setInstallIfExists} "$PA\AutoHotKeyPortable\AHKCompilerPortable.exe" ${sec_autohotkey_portable}
-    ${ifSecNotRO} ${sec_nsis_portable_ansi} skip_nsis_group_ro 
-    ${ifSecNotRO} ${sec_inetc} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_ipconfig} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_loading_bar_ui} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_zipdll} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_blowfish_plugin} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_enumini} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_7zip_plugin} skip_nsis_group_ro
-    ${ifSecNotRO} ${sec_execdos} skip_nsis_group_ro
-    ${setInstallGroup} ${sec_nsis_portable_components}
+    ${ifSecNotRO} ${sec_make} skip_gnu32_util
+    ${setInstallGroup} ${sec_required_gnu32_utilities}
+    skip_gnu32_util:    
+      ${ifSecNotRO} ${sec_nsis_portable_ansi} skip_nsis_group_ro 
+      ${ifSecNotRO} ${sec_inetc} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_ipconfig} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_loading_bar_ui} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_zipdll} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_blowfish_plugin} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_enumini} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_7zip_plugin} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_execdos} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_ct1} skip_nsis_group_ro
+      ${ifSecNotRO} ${sec_required_gnu32_utilities} skip_nsis_group_ro
+      ${setInstallGroup} ${sec_nsis_portable_components}
     skip_build_tools:
       ${ifSecNotRO} ${sec_nsis_portable_components} skip_build_tools 
       ${ifSecNotRO} ${sec_autohotkey_portable} skip_build_tools

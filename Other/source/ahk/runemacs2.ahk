@@ -16,6 +16,7 @@ epenv = %TEMP%\ep-env.ini
     }  
   }
 }
+  FileDelete, %epenv%
   exe = 
   
   

@@ -126,8 +126,6 @@ package, the following ini-file will set the
 [Environment]
 ERGOEMACS_KEYBOARD_LAYOUT=colemak
 #+END_SRC
-**** TODO Mac OS X recognizances environment options
-
 ** General Customization
 
 - git branch :: The first step to user-specific customization is (like
@@ -390,7 +388,9 @@ EmacsPortable.App will be recognized and used.
 ** MSYS
 * EmacsPortable.App Wish List/TODO list
 ** TODO Gnus behind a firewall/proxy server
-** TODO Add Mac support of Environment.ini
+** DONE Add Mac support of Environment.ini
+CLOSED: [2012-01-23 Mon 15:50]
+- State "DONE"       from "TODO"       [2012-01-23 Mon 15:50]
 :LOGBOOK:
 CLOCK: [2011-12-14 Wed 21:47]--[2011-12-14 Wed 21:48] =>  0:01
 :END:
@@ -401,3 +401,8 @@ CLOCK: [2011-12-14 Wed 21:47]--[2011-12-14 Wed 21:48] =>  0:01
 ** TODO Make a portable browser a selectable EmacsOption
 [2011-12-15 Thu 13:15]
 ** TODO When Cygwin is found drop GnuWin32 Support, or make it secondary.
+** STARTED Download of GnuWin32 Utilities
+:LOGBOOK:
+CLOCK: [2012-01-23 Mon 15:51]
+:END:
+

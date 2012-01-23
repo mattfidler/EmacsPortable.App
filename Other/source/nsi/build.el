@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Thu Jan 19 21:43:31 2012 (-0600)
+;; Last-Updated: Sun Jan 22 15:32:44 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 53
+;;     Update #: 54
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -50,9 +50,23 @@
 ;;; Code:
 
 (setq debug-on-error t)
-(setq build-dir (file-name-directory (or
-                                      load-file-name
-                                      buffer-file-name)))
+
+(setq build-dir
+      (file-name-directory
+       (or
+        load-file-name
+        buffer-file-name)))
+
+(defun one-nsi ()
+  (let ((tmp))
+  (when (getenv "NSI_FILE")
+    (find-file (expand-file-name (getenv "NSI_FILE") build-dir))
+    (while (re-search-forward "!include \"\\(.*[.]nsi\\)\"")
+      (setq tmp (match-string 1))
+      (replace-match "\n")
+      (insert-file-contents (expand-file-name tmp build-dir)))
+    (write-file (expand-file-name (getenv "NSI_FILE") build-dir)))))
+
 (defun build-nsi (&optional eval-lisp org-file)
   "Build NSIS script from org-mode."
   (let ((case-fold-search t)
