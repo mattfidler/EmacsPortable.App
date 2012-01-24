@@ -54,13 +54,13 @@ EmacsDownload.nsi: EmacsDownload.org ${download_extras}
 emacsproxy.nsh: emacsproxy.org 
 	cmd /c "set ORG_FILE=""emacsproxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
-EmacsDownload-vers.nsi: emacsdownload-vers.el ../../../App/mirrors.ini
+EmacsDownload-vers.nsi: emacsdownload-vers.el ../../../App/ini/mirrors.ini
 	cmd /c "emacs -Q --batch -l ./emacsdownload-vers.el"
 
-EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/mirrors.ini
+EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
 	cmd /c "emacs -Q --batch -l ./emacsdownload-pae.el"
 
-emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/mirrors.ini
+emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/mirrors.ini
 	cmd /c "emacs -Q --batch -l ./emacsdownload-gw32.el"
 
 EmacsRemoveRegistry.nsi: EmacsRemoveRegistry.org emacsproxy.nsh

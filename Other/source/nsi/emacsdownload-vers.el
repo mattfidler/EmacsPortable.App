@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 21:51:16 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Jan 20 08:44:03 2012 (-0600)
+;; Last-Updated: Tue Jan 24 16:37:29 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 3
+;;     Update #: 5
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -54,7 +54,7 @@
 
 (progn
   (with-temp-buffer
-    (insert-file-contents "../../../App/mirrors.ini")
+    (insert-file-contents "../../../App/ini/mirrors.ini")
     (let ((ret "")
           (grp-ro "")
           (vals "var nemacs\nFunction SetValues\n  IntOp $nemacs $nemacs + 1\n  StrLen $R1 \"$EXEDIR\\App\\emacs-\"\n  StrLen $R2 $R9\n  IntOp $R2 $R1 - $R2\n  StrCpy $R0 $R9 \"\" $R2\n")

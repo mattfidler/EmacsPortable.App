@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 19 21:56:36 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Sun Jan 22 15:08:25 2012 (-0600)
+;; Last-Updated: Tue Jan 24 16:39:49 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 3
+;;     Update #: 4
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -50,7 +50,7 @@
 ;;; Code:
 
 (with-temp-buffer
-  (insert-file-contents "../../../App/mirrors.ini")
+  (insert-file-contents "../../../App/ini/mirrors.ini")
   (let ((sec "")
         (sec-cnt 0)
         (txt "")

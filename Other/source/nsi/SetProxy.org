@@ -93,7 +93,7 @@ Function .onInit
   var /GLOBAL nemacs
   var /GLOBAL lastversion
   IfFileExists "$EXEDIR\..\..\Data\ini\proxy.ini" +2 0
-  CopyFiles /SILENT "$EXEDIR\..\..\App\proxy.ini" "$EXEDIR\..\..\Data\ini\proxy.ini"
+  CopyFiles /SILENT "$EXEDIR\..\..\App\ini\proxy.ini" "$EXEDIR\..\..\Data\ini\proxy.ini"
   ${SetupProxyFile} "$EXEDIR\..\..\Data\ini\"
   WriteIniStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_server}" "State" ""
   WriteIniStr "$EXEDIR\..\..\Data\ini\proxy.ini" "${ep_proxy_port}" "State" ""

@@ -649,38 +649,38 @@ FunctionEnd
 #+BEGIN_SRC nsis
   !macro enumPathIni WHAT
     ;; Parse ${WHAT}
-    EnumINI::Section "$EXEDIR\App\paths.ini" "${WHAT}"
+    EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}"
     Pop $R0
     StrCmp $R0 "error" done_${WHAT}
     loop_${WHAT}:
       IntCmp $R0 "0" done_${WHAT} done_${WHAT} 0
       Pop $R1
-      ReadINIStr $R2 "$EXEDIR\App\paths.ini" "${WHAT}" "$R1"
+      ReadINIStr $R2 "$EXEDIR\App\ini\paths.ini" "${WHAT}" "$R1"
   !macroend
   !define enumPathIni `!insertmacro enumPathIni`
   
   !define enumPathEnd `!insertmacro enumPathEnd`
   !macro enumPathEnd WHAT
     path_${WHAT}:
-      EnumINI::Section "$EXEDIR\App\paths.ini" "${WHAT}.$R1.path"
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}.$R1.path"
       Pop $R7
       StrCmp $R7 "error" no_${WHAT}_path
     loop_${WHAT}_path:
       IntCmp $R7 "0" no_${WHAT}_path no_${WHAT}_path 0
       Pop $R3
-      ReadINIStr $R4 "$EXEDIR\App\paths.ini" "${WHAT}.$R1.path" "$R3"
+      ReadINIStr $R4 "$EXEDIR\App\ini\paths.ini" "${WHAT}.$R1.path" "$R3"
       DetailPrint "Set $R3=$R6\$R4"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R6\$R4").r3'
       IntOp $R7 $R7 - 1
       Goto loop_${WHAT}_path
     no_${WHAT}_path:
-      EnumINI::Section "$EXEDIR\App\paths.ini" "${WHAT}.$R1.set"
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}.$R1.set"
       Pop $R7
       StrCmp $R7 "error" no_${WHAT}
     loop_${WHAT}_set:
       IntCmp $R7 "0" no_${WHAT} no_${WHAT} 0
       Pop $R3
-      ReadINIStr $R4 "$EXEDIR\App\paths.ini" "${WHAT}.$R1.set" "$R3"
+      ReadINIStr $R4 "$EXEDIR\App\ini\paths.ini" "${WHAT}.$R1.set" "$R3"
       DetailPrint "Set $R3=$R4"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R4").r3'
       IntOp $R7 $R7 - 1
@@ -694,7 +694,7 @@ FunctionEnd
   Function SetupPath
     StrCpy $nini 0
     StrCpy $npath 0
-    IfFileExists "$EXEDIR\App\paths.ini" 0 skip_data_paths
+    IfFileExists "$EXEDIR\App\ini\paths.ini" 0 skip_data_paths
     setup_paths:
       ${enumPathIni} "exedir"
       ${PathIfExist} "$EXEDIR\$R2" found_exedir
@@ -915,32 +915,28 @@ FunctionEnd
 * Setup Files
 ** Copy Dlls to the correct position
 #+BEGIN_SRC nsis
-!define dllcp `!insertmacro _dllcp`
-!macro _dllcp FILENAME
-  IfFileExists "$emacs\${FILENAME}" +3
-  IfFileExists "$EXEDIR\App\bin\${FILENAME}" 0 +2
-  CopyFiles /SILENT "$EXEDIR\App\bin\${FILENAME}" "$emacs\${FILENAME}"
-!macroend
-Function CpDll
-  ${dllcp} giflib4.dll
-  ${dllcp} glut32.dll
-  ${dllcp} jpeg62.dll
-  ${dllcp} libimage.dll
-  ${dllcp} libpng3.dll
-  ${dllcp} libpng12.dll
-  ${dllcp} libpng13.dll
-  ${dllcp} librle3.dll
-  ${dllcp} libtiff3.dll
-  ${dllcp} libXpm.dll
-  ${dllcp} zlib1.dll
-  ${dllcp} libgcrypt-11.dll
-  ${dllcp} libgnutls-26.dll
-  ${dllcp} libgpg-error-0.dll
-  ${dllcp} libtasn1-3.dll
-  ${dllcp} libungif4.dll
-  ${dllcp} xpm4.dll
-FunctionEnd
-!define CpDll "Call CpDll"
+  !define dllcp `!insertmacro _dllcp`
+  !macro _dllcp FILENAME
+    IfFileExists "$emacs\${FILENAME}" +3
+    IfFileExists "$EXEDIR\App\gw32\bin\${FILENAME}" 0 +2
+    CopyFiles /SILENT "$EXEDIR\App\gw32\bin\${FILENAME}" "$emacs\${FILENAME}"
+  !macroend
+  Function CpDll
+    IfFileExists "$EXEDIR\App\ini\copy.ini" 0 end_copy
+    EnumINI::Section "$EXEDIR\App\ini\copy.ini" "${WHAT}"
+    Pop $R0
+    StrCmp $R0 "error" end_copy
+    loop:
+      IntCmp "$R0" "0" end_copy
+      Pop $R1
+      ${dllcp} $R1
+      IntOp $R0 $R0 - 1
+      Goto loop
+    end_copy:
+      ClearErrors
+  FunctionEnd
+  !define CpDll "Call CpDll"
+  
 #+END_SRC
 
 
@@ -1023,10 +1019,10 @@ FunctionEnd
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPRMREG","$EXEDIR\App\eps\RemoveReg.exe").r0'
       ClearErrors
-      IfFileExists "$EXEDIR\App\fonts.ini" 0 skip_font
-      ReadINIStr $R0 $EXEDIR\App\fonts.ini "fonts1" "$option_font"
+      IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
+      ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
       IfErrors skip_font
-      ReadINIStr $R1 $EXEDIR\App\fonts.ini "fonts2" "$option_font"
+      ReadINIStr $R1 $EXEDIR\App\ini\fonts.ini "fonts2" "$option_font"
       IfErrors 0 +2
       StrCpy "$R1" "-*-*-*-c-*-iso8859-1"
       ClearErrors
@@ -1157,11 +1153,11 @@ FunctionEnd
        StrCmp "1" $option_daemon 0 end
        StrCmp "" $option_q 0 end
        StrCpy $cnt 300
-       IfFileExists "$EXEDIR/App/eps/EmacsPortableServer-$option_version.exe" +3 0
-       IfFileExists "$EXEDIR/App/eps/EmacsPortableServer.exe" 0 end
-       CopyFiles /SILENT "$EXEDIR/App/eps/EmacsPortableServer.exe" \
-           "$EXEDIR/App/eps/EmacsPortableServer-$option_version.exe"
-       Exec "$EXEDIR/App/eps/EmacsPortableServer-$option_version.exe $option_version"
+       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +3 0
+       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer.exe" 0 end
+       CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
+           "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe"
+       Exec "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe $option_version"
        Goto end
      start_emacsclient:
        ${emacsclient_setup}

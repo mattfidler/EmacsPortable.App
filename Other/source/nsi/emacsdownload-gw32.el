@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Mon Jan 23 17:08:46 2012 (-0600)
+;; Last-Updated: Tue Jan 24 16:37:20 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 72
+;;     Update #: 73
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -112,7 +112,7 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
 %s\n!macroend" ret dt))
   ;; Now get all gnuwin32 packages listed in the mirrors.ini
   (with-temp-buffer
-    (insert-file-contents "../../../App/mirrors.ini")
+    (insert-file-contents "../../../App/ini/mirrors.ini")
     (let ((sec "")
           (sec-cnt 0)
           (txt "")

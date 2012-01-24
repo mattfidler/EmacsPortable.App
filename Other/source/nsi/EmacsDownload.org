@@ -24,7 +24,7 @@ Modern UI2 user interface
 #+END_SRC
 ** Defines
 #+BEGIN_SRC nsis
-!define mirror $EXEDIR\App\mirrors.ini
+!define mirror $EXEDIR\App\ini\mirrors.ini
 #+END_SRC
 
 ** Headers and Plugins

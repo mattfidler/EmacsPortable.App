@@ -266,7 +266,7 @@ it alone when OTHER_SEC is read-only.
 ** GnuWin32 Utilities Download
 #+BEGIN_SRC nsis
   !macro  g32exist WHAT GO
-    IfFileExists "$INSTDIR\App\gw32.ini" 0 g32exist_skip
+    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 g32exist_skip
     
     g32exist_skip:
       ClearErrors
@@ -275,68 +275,76 @@ it alone when OTHER_SEC is read-only.
   !macro g32down WHAT
     ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "bin.exe"
     IfErrors g32_zip
-    inetc::get /CONNECTTIMEOUT 30 $R0 "$EXEDIR\App\gw32\${WHAT}.exe"
-    WriteIniStr "$INSTDIR\App\gw32.ini" "${WHAT}.bin" "${WHAT}.exe" "1"
+    SetOutPath "$INSTDIR\App\gw32\bin"
+    inetc::get /CONNECTTIMEOUT 30 $R0 "$INSTDIR\App\gw32\bin\${WHAT}.exe"
+    WriteIniStr "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin" "${WHAT}.exe" "1"
     Goto g32_exit
     g32_zip:
       ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "bin.zip"
       IfErrors g32_download
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
-      ZipDLL::extractall "$TEMP\${WHAT}-bin.zip" "$TEMP\ep-${WHAT}"
-      SetOutPath "$INSTDIR\App\gw32"
+      ZipDLL::extractall "$TEMP\${WHAT}-bin.zip" "$TEMP\ep-gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
-      ${Locate} "$TEMP\ep-${WHAT}\bin" "/L=F /M=* /S= /G=0" "AddGW"
-      CopyFiles /SILENT "$TEMP\ep-${WHAT}\bin\*.*" "$INSTDIR\App\gw32"
-      RmDir /r "$TEMP\ep-${WHAT}"
-      Delete "$TEMP\${WHAT}-bin.zip"
+      ${Locate} "$TEMP\ep-gw32" "" "AddGW"
+      RmDir /r "$TEMP\ep-gw32"
+      ;Delete "$TEMP\${WHAT}-bin.zip"
       ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "dep.zip"
       IfErrors g32_exit
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
-      ZipDLL::extractall "$TEMP\${WHAT}-dep.zip" "$TEMP\ep-${WHAT}"
+      ZipDLL::extractall "$TEMP\${WHAT}-dep.zip" "$TEMP\ep-gw32"
       SetOutPath "$INSTDIR\App\gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "dep"
-      ${Locate} "$TEMP\ep-${WHAT}\bin" "/L=F /M=* /S= /G=0" "AddGW"
-      CopyFiles /SILENT "$TEMP\ep-${WHAT}\bin\*.*" "$INSTDIR\App\gw32"
-      RmDir /r "$TEMP\ep-${WHAT}"
-      Delete "$TEMP\${WHAT}-dep.zip"
+      ${Locate} "$TEMP\ep-gw32" "" "AddGW"
+      RmDir /r "$TEMP\ep-gw32"
+      ;Delete "$TEMP\${WHAT}-dep.zip"
     g32_download:
       ClearErrors
       inetc::get /CONNECTTIMEOUT 30 \
           "http://gnuwin32.sourceforge.net/downlinks/${WHAT}-bin-zip.php" \
           "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
-      ZipDLL::extractall "$TEMP\${WHAT}-bin.zip" "$TEMP\ep-${WHAT}"
+      ZipDLL::extractall "$TEMP\${WHAT}-bin.zip" "$TEMP\ep-gw32"
       SetOutPath "$INSTDIR\App\gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
-      ${Locate} "$TEMP\ep-${WHAT}\bin" "/L=F /M=* /S= /G=0" "AddGW"
-      CopyFiles /SILENT "$TEMP\ep-${WHAT}\bin\*.*" "$INSTDIR\App\gw32"
-      RmDir /r "$TEMP\ep-${WHAT}"
-      Delete "$TEMP\${WHAT}-bin.zip"
+      ${Locate} "$TEMP\ep-gw32" "" "AddGW" 
+      RmDir /r "$TEMP\ep-gw32"
+      ;Delete "$TEMP\${WHAT}-bin.zip"
       inetc::get /CONNECTTIMEOUT 30 \
           "http://gnuwin32.sourceforge.net/downlinks/${WHAT}-dep-zip.php" \
           "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
-      ZipDLL::extractall "$TEMP\${WHAT}-dep.zip" "$TEMP\ep-${WHAT}"
+      ZipDLL::extractall "$TEMP\${WHAT}-dep.zip" "$TEMP\ep-gw32"
       SetOutPath "$INSTDIR\App\gw32"
       StrCpy $R1 "dep"
-      ${Locate} "$TEMP\ep-${WHAT}\bin" "/L=F /M=* /S= /G=0" "AddGW"
-      CopyFiles /SILENT "$TEMP\ep-${WHAT}\bin\*.*" "$INSTDIR\App\gw32"
-      RmDir /r "$TEMP\ep-${WHAT}"
-      Delete "$TEMP\${WHAT}-dep.zip"
+      ${Locate} "$TEMP\ep-gw32" "" "AddGW"
+      RmDir /r "$TEMP\ep-gw32"
+      ;Delete "$TEMP\${WHAT}-dep.zip"
     g32_exit:
       ClearErrors
   !macroend
   
   Function AddGW
-    WriteINIStr "$INSTDIR\App\gw32.ini" "$R0.$R1" "$R7" "1"
-    StrCmp "$R1" "dep" 0 skip_dep
-    WriteINIStr "$INSTDIR\App\gw32.ini" "$R7" "$R0" "1"
+    StrLen $0 "$TEMP\ep-gw32\"
+    StrCpy "$R4" "$R8" "" $0
+    StrCpy "$R5" "$R9" "" $0
+    StrCmp $R6 "" is_dir is_file
+    is_dir:
+      CreateDirectory "$INSTDIR\App\gw32\$R5"
+      Goto end
+    is_file:
+      WriteINIStr "$INSTDIR\App\ini\gw32.ini" "$R0.$R1" "$R5" "1"
+      StrCmp "$R1" "dep" 0 skip_dep
+      WriteINIStr "$INSTDIR\App\ini\gw32.ini" "$R5" "$R0" "1"
     skip_dep:
+      CopyFiles /SILENT "$TEMP\ep-gw32\$R5" "$INSTDIR\App\gw32\$R4"
+    end:
+      ClearErrors
+      StrCpy $0 1
       Push $0
   FunctionEnd
   
@@ -346,11 +354,11 @@ it alone when OTHER_SEC is read-only.
 This removes a gnuwin32 package.
 #+BEGIN_SRC nsis
   !macro g32rm WHAT
-    IfFileExists "$INSTDIR\App\gw32.ini" 0 g32rmnotinstalled_${WHAT}
-    EnumINI::SectionExist "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 g32rmnotinstalled_${WHAT}
+    EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" "1" 0 g32rmnotinstalled_${WHAT}
-    EnumINI::Section "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+    EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" error g32rmnotinstalled_${WHAT}
     loop_g32rm_${WHAT}:
@@ -360,15 +368,15 @@ This removes a gnuwin32 package.
       IntOp $R0 $R0 - 1
       Goto loop_g32rm_${WHAT}
     loop_g32rm_${WHAT}_done:
-      DeleteIniSec "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+      DeleteIniSec "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
       ## Try to remove dependencies
-      EnumINI::Section "$INSTDIR\App\gw32.ini" "${WHAT}.dep"
+      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.dep"
       Pop $R0
       StrCmp "$R0" error g32rmnotinstalled_${WHAT}
     loop_g32rm_dep_${WHAT}:
       IntCmp $R0 "0" loop_g32rm_dep_${WHAT}_done loop_g32rm_dep_${WHAT}_done 0
       Pop $R1
-      EnumINI::Section "$INSTDIR\App\gw32.ini" "$R1"
+      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "$R1"
       Pop $R2
       StrCmp "$R2" error g32nodep_${WHAT}
       StrCmp "$R2" "1" g32depdel_${WHAT}
@@ -378,18 +386,18 @@ This removes a gnuwin32 package.
       IntOp $R2 $R2 - 1
       Goto loop_g32rm_dep_${WHAT}2
     loop_g32rm_dep_${WHAT}_done2:
-      DeleteIniStr "$INSTDIR\App\gw32.ini" "$R1" "${WHAT}"
+      DeleteIniStr "$INSTDIR\App\ini\gw32.ini" "$R1" "${WHAT}"
       Goto g32nodep_${WHAT}
     g32depdel_${WHAT}:
       Pop $R2
       StrCmp "$R2" "${WHAT}" 0 g32nodep_${WHAT}
       Delete "$INSTDIR\App\gw32\$R1"
-      DeleteIniSec "$INSTDIR\App\gw32.ini" "${WHAT}.dep"
+      DeleteIniSec "$INSTDIR\App\ini\gw32.ini" "${WHAT}.dep"
     g32nodep_${WHAT}:
       IntOp $R0 $R0 - 1
       Goto loop_g32rm_dep_${WHAT}
     loop_g32rm_dep_${WHAT}_done: 
-      DeleteIniSec "$INSTDIR\App\gw32.ini" "${WHAT}.dep"
+      DeleteIniSec "$INSTDIR\App\ini\gw32.ini" "${WHAT}.dep"
     g32rminstalled_${WHAT}:
       
     g32rmnotinstalled_${WHAT}:
@@ -401,11 +409,11 @@ This removes a gnuwin32 package.
 ** GnuWin32 Is Installed?
 #+BEGIN_SRC nsis
   !macro g32installed WHAT SEC
-    IfFileExists "$INSTDIR\App\gw32.ini" 0 "g32notinstalled_${WHAT}_${SEC}"
-    EnumINI::SectionExist "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 "g32notinstalled_${WHAT}_${SEC}"
+    EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" "1" 0 "g32notinstalled_${WHAT}_${SEC}"
-    EnumINI::Section "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+    EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" "error" "g32notinstalled_${WHAT}_${SEC}"
     StrCpy $R3 "1"
@@ -433,11 +441,11 @@ This removes a gnuwin32 package.
   !define g32installed `!insertmacro g32installed`
   
   !macro g32removed WHAT SEC
-    IfFileExists "$INSTDIR\App\gw32.ini" 0 "rg32notinstalled_${WHAT}_${SEC}"
-    EnumINI::SectionExist "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 "rg32notinstalled_${WHAT}_${SEC}"
+    EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" "1" 0 "rg32notinstalled_${WHAT}_${SEC}"
-    EnumINI::Section "$INSTDIR\App\gw32.ini" "${WHAT}.bin"
+    EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" "error" "rg32notinstalled_${WHAT}_${SEC}"
     StrCpy $R3 "1"

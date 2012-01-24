@@ -113,7 +113,7 @@ SectionEnd ; sec_emacsportable_app_net_installer
  [[./EmacsDownload-vers.el]]
 
 #+BEGIN_SRC nsis
-!include "EmacsDownload-vers.nsi"
+  !include "EmacsDownload-vers.nsi"
 #+END_SRC
 
 ** Emacs Compile Tools
@@ -167,7 +167,7 @@ FunctionEnd
   Function .onInit
     InitPluginsDir
     SetOutPath "$PLUGINSDIR"
-    File "..\..\..\App\mirrors.ini"
+    File "..\..\..\App\ini\mirrors.ini"
     StrCpy $PA ""
     StrCpy $PG ""
     ${GetDrives} "FDD+HDD" "GetDriveVars"

@@ -144,3 +144,5 @@ Readme.org_archive
 /Other/source/nsi/emacsdownload-gw32.nsi
 /Other/source/nsi/emacsdownload-rgw32.nsi
 /README.html
+/App/ini/gw32.ini
+/Data/Home/.history

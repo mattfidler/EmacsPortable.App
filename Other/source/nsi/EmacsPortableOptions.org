@@ -109,69 +109,69 @@ This provides an interface to the Emacs Startup options
 ** Callback Functions
 *** Initialization Function
   #+BEGIN_SRC nsis
-  Function .onInit
-    var /GLOBAL versions
-    var /GLOBAL nemacs
-    var /GLOBAL lastversion
-    IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
-    CopyFiles /SILENT "$EXEDIR\App\ep.ini" "$EXEDIR\Data\ini\ep.ini"
-    StrCpy $versions ""
-    StrCpy $nemacs 0
-    StrCpy $lastversion ""
-    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
-    StrCmp $versions "" 0 +4
-    ExecWait "$EXEDIR\EmacsDownload.exe"
-    ExecWait "$EXEDIR\EmacsOptions.exe"
-    Abort
-    StrCmp $nemacs 1 +2 0
-    CopyFiles /SILENT "$EXEDIR/EmacsPortableApp.exe" "$EXEDIR/EmacsPortableApp-$lastversion.exe"
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
-    ${SetupProxy}
-    
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State" ""
-    
-    
-    IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
-    
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
-    
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
-    
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
-    end_proxy_init:
+    Function .onInit
+      var /GLOBAL versions
+      var /GLOBAL nemacs
+      var /GLOBAL lastversion
+      IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
+      CopyFiles /SILENT "$EXEDIR\App\ini\ep.ini" "$EXEDIR\Data\ini\ep.ini"
+      StrCpy $versions ""
+      StrCpy $nemacs 0
+      StrCpy $lastversion ""
+      ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+      StrCmp $versions "" 0 +4
+      ExecWait "$EXEDIR\EmacsDownload.exe"
+      ExecWait "$EXEDIR\EmacsOptions.exe"
+      Abort
+      StrCmp $nemacs 1 +2 0
+      CopyFiles /SILENT "$EXEDIR/EmacsPortableApp.exe" "$EXEDIR/EmacsPortableApp-$lastversion.exe"
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
+      ${SetupProxy}
       
-      ;; Put in some selected options
-      IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
-      ${RW} "OrgProtocol" "${ep_org}"
-      ${RW} "RightEdit" "${ep_right}"
-      ${RW} "IEmailto" "${ep_iemail}"
-      ${RW} "IEsource" "${ep_iesrc}"
-      ${RW} "IEnews" "${ep_ienews}"
-      ${RW} "Font" "${ep_font}"
-      ${RW} "FontSize" "${ep_font_size}"
-      ${RW} "Foreground" "${ep_fg}"
-      ${RW} "Background" "${ep_bg}"
-      ${RW} "Maximized" "${ep_mm}"
-      ${RW} "Fullwidth" "${ep_fw}"
-      ${RW} "Fullheight" "${ep_fh}"
-      ${RW} "Debug" "${ep_debug}"
-      ${RW} "Home" "${ep_home}"
-      ${RW} "Daemon" "${ep_daemon}"
-    end_init:
-      ClearErrors
-    FunctionEnd
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State" ""
+      
+      
+      IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
+      ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
+      
+      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
+      
+      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
+      
+      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
+      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
+      end_proxy_init:
+        
+        ;; Put in some selected options
+        IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
+        ${RW} "OrgProtocol" "${ep_org}"
+        ${RW} "RightEdit" "${ep_right}"
+        ${RW} "IEmailto" "${ep_iemail}"
+        ${RW} "IEsource" "${ep_iesrc}"
+        ${RW} "IEnews" "${ep_ienews}"
+        ${RW} "Font" "${ep_font}"
+        ${RW} "FontSize" "${ep_font_size}"
+        ${RW} "Foreground" "${ep_fg}"
+        ${RW} "Background" "${ep_bg}"
+        ${RW} "Maximized" "${ep_mm}"
+        ${RW} "Fullwidth" "${ep_fw}"
+        ${RW} "Fullheight" "${ep_fh}"
+        ${RW} "Debug" "${ep_debug}"
+        ${RW} "Home" "${ep_home}"
+        ${RW} "Daemon" "${ep_daemon}"
+      end_init:
+        ClearErrors
+      FunctionEnd
 #+END_SRC
 *** Exit Function
 #+BEGIN_SRC nsis
