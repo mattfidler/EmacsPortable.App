@@ -1,6 +1,6 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsDownload.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	makensis SetProxy.nsi
@@ -49,7 +49,7 @@ emacsPathIfExists.nsh: emacsPathIfExists.org
 
 EmacsDownload.nsi: EmacsDownload.org ${download_extras}
 	cmd /c "set ORG_FILE=""EmacsDownload.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
-	cmd /c "set NSI_FILE=""EmacsDownload.nsi"" & emacs -Q --batch -l ./bulid.el --eval ""(one-nsi)"""
+
 
 emacsproxy.nsh: emacsproxy.org 
 	cmd /c "set ORG_FILE=""emacsproxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
@@ -71,7 +71,6 @@ SetProxy.nsi: SetProxy.org emacsproxy.nsh
 
 install-net.nsi: install-net.org ${download_extras}
 	cmd /c "set ORG_FILE=""install-net.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
-	cmd /c "set NSI_FILE=""install-net.nsi"" & emacs -Q --batch -l ./bulid.el --eval ""(one-nsi)"""
 
 EmacsDownloadShared.nsh: EmacsDownloadShared.org
 	cmd /c "set ORG_FILE=""EmacsDownloadShared.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""

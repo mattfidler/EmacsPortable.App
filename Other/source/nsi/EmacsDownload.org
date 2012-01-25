@@ -245,6 +245,34 @@ the mirrors.ini file
 #+END_SRC
 
 
+** Tools
+#+BEGIN_SRC nsis
+  SectionGroup "Tools" sec_tools ; Collapsed
+    ; Description:
+    ; Tools for modifying EmacsPortable.App
+    Section /o "Compile EmacsPortable.App launcher" sec_compile_emacs ; Unchecked (/o)
+      ; Description:
+      ; Compile EmacsPortable.App launcher
+      Call CompileEmacsPortableApp
+    SectionEnd ; sec_compile_emacs
+  SectionGroupEnd ; sec_tools
+  ;--------------------------------
+  ;Description(s)
+  LangString DESC_sec_tools ${LANG_ENGLISH} "Tools for modifying EmacsPortable.App"
+  LangString DESC_sec_compile_emacs ${LANG_ENGLISH} "Compile EmacsPortable.App launcher"
+#+END_SRC
+
+** Hidden Start of EmacsDownload.exe
+#+BEGIN_SRC nsis
+  Section "" 
+    StrCmp "$EXEFILE" "etmp.exe" 0 skip
+    Exec "$EXEDIR\EmacsDownload.exe"
+    skip:
+      ClearErrors
+  SectionEnd ; sec_
+  
+#+END_SRC
+
 * Installer Functions
 ** Determine Portable Apps and GIT Location
 #+BEGIN_SRC nsis
@@ -306,11 +334,27 @@ FunctionEnd
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
-    StrCpy $INSTDIR $EXEDIR
-    StrCpy $PA ""
-    StrCpy $PROXY_ID ""
-    ${GetDrives} "FDD+HDD" "GetDriveVars"
-    StrCmp "$PG" "" cant_use_git can_use_git
+    StrCmp "$EXEFILE" "etmp.exe" emacs_temp emacs_download
+    emacs_download:
+      IfFileExists "$EXEDIR\etmp.exe" 0 emacs_etmp
+    wait_for_etmp_exit:
+      FindProcDLL::FindProc "etmp.exe"
+      StrCmp $R0 "1" 0 +3
+      Sleep 1
+      Goto wait_for_etmp_exit
+      Delete "$EXEDIR\etmp.exe"
+      Abort
+    emacs_etmp:
+      
+      CopyFiles /SILENT "$EXEDIR\$EXEFILE" "$EXEDIR\etmp.exe"
+      Exec "$EXEDIR\etmp.exe"
+      Abort
+    emacs_temp:    
+      StrCpy $INSTDIR $EXEDIR
+      StrCpy $PA ""
+      StrCpy $PROXY_ID ""
+      ${GetDrives} "FDD+HDD" "GetDriveVars"
+      StrCmp "$PG" "" cant_use_git can_use_git
     cant_use_git:
       SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_RO}
       Goto after_git
@@ -344,8 +388,9 @@ FunctionEnd
 ** Termination
 Remove all plug-in directory files, like 7zip.
 #+BEGIN_SRC nsis
-Function .onGUIEnd
-FunctionEnd
+  Function .onGUIEnd
+  FunctionEnd
+  
 #+END_SRC
 
 ** On Selection Change
@@ -359,6 +404,9 @@ FunctionEnd
 ** Languages
 #+BEGIN_SRC nsis
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compile_emacs} $(DESC_sec_compile_emacs)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_tools} $(DESC_sec_tools)
+    
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_from_emacsportable_app} $(DESC_sec_remove_from_emacsportable_app)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_download_and_add} $(DESC_sec_download_and_add)
     ${EMACS_DESC}

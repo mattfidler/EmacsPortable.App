@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Sun Jan 22 15:32:44 2012 (-0600)
+;; Last-Updated: Tue Jan 24 20:33:26 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 54
+;;     Update #: 60
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -59,13 +59,13 @@
 
 (defun one-nsi ()
   (let ((tmp))
-  (when (getenv "NSI_FILE")
-    (find-file (expand-file-name (getenv "NSI_FILE") build-dir))
-    (while (re-search-forward "!include \"\\(.*[.]nsi\\)\"")
-      (setq tmp (match-string 1))
-      (replace-match "\n")
-      (insert-file-contents (expand-file-name tmp build-dir)))
-    (write-file (expand-file-name (getenv "NSI_FILE") build-dir)))))
+    (when (getenv "NSI_FILE")
+      (find-file (expand-file-name (getenv "NSI_FILE") build-dir))
+      (while (re-search-forward "!include \"\\(.*[.]nsi\\)\"")
+        (setq tmp (match-string 1))
+        (replace-match "\n")
+        (insert-file-contents (expand-file-name tmp build-dir)))
+      (write-file (expand-file-name (getenv "NSI_FILE") build-dir)))))
 
 (defun build-nsi (&optional eval-lisp org-file)
   "Build NSIS script from org-mode."
@@ -75,8 +75,17 @@
     (if org-file
         (setq org-files (list (expand-file-name org-file build-dir)))
       (if (getenv "ORG_FILE")
-          (setq org-files (list (expand-file-name (getenv "ORG_FILE")
-                                                  build-dir)))
+          (progn
+            (setq org-files (getenv "ORG_FILE"))
+            ;; fix the differences between eterm make and command
+            ;; prompt make
+            (while (string-match "^\"+" org-files)
+              (setq org-files (replace-match "" t t org-files)))
+            (while (string-match "[.]org.+" org-files)
+              (setq org-files (replace-match ".org" t t org-files)))
+            (message "Trying Org files: %s" org-files)
+            (setq org-files (list (expand-file-name org-files
+                                                    build-dir))))
         (setq org-files (directory-files build-dir nil ".org"))))
     (setq org-dir (nth 0 (directory-files (concat build-dir "../../../App/lisp/src") t "\\<org")))
     (load (concat org-dir "/lisp/org-install.el"))

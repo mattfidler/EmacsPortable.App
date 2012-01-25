@@ -23,6 +23,12 @@ executables.
       ${DOWN} "org" "$EXEDIR\App\lisp\src"
   
     SectionEnd ; sec_ct1
+  
+    Section /o "EmacsPortable.App Starter Kit" sec_emacsportable_app_starter_kit ; Unchecked (/o)
+      ; Description:
+      ; A Starter kit based on Eric Shulte's Starter kit modified for directory paths.
+      ${DOWN} "sk" "$EXEDIR\App"
+    SectionEnd ; sec_emacsportable_app_starter_kit
     
     SectionGroup "Required Gnu32 Utilities" sec_required_gnu32_utilities ; Collapsed
       ; Description:
@@ -116,6 +122,7 @@ executables.
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_nsis_portable_components ${LANG_ENGLISH} "Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App"  
+  LangString DESC_sec_emacsportable_app_starter_kit ${LANG_ENGLISH} "A Starter kit based on Eric Shulte's Starter kit modified for directory paths."
   LangString DESC_sec_make ${LANG_ENGLISH} "Gnu Make to geneate executables from soruce files"
   LangString DESC_sec_required_gnu32_utilities ${LANG_ENGLISH} "Required Gnu32 Utilities"
   LangString DESC_sec_ct1 ${LANG_ENGLISH} "Org mode is required to build EmacsPortable.App since the sorce code is in org files"
@@ -150,8 +157,11 @@ executables.
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_ct1} $(DESC_sec_ct1)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_required_gnu32_utilities} $(DESC_sec_required_gnu32_utilities)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_make} $(DESC_sec_make)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_starter_kit} $(DESC_sec_emacsportable_app_starter_kit)
   !macroend
   
+    
+    
 #+END_SRC
 
 ** Initialization Macro
@@ -195,4 +205,43 @@ executables.
 #+END_SRC
 
 
+
+
+** Compile EmacsPortable.App
+This will allow a compile of EmacsPortable.App, assuming:
+ - Make is located in =App\gw32\bin\make.exe=
+ - Autohotkey Compiler is in
+   =$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler=
+ - NSIS Portable Compiler is in =$PA\NSISPortableANSI\App\NSIS=
+#+BEGIN_SRC nsis
+  Function compileEmacsPortableApp
+    ${PathIfExist} "$INSTDIR\App\gw32\bin"
+    ${PathIfExist} "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler"
+    ${PathIfExist} "$PA\NSISPortableANSI\App\NSIS"
+    StrCpy $R1 ""
+    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
+    StrCmp $R1 "" 0 +3
+    MessageBox MB_OK "Could not Locate Emacs."
+    Goto end
+    ${PathIfExist} "$R1"
+    
+    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make clean"
+    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make"
+    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make clean"
+    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make" 
+    end:
+      ClearErrors
+  FunctionEnd
+  Function SetEmacs
+    IfFileExists "$R9\bin" 0 end
+    StrCpy $R1 "$R9\bin"
+    end:
+      StrCpy $0 1
+      Push $0
+  FunctionEnd
+  
+    
+  
+    
+#+END_SRC
 

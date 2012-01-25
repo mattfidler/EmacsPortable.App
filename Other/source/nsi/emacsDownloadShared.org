@@ -254,6 +254,7 @@ it alone when OTHER_SEC is read-only.
       Goto zip
       ClearErrors
       DetailPrint "Using GIT"
+      MessageBox MB_OK "$PG clone $R0 ${OUT}\$R1"
       ExecWait "$PG clone $R0 ${OUT}\$R1"
       Goto end
     end:
@@ -289,7 +290,7 @@ it alone when OTHER_SEC is read-only.
       StrCpy $R1 "bin"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
       RmDir /r "$TEMP\ep-gw32"
-      ;Delete "$TEMP\${WHAT}-bin.zip"
+      Delete "$TEMP\${WHAT}-bin.zip" 
       ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "dep.zip"
       IfErrors g32_exit
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-dep.zip"
@@ -300,7 +301,7 @@ it alone when OTHER_SEC is read-only.
       StrCpy $R1 "dep"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
       RmDir /r "$TEMP\ep-gw32"
-      ;Delete "$TEMP\${WHAT}-dep.zip"
+      Delete "$TEMP\${WHAT}-dep.zip"
     g32_download:
       ClearErrors
       inetc::get /CONNECTTIMEOUT 30 \
@@ -313,7 +314,7 @@ it alone when OTHER_SEC is read-only.
       StrCpy $R1 "bin"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW" 
       RmDir /r "$TEMP\ep-gw32"
-      ;Delete "$TEMP\${WHAT}-bin.zip"
+      Delete "$TEMP\${WHAT}-bin.zip"
       inetc::get /CONNECTTIMEOUT 30 \
           "http://gnuwin32.sourceforge.net/downlinks/${WHAT}-dep-zip.php" \
           "$TEMP\${WHAT}-dep.zip"
@@ -323,7 +324,7 @@ it alone when OTHER_SEC is read-only.
       StrCpy $R1 "dep"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
       RmDir /r "$TEMP\ep-gw32"
-      ;Delete "$TEMP\${WHAT}-dep.zip"
+      Delete "$TEMP\${WHAT}-dep.zip"
     g32_exit:
       ClearErrors
   !macroend

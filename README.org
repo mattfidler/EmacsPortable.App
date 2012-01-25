@@ -414,10 +414,14 @@ CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
 :END:
 *** TODO List Emacs Binaries Contents
 *** TODO Figure out a way to remove specific components of the Emacs binaries
-** STARTED Remove App/bin and replace with contents of gw32 directory
+** DONE Remove App/bin and replace with contents of gw32 directory
+CLOSED: [2012-01-24 Tue 17:59]
+- State "DONE"       from "STARTED"    [2012-01-24 Tue 17:59]
 :LOGBOOK:
 CLOCK: [2012-01-24 Tue 10:22]--[2012-01-24 Tue 10:50] =>  0:28
 CLOCK: [2012-01-24 Tue 10:21]--[2012-01-24 Tue 10:22] =>  0:01
 CLOCK: [2012-01-24 Tue 10:14]--[2012-01-24 Tue 10:21] =>  0:07
 :END:
+** TODO Zip windows binaries and then extract to temporary directory
+
 
