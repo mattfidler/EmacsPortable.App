@@ -250,16 +250,33 @@ the mirrors.ini file
   SectionGroup "Tools" sec_tools ; Collapsed
     ; Description:
     ; Tools for modifying EmacsPortable.App
+    SectionGroup "Update Git Repositories" sec_update_git_repositories ; Collapsed
+      ; Description:
+      ; This allow GIT repositories to be updated
+      Section /o "Update EmacsPortable.App launcher" sec_update_emacsportable_app_launcher ; Unchecked (/o)
+        ; Description:
+        ; Update the EmacsPortable.App Launcher to the latest version
+        ExecWait 'cmd /c "cd $EXEDIR & $PG pull origin master"'
+      SectionEnd ; sec_update_emacsportable_app_launcher
+    SectionGroupEnd ; sec_update_git_repositories
+    
     Section /o "Compile EmacsPortable.App launcher" sec_compile_emacs ; Unchecked (/o)
       ; Description:
       ; Compile EmacsPortable.App launcher
+      StrCpy "$INSTDIR" "$EXEDIR"
       Call CompileEmacsPortableApp
     SectionEnd ; sec_compile_emacs
   SectionGroupEnd ; sec_tools
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_tools ${LANG_ENGLISH} "Tools for modifying EmacsPortable.App"
+  LangString DESC_sec_update_git_repositories ${LANG_ENGLISH} "This allow GIT repositories to be updated"
+  LangString DESC_sec_update_emacsportable_app_launcher ${LANG_ENGLISH} "Update the EmacsPortable.App Launcher to the latest version"
   LangString DESC_sec_compile_emacs ${LANG_ENGLISH} "Compile EmacsPortable.App launcher"
+  
+    
+  
+  
 #+END_SRC
 : 
 
@@ -400,6 +417,8 @@ Remove all plug-in directory files, like 7zip.
     
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_from_emacsportable_app} $(DESC_sec_remove_from_emacsportable_app)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_download_and_add} $(DESC_sec_download_and_add)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_update_git_repositories} $(DESC_sec_update_git_repositories)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_update_emacsportable_app_launcher} $(DESC_sec_update_emacsportable_app_launcher)
     ${EMACS_DESC}
     ${NSIS_DESC}
     ${ELPA}
@@ -409,4 +428,5 @@ Remove all plug-in directory files, like 7zip.
     ${RGW32_DESC}
     ${RGW32E_DESC}
   !insertmacro MUI_FUNCTION_DESCRIPTION_END 
+  
 #+END_SRC
