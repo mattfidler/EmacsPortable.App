@@ -120,6 +120,16 @@ SectionEnd ; sec_emacsportable_app_net_installer
 #+BEGIN_SRC nsis
 !include "emacsCompileTools.nsi"
 #+END_SRC
+** Build EmacsPortable.App
+#+BEGIN_SRC nsis
+  Section "Compile EmacsPortable.App launcher" sec_compile_emacs ; Unchecked (/o)
+    ; Description:
+    ; Compile EmacsPortable.App launcher
+    Call CompileEmacsPortableApp
+  SectionEnd ; sec_compile_emacs
+  LangString DESC_sec_compile_emacs ${LANG_ENGLISH} "Compile EmacsPortable.App launcher"
+#+END_SRC
+
 * Functions
 ** Get Portable Apps and GIT
 #+BEGIN_SRC nsis
@@ -199,6 +209,7 @@ FunctionEnd
   LangString DESC_sec_emacsportable_app_net_installer ${LANG_ENGLISH} "Install EmacsPortable.App from the Internet"
   LangString DESC_sec_use_git_instead_of_zip ${LANG_ENGLISH} "Git Download of EmacsPortable.App. Requires installer to find GIT"
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compile_emacs} $(DESC_sec_compile_emacs)
     ${EMACS_DESC}
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_use_git_instead_of_zip} $(DESC_sec_use_git_instead_of_zip)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_net_installer} $(DESC_sec_emacsportable_app_net_installer)
