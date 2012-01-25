@@ -7,7 +7,7 @@ executables.
 * Shared Code
 ** Sections
 #+BEGIN_SRC nsis
-  SectionGroup "EmacsPortable.App Build Tools" sec_emacsportable_app_build_tools 
+  SectionGroup "EmacsPortable.App Build Tools" sec_emacsportable_app_build_tools
     ; Description:
     ; Tools needed to build EmacsPortable.App
     Section /o "AutoHotKey Portable" sec_autohotkey_portable ; Unchecked (/o)
@@ -20,15 +20,24 @@ executables.
     Section /o "Org-mode" sec_ct1 ; Unchecked (/o)
       ; Description:
       ; Org mode is required to build EmacsPortable.App since the sorce code is in org files
-      ${DOWN} "org" "$EXEDIR\App\lisp\src"
+      ${DOWN} "org" "$INSTDIR\App\lisp\src"
   
     SectionEnd ; sec_ct1
   
-    Section /o "EmacsPortable.App Starter Kit" sec_emacsportable_app_starter_kit ; Unchecked (/o)
+    Section /o "EmacsPortable.App Starter Kit" sec_sk ; Unchecked (/o)
       ; Description:
       ; A Starter kit based on Eric Shulte's Starter kit modified for directory paths.
-      ${DOWN} "sk" "$EXEDIR\App"
-    SectionEnd ; sec_emacsportable_app_starter_kit
+      ${DOWN} "sk" "$INSTDIR\App"
+    SectionEnd ; sec_sk
+  
+    Section /o "Hunspell" sec_hunspell ; Unchecked (/o)
+      ; Description:
+      ; Hunspell is a spellchecker that is used in many programs inculding firefox, open office, etc.
+      ${DOWN} "hunspell" "$INSTDIR\App\hunspell\bin"
+      SetOutPath "$INSTDIR\App\hunspell\epdic"
+      Rename  "$INSTDIR\App\hunspell\bin\en_US.aff" "$INSTDIR\App\hunspell\epdic\en_US.aff"
+      Rename  "$INSTDIR\App\hunspell\bin\en_US.dic" "$INSTDIR\App\hunspell\epdic\en_US.dic"
+    SectionEnd ; sec_hunspell
     
     SectionGroup "Required Gnu32 Utilities" sec_required_gnu32_utilities ; Collapsed
       ; Description:
@@ -122,6 +131,7 @@ executables.
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_nsis_portable_components ${LANG_ENGLISH} "Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App"  
+  LangString DESC_sec_hunspell ${LANG_ENGLISH} "Hunspell is a spellchecker that is used in many programs inculding firefox, open office, etc."
   LangString DESC_sec_emacsportable_app_starter_kit ${LANG_ENGLISH} "A Starter kit based on Eric Shulte's Starter kit modified for directory paths."
   LangString DESC_sec_make ${LANG_ENGLISH} "Gnu Make to geneate executables from soruce files"
   LangString DESC_sec_required_gnu32_utilities ${LANG_ENGLISH} "Required Gnu32 Utilities"
@@ -158,12 +168,13 @@ executables.
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_required_gnu32_utilities} $(DESC_sec_required_gnu32_utilities)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_make} $(DESC_sec_make)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacsportable_app_starter_kit} $(DESC_sec_emacsportable_app_starter_kit)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_hunspell} $(DESC_sec_hunspell)
   !macroend
   
-    
-    
+  
+  
+  
 #+END_SRC
-
 ** Initialization Macro
 #+BEGIN_SRC nsis
   !macro REQ_INI
@@ -178,6 +189,8 @@ executables.
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ExecDos.dll" ${sec_execdos}
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\nsis7z.dll" ${sec_7zip_plugin}
     ${setInstallIfExists} "$PA\AutoHotKeyPortable\AHKCompilerPortable.exe" ${sec_autohotkey_portable}
+    ${setInstallIfExists} "$INSTDIR\App\hunspell\bin\hunspell.exe" ${sec_hunspell}
+    ${setInstallIfExists} "$INSTDIR\App\portable-starter-kit\init.el" ${sec_sk}
     ${ifSecNotRO} ${sec_make} skip_gnu32_util
     ${setInstallGroup} ${sec_required_gnu32_utilities}
     skip_gnu32_util:    
@@ -191,14 +204,15 @@ executables.
       ${ifSecNotRO} ${sec_7zip_plugin} skip_nsis_group_ro
       ${ifSecNotRO} ${sec_execdos} skip_nsis_group_ro
       ${ifSecNotRO} ${sec_ct1} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_required_gnu32_utilities} skip_nsis_group_ro
       ${setInstallGroup} ${sec_nsis_portable_components}
-    skip_build_tools:
+    skip_nsis_group_ro:
       ${ifSecNotRO} ${sec_nsis_portable_components} skip_build_tools 
       ${ifSecNotRO} ${sec_autohotkey_portable} skip_build_tools
-      
+      ${ifSecNotRO} ${sec_hunspell} skip_build_tools
+      ${ifSecNotRO} ${sec_sk} skip_build_tools
+      ${ifSecNotRO} ${sec_required_gnu32_utilities} skip_build_tools
       ${setInstallGroup} ${sec_emacsportable_app_build_tools}
-    skip_nsis_group_ro:
+    skip_build_tools:
       ClearErrors
   !macroend
   

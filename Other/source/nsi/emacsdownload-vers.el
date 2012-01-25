@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 21:51:16 2012 (-0600)
 ;; Version:
-;; Last-Updated: Tue Jan 24 23:41:02 2012 (-0600)
+;; Last-Updated: Wed Jan 25 13:59:10 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 6
+;;     Update #: 16
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -78,23 +78,35 @@
               (format "%s\n${selectSectionIf} ${sec_emacs_%s_mac} ${sec_emacs_%s}\n" toggle-mac ver2 ver2))
         (setq sel-change
               (format "%s  SectionGetFlags ${sec_emacs_%s} $0
+     IfErrors 0 +4
+     ClearErrors
+     MessageBox MB_OK \"Emacs Section %s out of range\"
+     Goto +3
      IntOp $0 $0 & ${SF_SELECTED}
      StrCmp \"0\" \"$0\" 0 skip_ver_sel\n"
-                      sel-change ver2))
+                      sel-change ver2 ver))
         (when (and default-ver
                    (string= default-ver ver))
           (setq ver-define (format "!define sec_emacs_default `${sec_emacs_%s}`\n!define sec_emacs_default_mac `${sec_emacs_%s_mac}`"
                                    ver2 ver2)))
         (setq vals (format
                     "%s
-  StrCmp \"$R0\" \"%s\" 0 +15
+  StrCmp \"$R0\" \"%s\" 0 +23
   SectionSetFlags ${sec_emacs_%s} ${SF_RO}
+  IfErrors 0 +4
+  ClearErrors 
+  MessageBox MB_OK \"Emacs Section %s out of range\"
+  Goto +4
   SectionGetText ${sec_emacs_%s} $0
   StrCpy $0 \"$0 (Installed)\"
   SectionSetText ${sec_emacs_%s} $0
 
-  IfFileExists \"$INSTDIR\\App\\emacs-%s\\MacOS\" 0 +10
+  IfFileExists \"$INSTDIR\\App\\emacs-%s\\MacOS\" 0 +14
   SectionSetFlags ${sec_emacs_%s_mac} ${SF_RO}
+  IfErrors 0 +4
+  ClearErrors
+  MessageBox MB_OK \"Emacs Section %s out of range\"
+  Goto +9
   SectionGetText ${sec_emacs_%s_mac} $0
   StrCpy $0 \"$0 (Installed)\"
   SectionSetText ${sec_emacs_%s_mac} $0
@@ -103,7 +115,7 @@
   SectionGetText ${sec_emacs_%s_grp} $0
   StrCpy $0 \"$0 (Win & Mac Installed)\"
   SectionSetText ${sec_emacs_%s_grp} $0\n"
-                    vals ver ver2 ver2 ver2 ver ver2 ver2 ver2 ver2 ver2 ver2))
+                    vals ver ver2 ver ver2 ver2 ver ver2 ver ver2 ver2 ver2 ver2 ver2))
         (setq grp-ro
               (format
                "%s\n${ifSecNotRO} ${sec_emacs_%s_grp} skip_emacs_grp\n"
@@ -126,8 +138,8 @@ skip_emacs_grp:
 FunctionEnd\n%s\n%s" ret lang desc vals grp-ro (or ver-define "") (if (not ver-define) ""
                                                                     (format "%s
   MessageBox MB_OK \"Since there is no emacs binaries installed, at least one Emacs Binary Selection must be made.\"
-  SectionSetFlags ${sec_emacs_default} ${SF_SELECTED}
-  SectionSetFlags ${sec_emacs_default_mac} ${SF_SELECTED}
+  ;SectionSetFlags ${sec_emacs_default} ${SF_SELECTED}
+  ;SectionSetFlags ${sec_emacs_default_mac} ${SF_SELECTED}
   skip_ver_sel:
   %s
 !macroend
@@ -137,4 +149,4 @@ FunctionEnd\n%s\n%s" ret lang desc vals grp-ro (or ver-define "") (if (not ver-d
         (insert ret)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; emacsdownload-vers.el ends here
+;;; bmacsdownload-vers.el ends here

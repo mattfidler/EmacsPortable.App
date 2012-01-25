@@ -44,7 +44,7 @@ OutFile "..\..\..\EmacsDownload.exe"
 #+BEGIN_SRC nsis
   Name "EmacsPortable.App Download Emacs"
   BrandingText "EmacsPortable.App"
-  !define MUI_ICON "..\img\ico\preferences_system.ico"
+  !define MUI_ICON "..\img\ico\download.ico"
   !define MUI_HEADERIMAGE
   
   !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage.bmp" ; 150x57 pixels
@@ -100,12 +100,12 @@ SectionEnd ; sec_use_git_instead_of_zip
  [[./EmacsDownload-vers.el]]
 
 #+BEGIN_SRC nsis
-!include "EmacsDownload-vers.nsi"
+  !include "emacsdownload-vers.nsi"
 #+END_SRC
 
 *** Emacs Compile Tools
 #+BEGIN_SRC nsis
-!include "emacsCompileTools.nsi"
+  !include "EmacsCompileTools.nsi"
 #+END_SRC
 *** Non-ELPA Packages
 **** Fix Functions
@@ -208,7 +208,7 @@ SectionEnd ; sec_use_git_instead_of_zip
 #+END_SRC
 *** GnuWin32 Applications
 #+BEGIN_SRC nsis
-!include "emacsdownload-gw32.nsi"
+  !include "emacsdownload-gw32.nsi"
 #+END_SRC
 
 *** Portable Apps that Emacs Recognizes
@@ -218,7 +218,7 @@ the mirrors.ini file
 
 
 #+BEGIN_SRC nsis
-!include "EmacsDownload-pae.nsi"
+  !include "emacsdownload-pae.nsi"
 #+END_SRC
 
 *** End Download and Add Section
@@ -234,7 +234,7 @@ the mirrors.ini file
 #+END_SRC
 *** Remove GnuWin32 Applications 
 #+BEGIN_SRC nsis
-!include "emacsdownload-rgw32.nsi"
+  !include "emacsdownload-rgw32.nsi"
 #+END_SRC
 
 *** End Remove Section
@@ -261,17 +261,7 @@ the mirrors.ini file
   LangString DESC_sec_tools ${LANG_ENGLISH} "Tools for modifying EmacsPortable.App"
   LangString DESC_sec_compile_emacs ${LANG_ENGLISH} "Compile EmacsPortable.App launcher"
 #+END_SRC
-
-** Hidden Start of EmacsDownload.exe
-#+BEGIN_SRC nsis
-  Section "" 
-    StrCmp "$EXEFILE" "etmp.exe" 0 skip
-    Exec "$EXEDIR\EmacsDownload.exe"
-    skip:
-      ClearErrors
-  SectionEnd ; sec_
-  
-#+END_SRC
+: 
 
 * Installer Functions
 ** Determine Portable Apps and GIT Location
@@ -334,9 +324,8 @@ FunctionEnd
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
-    StrCmp "$EXEFILE" "etmp.exe" emacs_temp emacs_download
-    emacs_download:
-      IfFileExists "$EXEDIR\etmp.exe" 0 emacs_etmp
+    StrCmp "$EXEFILE" "etmp.exe" emacs_temp
+    IfFileExists "$EXEDIR\etmp.exe" wait_for_etmp_exit emacs_etmp 
     wait_for_etmp_exit:
       FindProcDLL::FindProc "etmp.exe"
       StrCmp $R0 "1" 0 +3
@@ -345,12 +334,11 @@ FunctionEnd
       Delete "$EXEDIR\etmp.exe"
       Abort
     emacs_etmp:
-      
       CopyFiles /SILENT "$EXEDIR\$EXEFILE" "$EXEDIR\etmp.exe"
       Exec "$EXEDIR\etmp.exe"
       Abort
-    emacs_temp:    
-      StrCpy $INSTDIR $EXEDIR
+    emacs_temp:
+      StrCpy "$INSTDIR" "$EXEDIR"
       StrCpy $PA ""
       StrCpy $PROXY_ID ""
       ${GetDrives} "FDD+HDD" "GetDriveVars"
@@ -366,7 +354,6 @@ FunctionEnd
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=org* /S= /G=0" "SetORG_RO"
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=color-theme-* /S= /G=0" "SetCT_RO"
       ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=ess-* /S= /G=0" "SetESS_RO"
-      
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\esn" ${sec_emacs_speaks_nonmem}
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\nxhtml" ${sec_nxhtml}
       ${setInstallIfExists} "$EXEDIR\App\lisp\src\yasnippet" ${sec_yasnippet}
@@ -389,6 +376,10 @@ FunctionEnd
 Remove all plug-in directory files, like 7zip.
 #+BEGIN_SRC nsis
   Function .onGUIEnd
+    StrCmp "$EXEFILE" "etmp.exe" 0 skip
+    Exec "$EXEDIR\EmacsDownload.exe"
+    skip:
+      ClearErrors
   FunctionEnd
   
 #+END_SRC

@@ -3,12 +3,12 @@
 ;; Filename: emacsdownload-pae.el
 ;; Description: 
 ;; Author: Matthew L. Fidler
-;; Maintainer: 
+;; Maintainer:
 ;; Created: Thu Jan 19 21:56:36 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Tue Jan 24 16:39:49 2012 (-0600)
+;; Last-Updated: Wed Jan 25 14:01:13 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 4
+;;     Update #: 8
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -90,17 +90,19 @@
       (setq txt
             (format
              "%s\nReadINIStr $R0 \"$EXEDIR\\App\\mirrors.ini\" \"pa:e:%s\" \"name\"
-  IfErrors 0 +3
+  IfErrors 0 +4
   SectionSetText ${sec_pa_e_%s} \"\"
-  Goto +2
-  SectionSetText ${sec_pa_e_%s} $R0
+  IfErrors ___err_pa_e_%s
+  Goto +4
   ClearErrors
+  SectionSetText ${sec_pa_e_%s} $R0
+  IfErrors ___err_pa_e_%s
   ReadINIStr $R0 \"$EXEDIR\\App\\mirrors.ini\" \"pa:e:%s\" \"exist\"
   IfErrors ___err_pa_e_%s
   ${setInstallIfExists} \"$PA\\$R0\" ${sec_pa_e_%s}
   ___err_pa_e_%s:
   ClearErrors
-  " txt id id id id id id id)))
+  " txt id id id id id id id id id)))
     (setq ret (format "SectionGroup \"Recognized PortableApps\" sec_pa_e_grp
   %s
   SectionGroupEnd

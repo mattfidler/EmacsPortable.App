@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Tue Jan 24 20:33:26 2012 (-0600)
+;; Last-Updated: Wed Jan 25 10:25:09 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 60
+;;     Update #: 66
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -58,14 +58,20 @@
         buffer-file-name)))
 
 (defun one-nsi ()
-  (let ((tmp))
+  (let (tmp nsi-file)
     (when (getenv "NSI_FILE")
-      (find-file (expand-file-name (getenv "NSI_FILE") build-dir))
-      (while (re-search-forward "!include \"\\(.*[.]nsi\\)\"")
+      (setq nsi-file (getenv "NSI_FILE"))
+      (while (string-match "^\"+" nsi-file)
+        (setq nsi-file (replace-match "" t t nsi-file)))
+      (while (string-match "[.]nsi.+" nsi-file)
+        (setq nsi-file (replace-match ".org" t t nsi-file)))
+      (find-file (expand-file-name nsi-file build-dir))
+      (while (re-search-forward "!include \"\\(.*[.]nsi\\)\"" nil t)
+        (message "Found %s, inserting" tmp)
         (setq tmp (match-string 1))
         (replace-match "\n")
         (insert-file-contents (expand-file-name tmp build-dir)))
-      (write-file (expand-file-name (getenv "NSI_FILE") build-dir)))))
+      (save-buffer (current-buffer)))))
 
 (defun build-nsi (&optional eval-lisp org-file)
   "Build NSIS script from org-mode."

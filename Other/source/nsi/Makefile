@@ -50,7 +50,6 @@ emacsPathIfExists.nsh: emacsPathIfExists.org
 EmacsDownload.nsi: EmacsDownload.org ${download_extras}
 	cmd /c "set ORG_FILE=""EmacsDownload.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 
-
 emacsproxy.nsh: emacsproxy.org 
 	cmd /c "set ORG_FILE=""emacsproxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
 

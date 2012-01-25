@@ -386,6 +386,10 @@ If you extract MikTeX portable to =PortableApps/MikTexPortable/=,
 EmacsPortable.App will be recognized and used.
 ** Cygwin
 ** MSYS
+* Icons
+Icons came from various places:
+-  [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
+
 * EmacsPortable.App Wish List/TODO list
 ** TODO Gnus behind a firewall/proxy server
 ** DONE Add Mac support of Environment.ini

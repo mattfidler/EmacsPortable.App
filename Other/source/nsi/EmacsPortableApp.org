@@ -999,13 +999,13 @@ FunctionEnd
       Goto setup_options
     debug_exe:
       IfFileExists "$msys\bin\gdb.exe" msys_exe
-      IfFileExists "$pa\CommonFiles\MinGW\bin\gdb.exe" msys_pa
+      IfFileExists "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe" msys_pa
       Goto cygwin_exe
     msys_pa:
       IfFileExists "$EXEDIR\App\gdbinit" 0 +3
-      StrCpy $emacs `""""$pa\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
+      StrCpy $emacs `""""$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
       Goto +2
-      StrCpy $emacs `""""$pa\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
+      StrCpy $emacs `""""$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
       StrCpy $found_gdb "1"
       Goto setup_options
     msys_exe:
