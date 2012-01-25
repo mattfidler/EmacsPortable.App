@@ -218,8 +218,9 @@ This will allow a compile of EmacsPortable.App, assuming:
     ${PathIfExist} "$INSTDIR\App\gw32\bin"
     ${PathIfExist} "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler"
     ${PathIfExist} "$PA\NSISPortableANSI\App\NSIS"
+    SetOutPath "$INSTDIR\App\eps"
     StrCpy $R1 ""
-    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
+    ${Locate} "$INSTDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
     StrCmp $R1 "" 0 +3
     MessageBox MB_OK "Could not Locate Emacs."
     Goto end
@@ -238,10 +239,7 @@ This will allow a compile of EmacsPortable.App, assuming:
     end:
       StrCpy $0 1
       Push $0
-  FunctionEnd
+  FunctionEnd    
   
-    
-  
-    
 #+END_SRC
 

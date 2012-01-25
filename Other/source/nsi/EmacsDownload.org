@@ -417,8 +417,5 @@ Remove all plug-in directory files, like 7zip.
     ${GW32E_DESC}
     ${RGW32_DESC}
     ${RGW32E_DESC}
-  !insertmacro MUI_FUNCTION_DESCRIPTION_END
-  
-    
-  
+  !insertmacro MUI_FUNCTION_DESCRIPTION_END 
 #+END_SRC

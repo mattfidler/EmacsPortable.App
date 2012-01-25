@@ -5,10 +5,10 @@
 ;; Author: Matthew L. Fidler
 ;; Maintainer:
 ;; Created: Thu Jan 19 21:51:16 2012 (-0600)
-;; Version: 
-;; Last-Updated: Tue Jan 24 16:37:29 2012 (-0600)
+;; Version:
+;; Last-Updated: Tue Jan 24 23:41:02 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 5
+;;     Update #: 6
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -49,7 +49,7 @@
 ;; Floor, Boston, MA 02110-1301, USA.
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
+;;
 ;;; Code:
 
 (progn
@@ -57,7 +57,7 @@
     (insert-file-contents "../../../App/ini/mirrors.ini")
     (let ((ret "")
           (grp-ro "")
-          (vals "var nemacs\nFunction SetValues\n  IntOp $nemacs $nemacs + 1\n  StrLen $R1 \"$EXEDIR\\App\\emacs-\"\n  StrLen $R2 $R9\n  IntOp $R2 $R1 - $R2\n  StrCpy $R0 $R9 \"\" $R2\n")
+          (vals "var nemacs\nFunction SetValues\n  IntOp $nemacs $nemacs + 1\n  StrLen $R1 \"$INSTDIR\\App\\emacs-\"\n  StrLen $R2 $R9\n  IntOp $R2 $R1 - $R2\n  StrCpy $R0 $R9 \"\" $R2\n")
           (lang "LangString DESC_sec_emacs_binaries ${LANG_ENGLISH} \"This allows different Emacs Binaries to be downloaded\"\n")
           (desc "!insertmacro MUI_DESCRIPTION_TEXT ${sec_emacs_binaries} $(DESC_sec_emacs_binaries)\n")
           default-ver
