@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 21:51:16 2012 (-0600)
 ;; Version:
-;; Last-Updated: Wed Jan 25 13:59:10 2012 (-0600)
+;; Last-Updated: Wed Jan 25 14:53:51 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 16
+;;     Update #: 17
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -138,8 +138,8 @@ skip_emacs_grp:
 FunctionEnd\n%s\n%s" ret lang desc vals grp-ro (or ver-define "") (if (not ver-define) ""
                                                                     (format "%s
   MessageBox MB_OK \"Since there is no emacs binaries installed, at least one Emacs Binary Selection must be made.\"
-  ;SectionSetFlags ${sec_emacs_default} ${SF_SELECTED}
-  ;SectionSetFlags ${sec_emacs_default_mac} ${SF_SELECTED}
+  SectionSetFlags ${sec_emacs_default} ${SF_SELECTED}
+  SectionSetFlags ${sec_emacs_default_mac} ${SF_SELECTED}
   skip_ver_sel:
   %s
 !macroend

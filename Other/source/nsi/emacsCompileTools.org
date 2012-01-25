@@ -203,7 +203,6 @@ executables.
       ${ifSecNotRO} ${sec_enumini} skip_nsis_group_ro
       ${ifSecNotRO} ${sec_7zip_plugin} skip_nsis_group_ro
       ${ifSecNotRO} ${sec_execdos} skip_nsis_group_ro
-      ${ifSecNotRO} ${sec_ct1} skip_nsis_group_ro
       ${setInstallGroup} ${sec_nsis_portable_components}
     skip_nsis_group_ro:
       ${ifSecNotRO} ${sec_nsis_portable_components} skip_build_tools 
@@ -213,6 +212,47 @@ executables.
       ${ifSecNotRO} ${sec_required_gnu32_utilities} skip_build_tools
       ${setInstallGroup} ${sec_emacsportable_app_build_tools}
     skip_build_tools:
+      ClearErrors
+  !macroend
+  
+  !macro REQ_INI_F
+    ${setInstallIfExists} "$PA\NSISPortableANSI\NSISPortableANSI.exe" ${sec_nsis_portable_ansi}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\inetc.dll" ${sec_inetc}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\IpConfig.dll" ${sec_ipconfig}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs\LoadingBar_Icon.exe" ${sec_loading_bar_ui}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ZipDLL.dll" ${sec_zipdll}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\blowfish.dll" ${sec_blowfish_plugin}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\EnumINI.dll" ${sec_enumini}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ExecDos.dll" ${sec_execdos}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\nsis7z.dll" ${sec_7zip_plugin}
+    ${setInstallIfExists} "$PA\AutoHotKeyPortable\AHKCompilerPortable.exe" ${sec_autohotkey_portable}
+    
+    ${ifSecNotRO} ${sec_nsis_portable_ansi} skip_nsis_group_ro 
+    ${ifSecNotRO} ${sec_inetc} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_ipconfig} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_loading_bar_ui} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_zipdll} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_blowfish_plugin} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_enumini} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_7zip_plugin} skip_nsis_group_ro
+    ${ifSecNotRO} ${sec_execdos} skip_nsis_group_ro
+    ${setInstallGroup} ${sec_nsis_portable_components}
+    skip_nsis_group_ro:
+      ${setChkRO} ${sec_nsis_portable_ansi}
+      ${setChkRO} ${sec_inetc}
+      ${setChkRO} ${sec_ipconfig}
+      ${setChkRO} ${sec_loading_bar_ui}
+      ${setChkRO} ${sec_zipdll}
+      ${setChkRO} ${sec_blowfish_plugin}
+      ${setChkRO} ${sec_enumini}
+      ${setChkRO} ${sec_7zip_plugin}
+      ${setChkRO} ${sec_execdos}
+      ${setChkRO} ${sec_make}
+      ${setChkRO} ${sec_nsis_portable_components}
+      ${setChkRO} ${sec_autohotkey_portable}
+      ${setChkRO} ${sec_hunspell}
+      ${setChkRO} ${sec_sk}
+      ${setChkRO} ${sec_ct1}
       ClearErrors
   !macroend
   

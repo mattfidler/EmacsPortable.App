@@ -183,7 +183,9 @@ FunctionEnd
     ${GetDrives} "FDD+HDD" "GetDriveVars"
     StrCpy $INSTDIR "$PA\EmacsPortable.App"
     ${INI_VERS}
-    !insertmacro REQ_INI
+    !insertmacro REQ_INI_F
+    ${setChkRO} ${sec_emacsportable_app_net_installer}
+    ${setChkRO} ${sec_compile_emacs}
     StrCmp "$PG" "" cant_use_git can_use_git
     cant_use_git:
       SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_RO}
@@ -194,6 +196,8 @@ FunctionEnd
     end:
       #
   FunctionEnd
+    
+  
 #+END_SRC
 
 ** On Selection Change

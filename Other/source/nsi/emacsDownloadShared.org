@@ -31,6 +31,7 @@ This marks a section as installed and makes it read-only
 #+BEGIN_SRC nsis
   !define ifSecNotRO `!insertmacro ifSecNotRO`
   !macro ifSecNotRO SEC JMP_IF_TRUE
+    ClearErrors
     SectionGetFlags ${SEC} $0
     IfErrors 0 +4
     ClearErrors
@@ -43,6 +44,7 @@ This marks a section as installed and makes it read-only
   
   !define ifSecRO `!insertmacro ifSecRO`
   !macro ifSecRO SEC JMP_IF_TRUE
+    ClearErrors
     SectionGetFlags ${SEC} $0
     IfErrors 0 +4
     ClearErrors
@@ -54,6 +56,7 @@ This marks a section as installed and makes it read-only
   
   !define ifSecNotHidden `!insertmacro ifSecNotHidden`
   !macro ifSecNotHidden SEC JMP
+    ClearErrors
     SectionGetText ${SEC} $0
     IfErrors 0 +4
     ClearErrors
@@ -64,10 +67,11 @@ This marks a section as installed and makes it read-only
   
   !define setInstallIfExists `!insertmacro setInstallIfExists`
   !macro setInstallIfExists FILE SEC
+    ClearErrors
     IfFileExists "${FILE}" 0 +10
     SectionGetFlags ${SEC} $0
     IfErrors 0 +3
-    MessageBox MB_OK "Section ${SEC} out of range"
+    MessageBox MB_OK "Section ${SEC} out of range$\nIfFileExists: ${FILE}"
     Goto +6
     IntOp $0 ${SF_RO} | $0
     SectionSetFlags ${SEC} $0
@@ -91,6 +95,7 @@ This marks a section as installed and makes it read-only
   
   !define setInstallGroup `!insertmacro setInstallGroup`
   !macro setInstallGroup SEC
+    ClearErrors
     SectionGetFlags ${SEC} $0
     IfErrors 0 +3
     MessageBox MB_OK "Section ${SEC} out of range"
@@ -102,6 +107,14 @@ This marks a section as installed and makes it read-only
     SectionSetText ${SEC} $0
   !macroend
   
+  !define setChkRO `!insertmacro setChkRO`
+  
+  !macro setChkRO SEC
+    ${ifSecRO} ${SEC} is_ro_dont_check_${SEC}
+    SectionSetFlags ${SEC} 17
+    is_ro_dont_check_${SEC}:
+      ClearErrors
+  !macroend
   
 #+END_SRC
 ** Select Section If Other section is selected
