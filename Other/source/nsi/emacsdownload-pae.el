@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 21:56:36 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Jan 25 14:01:13 2012 (-0600)
+;; Last-Updated: Thu Jan 26 09:04:05 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 8
+;;     Update #: 9
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -89,7 +89,7 @@
              sec id id id))
       (setq txt
             (format
-             "%s\nReadINIStr $R0 \"$EXEDIR\\App\\mirrors.ini\" \"pa:e:%s\" \"name\"
+             "%s\nReadINIStr $R0 \"$EXEDIR\\App\\ini\\mirrors.ini\" \"pa:e:%s\" \"name\"
   IfErrors 0 +4
   SectionSetText ${sec_pa_e_%s} \"\"
   IfErrors ___err_pa_e_%s
@@ -97,7 +97,7 @@
   ClearErrors
   SectionSetText ${sec_pa_e_%s} $R0
   IfErrors ___err_pa_e_%s
-  ReadINIStr $R0 \"$EXEDIR\\App\\mirrors.ini\" \"pa:e:%s\" \"exist\"
+  ReadINIStr $R0 \"$EXEDIR\\App\\ini\\mirrors.ini\" \"pa:e:%s\" \"exist\"
   IfErrors ___err_pa_e_%s
   ${setInstallIfExists} \"$PA\\$R0\" ${sec_pa_e_%s}
   ___err_pa_e_%s:

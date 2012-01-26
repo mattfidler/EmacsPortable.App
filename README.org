@@ -427,5 +427,3 @@ CLOCK: [2012-01-24 Tue 10:21]--[2012-01-24 Tue 10:22] =>  0:01
 CLOCK: [2012-01-24 Tue 10:14]--[2012-01-24 Tue 10:21] =>  0:07
 :END:
 ** TODO Zip windows binaries and then extract to temporary directory
-
-
