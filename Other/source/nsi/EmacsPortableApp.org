@@ -1007,9 +1007,9 @@ FunctionEnd
     StrCpy $R0 "$EXEDIR\$R0"
     
     IfFileExists $R0 0 end
-    StrCpy $R1 "$usb\PortableApps\PuTTYPortable\App\putty\pageant.exe" 
+    StrCpy $R1 "$usbs\PortableApps\PuTTYPortable\PageantPortable.exe" 
     IfFileExists $R1 +3 end
-    StrCpy $R1 "$usb\PuTTYPortable\App\putty\pageant.exe"
+    StrCpy $R1 "$usbs\PortableApps\PuTTYPortable\PageantPortable.exe"
     IfFileExists $R1 0 end
     Exec "$EXEDIR\App\eps\run.exe $R1 $R0"
     found_pageant:

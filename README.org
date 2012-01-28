@@ -424,6 +424,10 @@ The information about setting up GIT to use putty are located here.
 http://sitaramc.github.com/gitolite/contrib_putty.html
 
 This is done automatically when running TRAMP.
+
+Therefore, if you want to use magit for github, you need open
+puttyportable and attempt to open =git@github.com= so it can cache the
+host id.
 *** PuTTY and Tramp
 From Jeremy Engilsh there is a tutorial on how to get TRAMP to work
 with windows 2K.  This is adapted from [[http://www.jeremyenglish.org/docs/tramp_ntmacs.pdf][that tutorial]].
@@ -525,5 +529,6 @@ CLOCK: [2012-01-27 Fri 12:23]
 ** TODO Fix shell issues
 ** TODO Try to find Putty Local, and other local applications via the registry.
 ** TODO Stop Pageant on registry cleanup if launched by Emacs.
+** TODO Allow user to select home directory in EmacsOptions.exe
 
 
