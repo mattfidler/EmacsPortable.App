@@ -419,7 +419,11 @@ or
 : fatal: The remote end hung up unexpectedly
 
 
+The information about setting up GIT to use putty are located here.
+
 http://sitaramc.github.com/gitolite/contrib_putty.html
+
+This is done automatically when running TRAMP.
 *** PuTTY and Tramp
 From Jeremy Engilsh there is a tutorial on how to get TRAMP to work
 with windows 2K.  This is adapted from [[http://www.jeremyenglish.org/docs/tramp_ntmacs.pdf][that tutorial]].
@@ -483,6 +487,9 @@ rm ~/key
     site-start.
 
 
+*** PuTTYPortable
+To use the settings of PuTTYPortable, you have to have a PuTTYPortable
+session open.
 * Icons
 Icons came from various places:
 -  [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
