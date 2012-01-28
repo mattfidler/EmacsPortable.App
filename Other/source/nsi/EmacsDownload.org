@@ -202,6 +202,11 @@ SectionEnd ; sec_use_git_instead_of_zip
   !include "emacsdownload-gw32.nsi"
 #+END_SRC
 
+*** EZ Windows Applications
+#+BEGIN_SRC nsis
+  !include "emacsdownload-ezwin.nsi"
+  !insertmacro InsertAddEZW
+#+END_SRC
 *** Portable Apps that Emacs Recognizes
 Using list, the portable apps that Emacs recognizes are generated from
 the mirrors.ini file
@@ -377,6 +382,8 @@ FunctionEnd
       ${PA_INI}
       ${G32_INI}
       ${RG32_INI}
+      ${EZWIN_INI}
+      #${RREZWIN_INI}
       ${ifSecNotRO} ${sec_color_theme}           skip_emacs_packages 
       ${ifSecNotRO} ${sec_emacs_speaks_statistics} skip_emacs_packages 
       ${ifSecNotRO} ${sec_emacs_speaks_nonmem}   skip_emacs_packages 
@@ -386,7 +393,7 @@ FunctionEnd
       ${setInstallGroup} ${sec_emacs_packages}
     skip_emacs_packages:
     FunctionEnd
-  
+    
 #+END_SRC
 ** Termination
 Remove all plug-in directory files, like 7zip.
@@ -412,6 +419,7 @@ Remove all plug-in directory files, like 7zip.
 #+BEGIN_SRC nsis
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro tools_desc
+    
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_compile_emacs} $(DESC_sec_compile_emacs)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_tools} $(DESC_sec_tools)
     
@@ -425,6 +433,8 @@ Remove all plug-in directory files, like 7zip.
     ${PA_DESC}
     ${GW32_DESC}
     ${GW32E_DESC}
+    ${EZWIN_DESC}
+    ${EZWINE_DESC}
     ${RGW32_DESC}
     ${RGW32E_DESC}
   !insertmacro MUI_FUNCTION_DESCRIPTION_END 

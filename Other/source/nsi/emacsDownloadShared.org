@@ -157,7 +157,6 @@ it alone when OTHER_SEC is read-only.
       DetailPrint "Wget not found in App\gw32"
       Goto end
       DetailPrint "Download of ${WHAT} failed, trying wget with proxy setting set"
-    check_proxy:
       ${SetupProxy}
       IfFileExists "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" read_proxy set_proxy
     set_proxy:
@@ -300,7 +299,8 @@ it alone when OTHER_SEC is read-only.
 #+END_SRC
 
 
-** GnuWin32 Utilities Download
+** GnuWin32
+*** GnuWin32 Utilities Download
 #+BEGIN_SRC nsis
   !macro  g32exist WHAT GO
     IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 g32exist_skip
@@ -331,6 +331,7 @@ it alone when OTHER_SEC is read-only.
       IfErrors g32_exit
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
+      RmDir /r "$TEMP\ep-gw32"
       ZipDLL::extractall "$TEMP\${WHAT}-dep.zip" "$TEMP\ep-gw32"
       SetOutPath "$INSTDIR\App\gw32"
       StrCpy $R0 "${WHAT}"
@@ -344,6 +345,7 @@ it alone when OTHER_SEC is read-only.
           "http://gnuwin32.sourceforge.net/downlinks/${WHAT}-bin-zip.php" \
           "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
+      RmDir /r "$TEMP\ep-gw32"
       ZipDLL::extractall "$TEMP\${WHAT}-bin.zip" "$TEMP\ep-gw32"
       SetOutPath "$INSTDIR\App\gw32"
       StrCpy $R0 "${WHAT}"
@@ -355,6 +357,7 @@ it alone when OTHER_SEC is read-only.
           "http://gnuwin32.sourceforge.net/downlinks/${WHAT}-dep-zip.php" \
           "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
+      RmDir /r "$TEMP\ep-gw32"
       ZipDLL::extractall "$TEMP\${WHAT}-dep.zip" "$TEMP\ep-gw32"
       SetOutPath "$INSTDIR\App\gw32"
       StrCpy $R1 "dep"
@@ -387,33 +390,33 @@ it alone when OTHER_SEC is read-only.
   
 #+END_SRC
 
-** GnuWin32 Remove 
+*** GnuWin32 Remove 
 This removes a gnuwin32 package.
 #+BEGIN_SRC nsis
-  !macro g32rm WHAT
-    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 g32rmnotinstalled_${WHAT}
-    EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+  !macro g32rm INI PATH WHAT
+    IfFileExists "${INI}" 0 g32rmnotinstalled_${WHAT}
+    EnumINI::SectionExist "${INI}" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" "1" 0 g32rmnotinstalled_${WHAT}
-    EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+    EnumINI::Section "${INI}" "${WHAT}.bin"
     Pop $R0
     StrCmp "$R0" error g32rmnotinstalled_${WHAT}
     loop_g32rm_${WHAT}:
       IntCmp $R0 "0" loop_g32rm_${WHAT}_done loop_g32rm_${WHAT}_done 0
       Pop $R1
-      Delete "$INSTDIR\App\gw32\$R1"
+      Delete "${PATH}\$R1"
       IntOp $R0 $R0 - 1
       Goto loop_g32rm_${WHAT}
     loop_g32rm_${WHAT}_done:
-      DeleteIniSec "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+      DeleteIniSec "${INI}" "${WHAT}.bin"
       ## Try to remove dependencies
-      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.dep"
+      EnumINI::Section "${INI}" "${WHAT}.dep"
       Pop $R0
       StrCmp "$R0" error g32rmnotinstalled_${WHAT}
     loop_g32rm_dep_${WHAT}:
       IntCmp $R0 "0" loop_g32rm_dep_${WHAT}_done loop_g32rm_dep_${WHAT}_done 0
       Pop $R1
-      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "$R1"
+      EnumINI::Section "${INI}" "$R1"
       Pop $R2
       StrCmp "$R2" error g32nodep_${WHAT}
       StrCmp "$R2" "1" g32depdel_${WHAT}
@@ -423,89 +426,167 @@ This removes a gnuwin32 package.
       IntOp $R2 $R2 - 1
       Goto loop_g32rm_dep_${WHAT}2
     loop_g32rm_dep_${WHAT}_done2:
-      DeleteIniStr "$INSTDIR\App\ini\gw32.ini" "$R1" "${WHAT}"
+      DeleteIniStr "${INI}" "$R1" "${WHAT}"
       Goto g32nodep_${WHAT}
     g32depdel_${WHAT}:
       Pop $R2
       StrCmp "$R2" "${WHAT}" 0 g32nodep_${WHAT}
-      Delete "$INSTDIR\App\gw32\$R1"
-      DeleteIniSec "$INSTDIR\App\ini\gw32.ini" "${WHAT}.dep"
+      Delete "${PATH}\$R1"
+      DeleteIniSec "${INI}" "${WHAT}.dep"
     g32nodep_${WHAT}:
       IntOp $R0 $R0 - 1
       Goto loop_g32rm_dep_${WHAT}
     loop_g32rm_dep_${WHAT}_done: 
-      DeleteIniSec "$INSTDIR\App\ini\gw32.ini" "${WHAT}.dep"
-    g32rminstalled_${WHAT}:
+      DeleteIniSec "${INI}" "${WHAT}.dep"
       
     g32rmnotinstalled_${WHAT}:
     ClearErrors
   !macroend
-  
+  !define g32rm `!insertmacro g32rm "$INSTDIR\App\ini\gw32.ini" "$INSTDIR\App\gw32"`
 #+END_SRC
 
-** GnuWin32 Is Installed?
+*** GnuWin32 Is Installed?
 #+BEGIN_SRC nsis
-  !macro g32installed WHAT SEC
-    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 "g32notinstalled_${WHAT}_${SEC}"
-    EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+  !macro g32installed PREFIX INI PATH WHAT SEC
+    IfFileExists "${INI}" 0 "${PREFIX}notinstalled_${WHAT}_${SEC}"
+    EnumINI::SectionExist "${INI}" "${WHAT}.bin"
     Pop $R0
-    StrCmp "$R0" "1" 0 "g32notinstalled_${WHAT}_${SEC}"
-    EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+    StrCmp "$R0" "1" 0 "${PREFIX}notinstalled_${WHAT}_${SEC}"
+    EnumINI::Section "${INI}" "${WHAT}.bin"
     Pop $R0
-    StrCmp "$R0" "error" "g32notinstalled_${WHAT}_${SEC}"
+    StrCmp "$R0" "error" "${PREFIX}notinstalled_${WHAT}_${SEC}"
     StrCpy $R3 "1"
-    "loop_g32_${WHAT}_${SEC}:"
-      IntCmp $R0 "0" "loop_g32_${WHAT}_${SEC}_done" "loop_g32_${WHAT}_${SEC}_done" 0
+    "loop_${PREFIX}_${WHAT}_${SEC}:"
+      IntCmp $R0 "0" "loop_${PREFIX}_${WHAT}_${SEC}_done" "loop_${PREFIX}_${WHAT}_${SEC}_done" 0
       Pop $R1
       StrCmp $R3 "0" +3
-      IfFileExists "$INSTDIR\App\gw32\$R1" +2
+      IfFileExists "${PATH}\$R1" +2
       StrCpy $R3 "0"
       IntOp $R0 $R0 - 1
-      Goto "loop_g32_${WHAT}_${SEC}"
-    "loop_g32_${WHAT}_${SEC}_done:"
-      StrCmp $R3 "0" "g32notinstalled_${WHAT}_${SEC}" "g32installed_${WHAT}_${SEC}"
-    "g32installed_${WHAT}_${SEC}:"
+      Goto "loop_${PREFIX}_${WHAT}_${SEC}"
+    "loop_${PREFIX}_${WHAT}_${SEC}_done:"
+      StrCmp $R3 "0" "${PREFIX}notinstalled_${WHAT}_${SEC}" "${PREFIX}installed_${WHAT}_${SEC}"
+    "${PREFIX}installed_${WHAT}_${SEC}:"
       SectionGetFlags ${SEC} $0
       IntOp $0 ${SF_RO} | $0
       SectionSetFlags ${SEC} $0
       SectionGetText ${SEC} $0
       StrCpy $0 "$0 (Installed)"
       SectionSetText ${SEC} $0
-      "g32notinstalled_${WHAT}_${SEC}:"
+      "${PREFIX}notinstalled_${WHAT}_${SEC}:"
       ClearErrors
       
   !macroend
-  !define g32installed `!insertmacro g32installed`
-  
-  !macro g32removed WHAT SEC
-    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 "rg32notinstalled_${WHAT}_${SEC}"
-    EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+  !define g32installed `!insertmacro g32installed "g32" "$INSTDIR\App\ini\gw32.ini" "$INSTDIR\App\gw32"`
+  !macro g32removed PREFIX INI PATH WHAT SEC
+    IfFileExists "${INI}" 0 "r${PREFIX}notinstalled_${WHAT}_${SEC}"
+    EnumINI::SectionExist "${INI}" "${WHAT}.bin"
     Pop $R0
-    StrCmp "$R0" "1" 0 "rg32notinstalled_${WHAT}_${SEC}"
-    EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin"
+    StrCmp "$R0" "1" 0 "r${PREFIX}notinstalled_${WHAT}_${SEC}"
+    EnumINI::Section "${INI}" "${WHAT}.bin"
     Pop $R0
-    StrCmp "$R0" "error" "rg32notinstalled_${WHAT}_${SEC}"
+    StrCmp "$R0" "error" "r${PREFIX}notinstalled_${WHAT}_${SEC}"
     StrCpy $R3 "1"
-    "loop_rg32_${WHAT}_${SEC}:"
-    IntCmp $R0 "0" "loop_rg32_${WHAT}_${SEC}_done" "loop_rg32_${WHAT}_${SEC}_done" 0
+    "loop_r${PREFIX}_${WHAT}_${SEC}:"
+    IntCmp $R0 "0" "loop_r${PREFIX}_${WHAT}_${SEC}_done" "loop_r${PREFIX}_${WHAT}_${SEC}_done" 0
     Pop $R1
     StrCmp $R3 "0" +3
-    IfFileExists "$INSTDIR\App\gw32\$R1" +2
+    IfFileExists "${PATH}\$R1" +2
     StrCpy $R3 "0"
     IntOp $R0 $R0 - 1
-    Goto "loop_rg32_${WHAT}_${SEC}"
-    "loop_rg32_${WHAT}_${SEC}_done:"
-    StrCmp $R3 "0" "rg32notinstalled_${WHAT}_${SEC}" "rg32installed_${WHAT}_${SEC}"
-    "rg32notinstalled_${WHAT}_${SEC}:"
+    Goto "loop_r${PREFIX}_${WHAT}_${SEC}"
+    "loop_r${PREFIX}_${WHAT}_${SEC}_done:"
+    StrCmp $R3 "0" "r${PREFIX}notinstalled_${WHAT}_${SEC}" "r${PREFIX}installed_${WHAT}_${SEC}"
+    "r${PREFIX}notinstalled_${WHAT}_${SEC}:"
     SectionGetFlags ${SEC} $0
     IntOp $0 ${SF_RO} | $0
     SectionSetFlags ${SEC} $0
     SectionSetText ${SEC} ""
-    "rg32installed_${WHAT}_${SEC}:"
+    "r${PREFIX}installed_${WHAT}_${SEC}:"
     ClearErrors
     
   !macroend
-  !define g32removed `!insertmacro g32removed`
+  !define g32removed `!insertmacro g32removed "g32" "$INSTDIR\App\ini\gw32.ini" "$INSTDIR\App\gw32"`
+  
+#+END_SRC
+
+** EzWindows Ports
+*** EzWindows Download 
+#+BEGIN_SRC nsis
+  !macro  ezwinexist WHAT GO              
+    IfFileExists "$INSTDIR\App\ini\ezwin.ini" 0 ezwinexist_skip
+    ezwinexist_skip:
+      ClearErrors
+  !macroend
+  
+  !macro ezwindown WHAT
+    ClearErrors
+    ReadIniStr $R0 "${mirror}" "ezw:${WHAT}" "ver"
+    IfErrors ezwin_exit 
+    inetc::get /CONNECTTIMEOUT 30 \
+        "http://downloads.sourceforge.net/project/ezwinports/${WHAT}-$R0-bin.zip" \
+        "$TEMP\${WHAT}-bin.zip" 
+    IfFileExists "$TEMP\${WHAT}-bin.zip" 0 ezwin_exit
+    RmDir /r "$TEMP\ep\ezwin"
+    ZipDLL::extractall "$TEMP\${WHAT}-bin.zip" "$TEMP\ep-ezwin"
+    SetOutPath "$INSTDIR\App\ezwin"
+    StrCpy $R0 "${WHAT}"
+    ${Locate} "$TEMP\ep-ezwin" "" "AddEZW"
+    Sleep 5
+    RmDir /r "$TEMP\ep-ezwin"
+    Delete "$TEMP\${WHAT}-bin.zip"
+    ezwin_exit:
+      ClearErrors
+  !macroend
+  
+  !macro InsertAddEZW
+    Function AddEZW
+      StrLen $R2 "$TEMP\ep-ezwin\"
+      StrCpy "$R4" "$R8" "" $R2
+      StrCpy "$R5" "$R9" "" $R2
+      StrCmp $R6 "" is_dir is_file
+      is_dir:
+        CreateDirectory "$INSTDIR\App\ezwin\$R5"
+        Goto end
+      is_file:
+        IfFileExists "$INSTDIR\App\ezwin\$R5" found_file new_file
+      found_file:
+        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R0.dep" "$R5" "1"
+        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R5" "$R0" "1"
+        ## Look for the same file in one of the binary sections
+        Call PushEZW
+        Pop $R1
+      loop_look_bin:
+        IntCmp $R1 0 end end 0
+        Pop $R2
+        StrCmp "$R2" "$R0" next_iter
+        EnumINI::SectionExist "$INSTDIR\App\ini\ezwin.ini" "$R2.bin"
+        Pop $R3
+        IntCmp "$R3" "0" next_iter
+        EnumINI::KeyExist "$INSTDIR\App\ini\ezwin.ini" "$R2.bin" "$R5"
+        Pop $R3
+        IntCmp "$R3" "0" next_iter
+        DeleteIniStr "$INSTDIR\App\ini\ezwin.ini" "$R2.bin" "$R5"
+        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R2.dep" "$R5" "1"
+        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R5" "$R2" "1"
+      next_iter:
+        IntOp $R1 $R1 - 1
+        Goto loop_look_bin
+      new_file:
+        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R0.bin" "$R5" "1" 
+        CopyFiles /SILENT "$TEMP\ep-ezwin\$R5" "$INSTDIR\App\ezwin\$R4"
+      end:
+        ClearErrors
+        Push $R5
+    FunctionEnd
+  !macroend
+  
+#+END_SRC
+*** EzWindows Add/Remove/Exists
+#+BEGIN_SRC nsis
+  !define ezwinrm `!insertmacro g32rm  "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
+  !define ezwininstalled `!insertmacro g32installed "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
+  !define ezwinremoved `!insertmacro g32removed "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
   
 #+END_SRC
 

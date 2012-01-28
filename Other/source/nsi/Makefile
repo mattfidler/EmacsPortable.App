@@ -1,4 +1,4 @@
-download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el
+download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi
 
 all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe
 
@@ -52,6 +52,9 @@ EmacsDownload.nsi: EmacsDownload.org ${download_extras}
 
 emacsproxy.nsh: emacsproxy.org 
 	cmd /c "set ORG_FILE=""emacsproxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+
+EmacsDownload-ezwin.nsi: emacsdownload-ezw.el ../../../App/ini/mirrors.ini
+	cmd /c "emacs -Q --batch -l ./emacsdownload-ezw.el"
 
 EmacsDownload-vers.nsi: emacsdownload-vers.el ../../../App/ini/mirrors.ini
 	cmd /c "emacs -Q --batch -l ./emacsdownload-vers.el"

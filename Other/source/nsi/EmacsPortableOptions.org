@@ -53,7 +53,9 @@ This provides an interface to the Emacs Startup options
   #+END_SRC
 ** Definitions and Variables
 #+BEGIN_SRC nsis
-  !define TEMP1 $R0 ;Temp variable  
+  Var usb
+  Var usbs
+  !define TEMP1 $R0 ;Temp variable
   !define ep_version "Field 3"
   !define ep_org "Field 9"
   !define ep_right "Field 8"
@@ -78,6 +80,8 @@ This provides an interface to the Emacs Startup options
   !define ep_proxy_port "Field 36"
   !define ep_proxy_user "Field 38"
   !define ep_proxy_password "Field 40"
+  !define ep_putty_key "Field 12"
+  
   #+END_SRC
   
 ** NSIS Pages
@@ -106,10 +110,52 @@ This provides an interface to the Emacs Startup options
   !define RW "!insertmacro RW"
 #+END_SRC  
 * Functions
+** Get Portable Apps Directories
+#+BEGIN_SRC nsis
+  Function GetDriveVars
+    StrCmp $9 "c:\" findcygwin
+    StrCmp $8 "HDD" gpa
+    StrCmp $9 "a:\" spa
+    StrCmp $9 "b:\" spa
+    
+    gpa:
+      StrCmp $option_home_usb "" set_usb 0
+      IfFileExists "$9$option_home_usb" 0 is_emacs_portable
+      IfFileExists "$9$option_home_usb\.emacs" set_home 0
+      IfFileExists "$9$option_home_usb\_emacs" set_home 0
+      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_home
+      IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_home
+      IfFileExists "$9PotableApps" set_home
+      Goto findcygwin
+      
+    set_home:
+      Goto set_usb
+      
+    is_emacs_portable:
+      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_usb
+      IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_usb
+      IfFileExists "$9PortableApps" set_usb
+      Goto findcygwin
+      
+    set_usb:
+      StrCpy $usb "$9"
+      StrCpy $usbs "$9" -1
+      Goto findcygwin
+      
+    findcygwin:
+      
+    spa:    
+      Push $0
+      
+  FunctionEnd
+  
+#+END_SRC
+
 ** Callback Functions
 *** Initialization Function
   #+BEGIN_SRC nsis
     Function .onInit
+      ${GetDrives} "FDD+HDD" "GetDriveVars"
       var /GLOBAL versions
       var /GLOBAL nemacs
       var /GLOBAL lastversion
@@ -151,7 +197,19 @@ This provides an interface to the Emacs Startup options
       ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
       WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
       end_proxy_init:
+    
+        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" 
+        StrCpy $R1 $R0 5
+        StrCmp "$R1" "USB:\" 0 +3
+        StrCpy $R0 $R0 "" 4
+        StrCpy $R0 "$usbs$R0"
         
+        StrCpy $R1 $R0 8
+        StrCmp "$R1" "EXEDIR:\" 0 +3
+        StrCpy $R0 $R0 "" 8
+        StrCpy $R0 "$EXEDIR\$R0"
+        
+        WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State" "$R0" 
         ;; Put in some selected options
         IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
         ${RW} "OrgProtocol" "${ep_org}"
@@ -172,6 +230,7 @@ This provides an interface to the Emacs Startup options
       end_init:
         ClearErrors
       FunctionEnd
+    
 #+END_SRC
 *** Exit Function
 #+BEGIN_SRC nsis
@@ -234,7 +293,26 @@ This provides an interface to the Emacs Startup options
   ;  done:
      Delete $EXEDIR\Data\ini\EmacsPortableApp.ini
      
+     ;; Putty Key
+  
+     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State"
+  
+     ;; Now replace $EXEDIR with EXEDIR:
+     StrLen $R1 $EXEDIR
+     StrCpy $R2 $R0 $R1
+     StrCmp $EXEDIR $R2 0 +3
+     StrCpy $R0 $R0 "" $R1
+     StrCpy $R0 "EXEDIR:$R0"
      
+     ;; Now replace $USBS
+  
+     StrLen $R1 $usbs
+     StrCpy $R2 $R0 $R1
+     StrCmp $usbs $R2 0 +3
+     StrCpy $R0 $R0 "" $R1
+     StrCpy $R0 "USB:$R0"
+  
+     WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" "$R0"
      
      ; Geometry
      ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
@@ -282,6 +360,7 @@ This provides an interface to the Emacs Startup options
      skip_proxy:
        
   FunctionEnd
+  
   #+END_SRC
   
 * Obligatory Section

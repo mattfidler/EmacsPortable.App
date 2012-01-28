@@ -905,6 +905,18 @@ be fixed by advices on some primitive functions
       ad-do-it))
 #+END_SRC
 
+* Add TRAMP support under windows
+Using putty, you may add tramp support.  This is the emacs piece of
+the implementation 
+#+BEGIN_SRC emacs-lisp
+  (when (and
+         (getenv "EPPAGEANT")
+         (executable-find "plink"))
+    (require 'tramp)
+    (ep-m "Tramp (for Putty)")
+    (setq tramp-default-method "plink"))
+#+END_SRC
+
 * Start the starter kit, if present
 The EmacsPortable.App starter kit is a fork from another starter kit
 and is located [[https://github.com/mlf176f2/emacs-portable-starter-kit][here]].

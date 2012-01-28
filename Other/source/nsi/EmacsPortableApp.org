@@ -758,7 +758,6 @@ FunctionEnd
 ** Add To Environment
 #+BEGIN_SRC nsis
   !macro AddToEnvironment
-    Call GetHomePath
     ;; Add User-name to the USER variable
     System::Call "advapi32::GetUserName(t .r0, *i ${NSIS_MAX_STRLEN} r1) i.r2"
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("USER", "$0").r0'
@@ -921,9 +920,9 @@ FunctionEnd
     IfFileExists "$EXEDIR\App\gw32\bin\${FILENAME}" 0 +2
     CopyFiles /SILENT "$EXEDIR\App\gw32\bin\${FILENAME}" "$emacs\${FILENAME}"
   !macroend
-  Function CpDll
+  Function CpDll       
     IfFileExists "$EXEDIR\App\ini\copy.ini" 0 end_copy
-    EnumINI::Section "$EXEDIR\App\ini\copy.ini" "${WHAT}"
+    EnumINI::Section "$EXEDIR\App\ini\copy.ini" "copy"
     Pop $R0
     StrCmp $R0 "error" end_copy
     loop:
@@ -985,6 +984,41 @@ FunctionEnd
       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
   FunctionEnd
   !define InstallFonts "Call InstallFonts"
+  
+#+END_SRC
+
+* Setup Putty
+1) Get the putty key from the saved options
+2) Launches paegent
+#+BEGIN_SRC nsis
+  Function setupPutty
+    FindProcDLL::FindProc "pageant.exe"
+    StrCmp $R0 "1" found_pageant 0
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" 
+    StrCpy $R1 $R0 5
+    StrCmp "$R1" "USB:\" 0 +3
+    StrCpy $R0 $R0 "" 4
+    StrCpy $R0 "$usbs$R0"
+    
+    StrCpy $R1 $R0 8
+    StrCmp "$R1" "EXEDIR:\" 0 +3
+    StrCpy $R0 $R0 "" 8
+    StrCpy $R0 "$EXEDIR\$R0"
+    
+    IfFileExists $R0 0 end
+    StrCpy $R1 "$usb\PortableApps\PuTTYPortable\App\putty\pageant.exe" 
+    IfFileExists $R1 +3 end
+    StrCpy $R1 "$usb\PuTTYPortable\App\putty\pageant.exe"
+    IfFileExists $R1 0 end
+    Exec "$EXEDIR\App\eps\run.exe $R1 $R0"
+    found_pageant:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPPAGEANT", "1").r0'
+    end:
+      ClearErrors
+  FunctionEnd
+  
+  !define SetupPutty `call setupPutty`
   
 #+END_SRC
 
@@ -1079,6 +1113,8 @@ FunctionEnd
 ** Setup things necessary to call Emacs
 #+BEGIN_SRC nsis
   !macro emacs_setup
+    DetailPrint "Setup Home path"
+    Call GetHomePath
     DetailPrint "Setup Emacs EXE"
     ${SetupEmacsExe}
     DetailPrint "Setup Necessary DLLs"
@@ -1087,6 +1123,8 @@ FunctionEnd
     ${InstallFonts}
     DetailPrint "Setup Proxy"
     ${SetupProxy}
+    DetailPrint "Setup PuTTy if available"
+    ${SetupPutty}
     DetailPrint "Add to Environment Variables"
     ${AddToEnvironment}
     DetailPrint "Add Org-protocol"

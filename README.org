@@ -384,46 +384,109 @@ http://portableapps.com/support/thunderbird_portable#encryption
 ** MikTeX Portable
 If you extract MikTeX portable to =PortableApps/MikTexPortable/=,
 EmacsPortable.App will be recognized and used.
-** Cygwin
-** MSYS
+** Unix Ports
+*** Cygwin
+*** MSYS
+Supports MSYS portable.
+*** GnuWin32
+*** EzWin
+** Putty and Tramp
+From Jeremy Engilsh there is a tutorial on how to get TRAMP to work
+with windows 2K.  This is adapted from [[http://www.jeremyenglish.org/docs/tramp_ntmacs.pdf][that tutorial]].
+
+EmacsPortable.App will download and setup the appropriate files for
+PuTTY portable, if you need them.  In addition to putty.exe, you will
+need:
+- puttygen.exe
+- pageant.exe
+- plink.exe
+
+
+1. Generate a Key
+
+Use Puttygen to generate a key.  Puttygen should be in the
+PuttyPortable application.
+
+[[./Other/img/PuTTYKeyGenerator0.png]]
+[[./Other/img/PuTTYKeyGenerator1.png]]
+
+2. Save the public key
+ 
+   This is under File->Save Private Key
+
+3. Export the key to an open ssh key.
+   
+   This is under Conversions->Export OpenSSH Key
+
+4. Copy the key to the server.
+
+   This can be done with a secure file transfer like FileZilla.
+
+   Or, if ssh is working for you, you can use the following shell
+   command
+
+#+BEGIN_SRC sh
+scp key user@host:~/
+#+END_SRC
+
+5. Log into the host and add to authorized keys
+
+#+BEGIN_SRC sh
+ssh example.server.com
+mkdir ~./ssh
+chmod 700 ~/.ssh
+cat ~/key >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+rm ~/key
+#+END_SRC
+
+6. Let EmacsPortable.App know about the key
+  
+   Use EmacsOptions.exe to select the PuTTy key.  If you want it to be
+   portable keep the key on the USB drive *OR* in the executable
+   directory.
+
+7.  Run EmacsPortable.App. 
+
+    EmacsPortable.App will start =pageant.exe= if it is not already
+    running and set up tramp to use plink.  This is done by the
+    site-start.
+
+
 * Icons
 Icons came from various places:
 -  [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
 
 * EmacsPortable.App Wish List/TODO list
 ** TODO Gnus behind a firewall/proxy server
-** DONE Add Mac support of Environment.ini
-CLOSED: [2012-01-23 Mon 15:50]
-- State "DONE"       from "TODO"       [2012-01-23 Mon 15:50]
-:LOGBOOK:
-CLOCK: [2011-12-14 Wed 21:47]--[2011-12-14 Wed 21:48] =>  0:01
-:END:
-[2011-12-14 Wed 21:47]
-
 ** TODO Add Mac Support of Daemon Mode
 [2011-12-14 Wed 21:48]
 ** TODO Make a portable browser a selectable EmacsOption
 [2011-12-15 Thu 13:15]
 ** TODO When Cygwin is found drop GnuWin32 Support, or make it secondary.
-** DONE Download of GnuWin32 Utilities
-CLOSED: [2012-01-24 Tue 09:41]
-- State "DONE"       from "STARTED"    [2012-01-24 Tue 09:41]
-:LOGBOOK:
-CLOCK: [2012-01-23 Mon 15:51]--[2012-01-23 Mon 17:22] =>  1:31
-:END:
-
 ** STARTED Remove Emacs Binaries
 :LOGBOOK:
 CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
 :END:
 *** TODO List Emacs Binaries Contents
 *** TODO Figure out a way to remove specific components of the Emacs binaries
-** DONE Remove App/bin and replace with contents of gw32 directory
-CLOSED: [2012-01-24 Tue 17:59]
-- State "DONE"       from "STARTED"    [2012-01-24 Tue 17:59]
-:LOGBOOK:
-CLOCK: [2012-01-24 Tue 10:22]--[2012-01-24 Tue 10:50] =>  0:28
-CLOCK: [2012-01-24 Tue 10:21]--[2012-01-24 Tue 10:22] =>  0:01
-CLOCK: [2012-01-24 Tue 10:14]--[2012-01-24 Tue 10:21] =>  0:07
-:END:
+
 ** TODO Zip windows binaries and then extract to temporary directory
+** TODO Add Info from ezwin and gw32 and elsewhere to the infopath
+** TODO Add to the manpath
+** TODO Compress Info Files
+** TODO Compress Elisp Files
+** TODO Upx selected files (not the emacs binary!)
+** STARTED PuttyPortable support of TRAMP?
+:LOGBOOK:
+CLOCK: [2012-01-27 Fri 12:23]
+:END:
+** TODO Ezwin remove facility
+** TODO More Hunspell Dictionaries, and/or use Firefox dictionaries.
+** TODO Add EmacsPortable.App Extensions to eXpresso?
+** TODO Add command prompt, MSYS, and cygwin here commands
+** TODO Fix shell issues
+** TODO Try to find Putty Local, and other local applications via the registry.
+** TODO Stop Pageant on registry cleanup if launched by Emacs.
+
+

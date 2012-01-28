@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Jan 25 13:54:57 2012 (-0600)
+;; Last-Updated: Thu Jan 26 19:03:12 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 74
+;;     Update #: 76
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -57,9 +57,9 @@
         ("CompFace" "used by gnus to display XFace headers in messages.")
         ("CoreUtils" "GNU file, shell and text utilities (also in MSYS)")
         ("DiffUtils" "for ediff and producing patches")
-        ("FindUtils" "for grep-find and other file searches.")
+        ;;("FindUtils" "for grep-find and other file searches.")
         ("GifLib" "library to support GIF images.")
-        ("Grep" "for searching through files with grep.")
+        ;;("Grep" "for searching through files with grep.")
         ("Gzip" "used by Emacs to automatically decompress .gz files.")
         ("Jpeg" "library to support JPEG images (also in GTK).")
         ("Lha" "used by archive-mode to edit .lzh files.")
@@ -68,8 +68,7 @@
         ("Make" "used by compile for building projects (also in MinGW)")
         ("OpenSSL" "used by gnus to talk to servers over SSL.")
         ("Patch" "used by ediff-patch-file and others to apply patches.")
-        
-        ("TexInfo" "used to build Emacs' manuals.")
+        ;;("TexInfo" "used to build Emacs' manuals.")
         ("Unzip" "used by archive-mode for extracting zip files.")
         ;;("Xpm" "library to support XPM images (bundled with Emacs binaries)")
         ("Zip" "used by archive-mode for editing zip files.")
@@ -180,8 +179,8 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
     (while (re-search-forward "gw32" nil t)
       (replace-match "rgw32"))
     (goto-char (point-min))
-    (while (re-search-forward "g32down" nil t)
-      (replace-match "g32rm"))
+    (while (re-search-forward "!insertmacro g32down" nil t)
+      (replace-match "${g32rm}"))
     (goto-char (point-min))
     (while (re-search-forward "G32_INI" nil t)
       (replace-match "RG32_INI"))
