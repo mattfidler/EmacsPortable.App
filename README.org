@@ -390,7 +390,37 @@ EmacsPortable.App will be recognized and used.
 Supports MSYS portable.
 *** GnuWin32
 *** EzWin
-** Putty and Tramp
+** PuTTY
+*** PuTTY and magit
+Since magit and ssh does not work correctly, you can use PuTTY to
+connect to your host via plink.  Note that you must connect to the
+host first via PuTTY or you will get one of the following error
+messages:
+
+: The server's host key is not cached in the registry. You
+: have no guarantee that the server is the computer you
+: think it is.
+: The server's rsa2 key fingerprint is:
+: ssh-rsa 2048 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+: Connection abandoned.
+: fatal: The remote end hung up unexpectedly
+
+or
+
+: WARNING - POTENTIAL SECURITY BREACH!
+: The server's host key does not match the one PuTTY has
+: cached in the registry. This means that either the
+: server administrator has changed the host key, or you
+: have actually connected to another computer pretending
+: to be the server.
+: The new rsa2 key fingerprint is:
+: ssh-rsa 2048 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+: Connection abandoned.
+: fatal: The remote end hung up unexpectedly
+
+
+http://sitaramc.github.com/gitolite/contrib_putty.html
+*** PuTTY and Tramp
 From Jeremy Engilsh there is a tutorial on how to get TRAMP to work
 with windows 2K.  This is adapted from [[http://www.jeremyenglish.org/docs/tramp_ntmacs.pdf][that tutorial]].
 
