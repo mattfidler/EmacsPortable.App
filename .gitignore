@@ -20,19 +20,24 @@ Thumbs.db
 /EmacsPortableApp-*.exe
 /Data/init/*.org
 /Data/init/*.el
+/Data/init/*.el.gz
 /Data/init/*.elc
 /Data/init/user/*.org
 /Data/init/user/*.el
+/Data/init/user/*.el.gz
 /Data/init/user/*.elc
 /Data/init/system/.org
 /Data/init/system/.el
+/Data/init/system/.el.gz
 /Data/init/system/.elc
 /Data/init/shared/*.org
 /Data/init/shared/*.el
+/Data/init/shared/*.el.gz
 /Data/init/shared/*.elc
 /Data/ini/*.ini
 /Data/src/*.org
 /Data/src/*.el
+/Data/src/*.el.gz
 /Data/src/*.elc
 /Data/src/*/
 /Data/Home/.ssh*
@@ -60,6 +65,7 @@ Readme.org_archive
 /Data/snippets/.yas*
 /Data/init/user/*/
 /Data/themes/*.el
+/Data/themes/*.el.gz
 /Data/themes/*.elc
 
 # Add Emacs Temp Files #
@@ -75,6 +81,7 @@ Readme.org_archive
 /Data/init/shared/Environment.ini
 /Data/init/shared/bang_6.wav
 /App/site-lisp/start.el
+/App/site-lisp/start.el.gz
 /App/site-lisp/start.elc
 /App/lisp/el-get/*
 /Data/Home/.subversion/README.txt
@@ -123,6 +130,7 @@ Readme.org_archive
 /Other/source/bbin/tidy.exe
 /Other/source/bbin/upx.exe
 /Other/source/elisp/gen-nsi-elpa.el
+/Other/source/elisp/gen-nsi-elpa.el.gz
 /Other/source/elisp/gen-nsi-elpa.nsi
 /Other/source/nsi/EmacsDownload.nsi
 /Other/source/nsi/Emacs-Q.nsi
@@ -151,7 +159,7 @@ Readme.org_archive
 /Other/source/nsi/emacsdownload-ezwin.nsi
 /Other/source/nsi/emacsdownload-rezwin.nsi
 /App/site-lisp/start.el.gz
-/Data/init/shared/startup-org.el.bz2
 /Other/source/nsi/esn-x-symbol.el.gz
-/Other/source/nsi/startup-org.el.bz2
 /App/eps/*.exe
+/Data/init/shared/startup-org.el.bz2
+/Data/init/shared/startup-org.el.bz2

@@ -270,12 +270,12 @@ the mirrors.ini file
         IfFileExists "$R1" found_upx
         Goto not_found
         found_upx:
-          IfFileExists "$EXEDIR\App\gw32\bin" +3
-          DetailPrint "Compressing executables in $EXEDIR\App\gw32\bin"
-          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\gw32\bin\*.exe"'
-          IfFileExists "$EXEDIR\App\ezwin\bin" +3
-          DetailPrint "Compressing executables in $EXEDIR\App\ezwin\bin"
-          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\ezwin\bin\*.exe"'
+          IfFileExists "$EXEDIR\App\gw32\bin" 0 +3
+          DetailPrint "Decompress executables in $EXEDIR\App\gw32\bin"
+          ExecWait '$R1 -d $EXEDIR\App\gw32\bin\*.exe"'
+          IfFileExists "$EXEDIR\App\ezwin\bin" 0 +3
+          DetailPrint "Decompress executables in $EXEDIR\App\ezwin\bin"
+          ExecWait '$R1 -d $EXEDIR\App\ezwin\bin\*.exe"'
           Goto end
         not_found:
           MessageBox MB_OK "Cannot Find upx"
@@ -307,12 +307,12 @@ the mirrors.ini file
         IfFileExists "$R1" found_upx
         Goto not_found
         found_upx:
-          IfFileExists "$EXEDIR\App\gw32\bin" +3
+          IfFileExists "$EXEDIR\App\gw32\bin" 0 +3
           DetailPrint "Compressing executables in $EXEDIR\App\gw32\bin"
-          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\gw32\bin\*.exe"'
-          IfFileExists "$EXEDIR\App\ezwin\bin" +3
+          ExecWait '$R1 -9 $EXEDIR\App\gw32\bin\*.exe"'
+          IfFileExists "$EXEDIR\App\ezwin\bin" 0 +3
           DetailPrint "Compressing executables in $EXEDIR\App\ezwin\bin"
-          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\ezwin\bin\*.exe"'
+          ExecWait '$R1 -9 $EXEDIR\App\ezwin\bin\*.exe"'
           Goto end
         not_found:
           MessageBox MB_OK  "Could not find upx"
