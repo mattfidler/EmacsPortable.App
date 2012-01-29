@@ -6,7 +6,6 @@ Icon?
 Thumbs.db
 # EmacsPortable Files to Ignore #
 /App/bin/*
-/App/eps/*
 /App/fonts/*
 /App/gw32/*
 /App/ezwin/*
@@ -155,3 +154,4 @@ Readme.org_archive
 /Data/init/shared/startup-org.el.bz2
 /Other/source/nsi/esn-x-symbol.el.gz
 /Other/source/nsi/startup-org.el.bz2
+/App/eps/*.exe
