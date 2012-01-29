@@ -605,41 +605,45 @@ FunctionEnd
 
 ** Get Home Path
 #+BEGIN_SRC nsis
-Function GetHomePath
-  Var /GLOBAL OHOME
-  System::Call 'Kernel32::GetEnvironmentVariable(t, t, i) i("HOME", .r0, ${NSIS_MAX_STRLEN}).r1'
-  StrCpy $OHOME $0
-  
-  ${ReadINIStrWithDefault} $option_home $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Home" "EXEDIR:\Data\Home"
-  ${StrSlash} "$option_home" "/"  
-  StrCpy $option_home_usb ""
-  StrCpy $option_home $R0
-  
-  ## Make sure doesn't end with /
-  StrCpy $R0 $option_home "" -1
-  StrCmp $R0 "\" 0 +2
-  StrCpy $option_home $option_home -1
-  
-  StrCpy $R0 $option_home 5
-  StrCmp "$R0" "USB:\" home_usb home_exe
-  
-  home_usb:
-    StrCpy $option_home_usb $option_home "" 5
-    Goto end
-  home_exe:
-    StrCpy $R0 $option_home 8
-    StrCmp "$R0" "EXEDIR:\" 0 leave_home
-    StrCpy $option_home $option_home "" 8
-    StrCpy $home "$EXEDIR\$option_home"
-    Goto end
-  leave_home:
-    StrCpy $home $OHOME
-  end:
-    ${GetDrives} "FDD+HDD" "GetDriveVars"
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HOME", "$home").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("OHOME", "$OHOME").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PWD", "$home").r0'
-FunctionEnd
+  Function GetHomePath
+    Var /GLOBAL OHOME
+    System::Call 'Kernel32::GetEnvironmentVariable(t, t, i) i("HOME", .r0, ${NSIS_MAX_STRLEN}).r1'
+    StrCpy $OHOME $0
+    
+    ${ReadINIStrWithDefault} $option_home $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Home" "EXEDIR:\Data\Home"
+    ${StrSlash} "$option_home" "/"  
+    StrCpy $option_home_usb ""
+    StrCpy $option_home $R0
+    
+    ## Make sure doesn't end with /
+    StrCpy $R0 $option_home "" -1
+    StrCmp $R0 "\" 0 +2
+    StrCpy $option_home $option_home -1
+    
+    StrCpy $R0 $option_home 5
+    StrCmp "$R0" "USB:\" home_usb home_exe
+    
+    home_usb:
+      StrCpy $option_home_usb $option_home "" 5
+      Goto end
+    home_exe:
+      StrCpy $R0 $option_home 8
+      StrCmp "$R0" "EXEDIR:\" 0 home_exists
+      StrCpy $option_home $option_home "" 8
+      StrCpy $home "$EXEDIR\$option_home"
+      Goto end
+    home_exists:
+      IfFileExists "$R0" 0 leave_home
+      StrCpy $home $R0
+      Goto end
+    leave_home:
+      StrCpy $home $OHOME
+    end:
+      ${GetDrives} "FDD+HDD" "GetDriveVars"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HOME", "$home").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("OHOME", "$OHOME").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PWD", "$home").r0'
+  FunctionEnd
 #+END_SRC
 
 ** Setup Path Variables

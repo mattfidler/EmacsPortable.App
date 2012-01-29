@@ -37,14 +37,31 @@ EmacsPortable.App is run from.
 
 The advantage to this methodology is that you can drag and drop Emacs
 and all your customizations will be dragged with it.
+*** Home if Exists
+If the =Data/ini/EmacsPortableApp.ini= file contains a full path, then
+the home is set when that file exists.  For example:
+#+BEGIN_SRC conf
+  [EmacsPortableApp]
+  Home=c:\
+#+END_SRC
+
+will set the home directory to =c:\= on Windows computers.  Currently,
+this is supported only on windows.
 *** System home directory
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry
-that doesn't start with either =EXEDIR:/= or =USB:/=, then the
+that doesn't start with either =EXEDIR:/= or =USB:/=, and doesn't
+exist then the
 original home directory is maintained.
 #+BEGIN_SRC conf
   [EmacsPortableApp]
   Home=Set as original
 #+END_SRC
+*** Selecting the Home directory with EmacsOptions.exe
+When using EmacsOptions.exe, you do not have to worry about selecting
+which type of file is used.  If you select a directory on the USB
+drive, the EmacsPortableApp is updated accordingly.  If you select
+location within the portable app directory, the =EXEDIR= is replaced.
+Note that any where else may change depending on the computer you use.
 ** Emacs-only directory aliases
 Emacs has a list of aliases that are convinces, but do not correspond
 with an actual directory.  
@@ -516,11 +533,6 @@ CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
 ** TODO Add Info from ezwin and gw32 and elsewhere to the infopath
 ** TODO Add to the manpath
 ** TODO Compress Info Files
-** STARTED Compress Elisp Files
-:LOGBOOK:
-CLOCK: [2012-01-28 Sat 17:05]--[2012-01-28 Sat 23:56] =>  6:51
-:END:
-** TODO Upx selected files (not the emacs binary!)
 ** TODO Ezwin remove facility
 ** TODO More Hunspell Dictionaries, and/or use Firefox dictionaries.
 ** TODO Add EmacsPortable.App Extensions to eXpresso?
@@ -528,7 +540,12 @@ CLOCK: [2012-01-28 Sat 17:05]--[2012-01-28 Sat 23:56] =>  6:51
 ** TODO Fix shell issues
 ** TODO Try to find Putty Local, and other local applications via the registry.
 ** TODO Stop Pageant on registry cleanup if launched by Emacs.
-** TODO Allow user to select home directory in EmacsOptions.exe
+** DONE Allow user to select home directory in EmacsOptions.exe
+CLOSED: [2012-01-29 Sun 15:37]
+- State "DONE"       from "STARTED"    [2012-01-29 Sun 15:37]
+:LOGBOOK:
+CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
+:END:
 ** TODO Remove PuTTY Portable startup screen when launching Pageant Portable.
 ** TODO Make sure that portable starter kit from a zip file works.
 

@@ -109,6 +109,56 @@ This provides an interface to the Emacs Startup options
   
   !define RW "!insertmacro RW"
 #+END_SRC  
+** StrSlash
+#+BEGIN_SRC nsis
+  ## StringSlash
+  !macro _StrSlash FILENAME SLASH
+    Push "${FILENAME}"
+    Push "${SLASH}"
+    Call StrSlash
+    Pop $R0
+  !macroend
+  !define StrSlash `!insertmacro _StrSlash`
+  ; Push $filenamestring (e.g. 'c:\this\and\that\filename.htm')
+  ; Push "\"
+  ; Call StrSlash
+  ; Pop $R0
+  ; ;Now $R0 contains 'c:/this/and/that/filename.htm'
+  Function StrSlash
+    Exch $R3 ; $R3 = needle ("\" or "/")
+    Exch
+    Exch $R1 ; $R1 = String to replacement in (haystack)
+    Push $R2 ; Replaced haystack
+    Push $R4 ; $R4 = not $R3 ("/" or "\")
+    Push $R6
+    Push $R7 ; Scratch reg
+    StrCpy $R2 ""
+    StrLen $R6 $R1
+    StrCpy $R4 "\"
+    StrCmp $R3 "/" loop
+    StrCpy $R4 "/"
+    
+    loop:
+      StrCpy $R7 $R1 1
+      StrCpy $R1 $R1 $R6 1
+      StrCmp $R7 $R3 found
+      StrCpy $R2 "$R2$R7"
+      StrCmp $R1 "" done loop
+      
+    found:
+      StrCpy $R2 "$R2$R4"
+      StrCmp $R1 "" done loop
+      
+    done:
+      StrCpy $R3 $R2
+      Pop $R7
+      Pop $R6
+      Pop $R4
+      Pop $R2
+      Pop $R1
+      Exch $R3
+  FunctionEnd
+#+END_SRC
 * Functions
 ** Get Portable Apps Directories
 #+BEGIN_SRC nsis
@@ -197,8 +247,14 @@ This provides an interface to the Emacs Startup options
       ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
       WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
       end_proxy_init:
-    
-        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" 
+        ;; Put in some selected options
+        IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
+        
+        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey"
+        Push $R0
+        Push "/"
+        Call StrSlash
+        Pop $R0
         StrCpy $R1 $R0 5
         StrCmp "$R1" "USB:\" 0 +3
         StrCpy $R0 $R0 "" 4
@@ -208,10 +264,24 @@ This provides an interface to the Emacs Startup options
         StrCmp "$R1" "EXEDIR:\" 0 +3
         StrCpy $R0 $R0 "" 8
         StrCpy $R0 "$EXEDIR\$R0"
+        WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State" "$R0"
         
-        WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State" "$R0" 
-        ;; Put in some selected options
-        IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
+        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" 
+        Push $R0
+        Push "/"
+        Call StrSlash
+        Pop $R0
+        StrCpy $R1 $R0 5
+        StrCmp "$R1" "USB:\" 0 +3
+        StrCpy $R0 $R0 "" 4
+        StrCpy $R0 "$usbs$R0"
+        
+        StrCpy $R1 $R0 8
+        StrCmp "$R1" "EXEDIR:\" 0 +3
+        StrCpy $R0 $R0 "" 8
+        StrCpy $R0 "$EXEDIR\$R0"
+        WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State" "$R0"
+        
         ${RW} "OrgProtocol" "${ep_org}"
         ${RW} "RightEdit" "${ep_right}"
         ${RW} "IEmailto" "${ep_iemail}"
@@ -225,11 +295,11 @@ This provides an interface to the Emacs Startup options
         ${RW} "Fullwidth" "${ep_fw}"
         ${RW} "Fullheight" "${ep_fh}"
         ${RW} "Debug" "${ep_debug}"
-        ${RW} "Home" "${ep_home}"
         ${RW} "Daemon" "${ep_daemon}"
       end_init:
         ClearErrors
       FunctionEnd
+      
     
 #+END_SRC
 *** Exit Function
@@ -276,90 +346,109 @@ This provides an interface to the Emacs Startup options
   
 ** Write the startup options to EmacsPortable.ini
 #+BEGIN_SRC nsis
+    
+    Function ValidateCustom
+    ;
+    ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 2" "State"
+    ;  StrCmp ${TEMP1} 1 done
+    
+    ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "${ep_version}" "State"
+    ;  StrCmp ${TEMP1} 1 done
+    
+    ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 4" "State"
+    ;  StrCmp ${TEMP1} 1 done
+    ;    MessageBox MB_ICONEXCLAMATION|MB_OK "You must select at least one install option!"
+    ;    Abort
+    
+    ;  done:
+       Delete $EXEDIR\Data\ini\EmacsPortableApp.ini
   
-  Function ValidateCustom
-  ;
-  ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 2" "State"
-  ;  StrCmp ${TEMP1} 1 done
-  
-  ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "${ep_version}" "State"
-  ;  StrCmp ${TEMP1} 1 done
-  
-  ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 4" "State"
-  ;  StrCmp ${TEMP1} 1 done
-  ;    MessageBox MB_ICONEXCLAMATION|MB_OK "You must select at least one install option!"
-  ;    Abort
-  
-  ;  done:
-     Delete $EXEDIR\Data\ini\EmacsPortableApp.ini
-     
-     ;; Putty Key
-  
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State"
-  
-     ;; Now replace $EXEDIR with EXEDIR:
-     StrLen $R1 $EXEDIR
-     StrCpy $R2 $R0 $R1
-     StrCmp $EXEDIR $R2 0 +3
-     StrCpy $R0 $R0 "" $R1
-     StrCpy $R0 "EXEDIR:$R0"
-     
-     ;; Now replace $USBS
-  
-     StrLen $R1 $usbs
-     StrCpy $R2 $R0 $R1
-     StrCmp $usbs $R2 0 +3
-     StrCpy $R0 $R0 "" $R1
-     StrCpy $R0 "USB:$R0"
-  
-     WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" "$R0"
-     
-     ; Geometry
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
-     StrCpy $R1 "$R0"
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g2}" "State"
-     StrCpy $R1 "$R1x$R0"
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g3}" "State"
-     StrCpy $R1 "$R1+$R0"
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g4}" "State"
-     StrCpy $R1 "$R1+$R0"
-     WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" "$R1"
-  
-  
-     ${WR} "Version" "${ep_version}"
-     ${WR} "OrgProtocol" "${ep_org}"
-     ${WR} "RightEdit" "${ep_right}"
-     ${WR} "IEmailto" "${ep_iemail}"
-     ${WR} "IEsource" "${ep_iesrc}"
-     ${WR} "IEnews" "${ep_ienews}"
-     ${WR} "Font" "${ep_font}"
-     ${WR} "FontSize" "${ep_font_size}"
-     ${WR} "Foreground" "${ep_fg}"
-     ${WR} "Background" "${ep_bg}"
-     ${WR} "Maximized" "${ep_mm}"
-     ${WR} "Fullwidth" "${ep_fw}"
-     ${WR} "Fullheight" "${ep_fh}"
-     ${WR} "Debug" "${ep_debug}"
-     ${WR} "Home" "${ep_home}"
-     ${WR} "Daemon" "${ep_daemon}"
-     
-     
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
-     StrCmp $R0 "" skip_proxy
-     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
-     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
-     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
-     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
-     ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
-     WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
-     skip_proxy:
+       ;; Home Directory
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State"
        
-  FunctionEnd
+       ;; Now replace $EXEDIR with EXEDIR:
+       StrLen $R1 $EXEDIR
+       StrCpy $R2 $R0 $R1
+       StrCmp $EXEDIR $R2 0 +3
+       StrCpy $R0 $R0 "" $R1
+       StrCpy $R0 "EXEDIR:$R0"
+       
+       ;; Now replace $USBS
+       
+       StrLen $R1 $usbs
+       StrCpy $R2 $R0 $R1
+       StrCmp $usbs $R2 0 +3
+       StrCpy $R0 $R0 "" $R1
+       StrCpy $R0 "USB:$R0"
+       
+       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" "$R0"
+       ;; Putty Key
+       
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State"
+       
+       ;; Now replace $EXEDIR with EXEDIR:
+       StrLen $R1 $EXEDIR
+       StrCpy $R2 $R0 $R1
+       StrCmp $EXEDIR $R2 0 +3
+       StrCpy $R0 $R0 "" $R1
+       StrCpy $R0 "EXEDIR:$R0"
+       
+       ;; Now replace $USBS
+       
+       StrLen $R1 $usbs
+       StrCpy $R2 $R0 $R1
+       StrCmp $usbs $R2 0 +3
+       StrCpy $R0 $R0 "" $R1
+       StrCpy $R0 "USB:$R0"
+       
+       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" "$R0"
+       
+       ; Geometry
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
+       StrCpy $R1 "$R0"
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g2}" "State"
+       StrCpy $R1 "$R1x$R0"
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g3}" "State"
+       StrCpy $R1 "$R1+$R0"
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g4}" "State"
+       StrCpy $R1 "$R1+$R0"
+       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" "$R1"
+    
+    
+       ${WR} "Version" "${ep_version}"
+       ${WR} "OrgProtocol" "${ep_org}"
+       ${WR} "RightEdit" "${ep_right}"
+       ${WR} "IEmailto" "${ep_iemail}"
+       ${WR} "IEsource" "${ep_iesrc}"
+       ${WR} "IEnews" "${ep_ienews}"
+       ${WR} "Font" "${ep_font}"
+       ${WR} "FontSize" "${ep_font_size}"
+       ${WR} "Foreground" "${ep_fg}"
+       ${WR} "Background" "${ep_bg}"
+       ${WR} "Maximized" "${ep_mm}"
+       ${WR} "Fullwidth" "${ep_fw}"
+       ${WR} "Fullheight" "${ep_fh}"
+       ${WR} "Debug" "${ep_debug}"
+       ${WR} "Daemon" "${ep_daemon}"
+       
+       
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
+       StrCmp $R0 "" skip_proxy
+       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
+       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
+       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
+       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
+       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
+       skip_proxy:
+         
+    FunctionEnd
+    
   
   #+END_SRC
   
