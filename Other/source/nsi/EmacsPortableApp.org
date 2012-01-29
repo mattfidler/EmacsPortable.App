@@ -537,16 +537,16 @@ FunctionEnd
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
   
-      StrCmp "" $option_dos setupdos setupwin
+      StrCmp "" $option_dos setupwin setupdos
     setupdos:
       StrCpy $server_file "$TEMP\epd-$option_version\server"
       Goto end
     setupwin:
       StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
     end:
+      DetailPrint "Removed stale server files"
       ClearErrors
   FunctionEnd
-  
 #+END_SRC
 
 * Setup Environment
@@ -976,6 +976,7 @@ FunctionEnd
       Exec "$\"$EXEDIR\App\eps\addfont.exe$\" $\"$EXEDIR\App\fonts$\""
       WriteINIStr "$TEMP\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
       CopyFiles /SILENT "$EXEDIR\App\eps\rmfont.exe" "$TEMP\ep-rmfont.exe"
+      DetailPrint "Copied font cleanup files."
     end:
       StrCmp $INSTALL_FONT "1" 0 +2
       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
@@ -1004,11 +1005,12 @@ FunctionEnd
     StrCpy $R0 "$EXEDIR\$R0"
     
     IfFileExists $R0 0 end
-    StrCpy $R1 "$usbs\PortableApps\PuTTYPortable\PageantPortable.exe" 
-    IfFileExists $R1 +3 end
+    StrCpy $R1 "$usbs\PuTTYPortable\PageantPortable.exe" 
+    IfFileExists $R1 launch_putty 
     StrCpy $R1 "$usbs\PortableApps\PuTTYPortable\PageantPortable.exe"
-    IfFileExists $R1 0 end
-    Exec "$EXEDIR\App\eps\run.exe $R1 $R0"
+    IfFileExists $R1 launch_putty end
+    launch_putty:
+      Exec "$EXEDIR\App\eps\runp.exe $R1 $R0"
     found_pageant:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPPAGEANT", "1").r0'
     end:
