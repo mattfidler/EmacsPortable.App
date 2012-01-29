@@ -1,7 +1,8 @@
 ;; Load Latest Org-mode
 (require 'cl)
-(let ((elisp-source-dir (expand-file-name "../lisp/src/"
-					  (file-name-directory (or load-file-name (buffer-file-name))))))
+(let ((elisp-source-dir
+       (expand-file-name "../lisp/src/"
+                         (file-name-directory (or load-file-name (buffer-file-name))))))
   ;; load specific files
   (when (file-exists-p elisp-source-dir)
     ;; add the src directory to the load path

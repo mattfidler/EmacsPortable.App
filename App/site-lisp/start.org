@@ -161,23 +161,24 @@ Which is called by the EmacsPortable launcher.
 
 * Start the Emacs Server
 #+BEGIN_SRC emacs-lisp
+      
+    ;; Start server and load-bar.
+    (when (and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
+      (setq server-auth-dir (concat (getenv "TEMP")
+                                    (if window-system 
+                                        "\\EmacsPortable.App-Server-"
+                                      "\\epd-") emacs-ver))
+      (when (not (file-exists-p server-auth-dir))
+        (make-directory server-auth-dir t))
+      (require 'server)
+        ;; Since this is in the temporary directory it should always be safe.
+      (defun server-ensure-safe-dir (&rest args)
+        t)
+      (server-force-delete)
+      (server-start t))
     
-  ;; Start server and load-bar.
-  (when (and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
-    (setq server-auth-dir (concat (getenv "TEMP")
-                                  (if window-system 
-                                      "\\EmacsPortable.App-Server-"
-                                    "\\epd-") emacs-ver))
-    (when (not (file-exists-p server-auth-dir))
-      (make-directory server-auth-dir t))
-    (require 'server)
-      ;; Since this is in the temporary directory it should always be safe.
-    (defun server-ensure-safe-dir (&rest args)
-      t)
-    (server-start))
-  
-(ep-m "EmacsPortable.app")
-(require 'cl)
+  (ep-m "EmacsPortable.app")
+  (require 'cl)
 #+end_src
 * Pseudo Daemon
 By using autohotkey emacs and nsis, I have implemented a psuedo-daemon

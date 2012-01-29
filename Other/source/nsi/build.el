@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Jan 25 10:25:09 2012 (-0600)
+;; Last-Updated: Sat Jan 28 18:44:25 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 66
+;;     Update #: 67
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -94,7 +94,7 @@
                                                     build-dir))))
         (setq org-files (directory-files build-dir nil ".org"))))
     (setq org-dir (nth 0 (directory-files (concat build-dir "../../../App/lisp/src") t "\\<org")))
-    (load (concat org-dir "/lisp/org-install.el"))
+    (load (concat org-dir "/lisp/org-install"))
     (setq load-path (cons (concat org-dir "/lisp") load-path))
     (setq load-path (cons (concat org-dir "/lisp/contrib") load-path))
     (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp . t)))

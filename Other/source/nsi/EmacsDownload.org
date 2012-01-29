@@ -1,4 +1,4 @@
-#+TITLE: Emacs Download Script
+#+TITLE: Emacs Download Script    
 #+AUTHOR: Matthew L. Fidler
 #+PROPERTY: tangle EmacsDownload.nsi
 * Installer Properties
@@ -6,7 +6,7 @@
 I want:
  - user level execution
  - CRC check
- - Good compression
+ - Good compression    
 #+BEGIN_SRC nsis
 CRCCheck On
 RequestExecutionLevel user
@@ -246,6 +246,80 @@ the mirrors.ini file
   SectionGroup "Tools" sec_tools ; Collapsed
     ; Description:
     ; Tools for modifying EmacsPortable.App
+    SectionGroup "Decompress EmacsPortable.App" sec_decompress_emacsportable_app ; Collapsed
+      ; Description:
+      ; Decompress of various components in EmacsPortable.App
+      Section /o "Decompress Emacs Lisp Files" sec_decompress_emacs_lisp_files ; Unchecked (/o)
+        ; Description:
+        ; This will decompress .el.gz or .el.bz2 files
+        IfFileExists "$EXEDIR\App\ezwin\bin\find.exe" ezwin_find
+        IfFileExists "$EXEDIR\App\gw32\bin\find.exe" g32_find
+        Goto end
+        ezwin_find:
+          ExecWait '$EXEDIR\App\ezwin\bin\find.exe $EXEDIR -name "*.el.gz" -exec $EXEDIR\App\gw32\bin\gzip.exe -d -v {} ;'
+          Goto end
+        g32_find:
+          ExecWait '$EXEDIR\App\gw32\bin\find.exe $EXEDIR -name "*.el.gz" -exec $EXEDIR\App\gw32\bin\gzip.exe -d -v {} ;'
+        end:
+          ClearErrors
+      SectionEnd ; sec_decompress_emacs_lisp_files
+      Section /o "Decompress Executables" sec_decompress_executables ; Unchecked (/o)
+        ; Description:
+        ; Decompress Executables by upx.
+        StrCpy "$R1" "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler\upx.exe"
+        IfFileExists "$R1" found_upx
+        Goto not_found
+        found_upx:
+          IfFileExists "$EXEDIR\App\gw32\bin" +3
+          DetailPrint "Compressing executables in $EXEDIR\App\gw32\bin"
+          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\gw32\bin\*.exe"'
+          IfFileExists "$EXEDIR\App\ezwin\bin" +3
+          DetailPrint "Compressing executables in $EXEDIR\App\ezwin\bin"
+          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\ezwin\bin\*.exe"'
+          Goto end
+        not_found:
+          MessageBox MB_OK "Cannot Find upx"
+        end:
+          ClearErrors
+      SectionEnd ; sec_decompress_executables
+    SectionGroupEnd ; sec_decompress_emacsportable_app
+    SectionGroup "Compress EmacsPortable.App" sec_compress_emacsportable_app ; Collapsed
+      ; Description:
+      ; Compression of varios components in EmacsPortable.App
+      Section /o "Compress Emacs Lisp Files" sec_compress_emacs_lisp_files ; Unchecked (/o)
+        ; Description:
+        ; This compresses Emacs Lisp Files that have a corresponding .elc file
+        IfFileExists "$EXEDIR\App\ezwin\bin\find.exe" ezwin_find
+        IfFileExists "$EXEDIR\App\gw32\bin\find.exe" g32_find
+        Goto end
+        ezwin_find:
+          ExecWait '$EXEDIR\App\ezwin\bin\find.exe $EXEDIR -name "*.el" -size +4k -exec cmd /c "$EXEDIR\App\eps\elgz.bat {} " ;'
+          Goto end
+        g32_find:
+          ExecWait '$EXEDIR\App\gw32\bin\find.exe $EXEDIR -name "*.el" -size +4k -exec cmd /c "$EXEDIR\App\eps\elgz.bat {} " ;'
+        end:
+          ClearErrors
+      SectionEnd ; sec_compress_emacs_lisp_files
+      Section /o "Compress Executables" sec_compress_executables ; Unchecked (/o)
+        ; Description:
+        ; Compresses some executables with upx
+        StrCpy "$R1" "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler\upx.exe"
+        IfFileExists "$R1" found_upx
+        Goto not_found
+        found_upx:
+          IfFileExists "$EXEDIR\App\gw32\bin" +3
+          DetailPrint "Compressing executables in $EXEDIR\App\gw32\bin"
+          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\gw32\bin\*.exe"'
+          IfFileExists "$EXEDIR\App\ezwin\bin" +3
+          DetailPrint "Compressing executables in $EXEDIR\App\ezwin\bin"
+          ExecWait 'cmd /c "$R1 -d $EXEDIR\App\ezwin\bin\*.exe"'
+          Goto end
+        not_found:
+          MessageBox MB_OK  "Could not find upx"
+        end:
+          ClearErrors
+      SectionEnd ; sec_compress_executables
+    SectionGroupEnd ; sec_compress_emacsportable_app
     SectionGroup "Update Git Repositories" sec_update_git_repositories ; Collapsed
       ; Description:
       ; This allow GIT repositories to be updated
@@ -271,6 +345,12 @@ the mirrors.ini file
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_tools ${LANG_ENGLISH} "Tools for modifying EmacsPortable.App"
+  LangString DESC_sec_compress_executables ${LANG_ENGLISH} "Compresses some executables with upx"
+  LangString DESC_sec_decompress_executables ${LANG_ENGLISH} "Decompress Executables by upx."
+  LangString DESC_sec_decompress_emacs_lisp_files ${LANG_ENGLISH} "This will decompress .el.gz or files"
+  LangString DESC_sec_decompress_emacsportable_app ${LANG_ENGLISH} "Decompress of various components in EmacsPortable.App"
+  LangString DESC_sec_compress_emacs_lisp_files ${LANG_ENGLISH} "This compresses Emacs Lisp Files that have a corresponding .elc file"
+  LangString DESC_sec_compress_emacsportable_app ${LANG_ENGLISH} "Compression of varios components in EmacsPortable.App"
   LangString DESC_sec_update_yasnippet ${LANG_ENGLISH} "Update Yasnippet"
   LangString DESC_sec_update_git_repositories ${LANG_ENGLISH} "This allow GIT repositories to be updated"
   LangString DESC_sec_update_emacsportable_app_launcher ${LANG_ENGLISH} "Update the EmacsPortable.App Launcher to the latest version"
@@ -278,8 +358,13 @@ the mirrors.ini file
   
   !macro tools_desc
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_update_yasnippet} $(DESC_sec_update_yasnippet)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compress_emacsportable_app} $(DESC_sec_compress_emacsportable_app)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compress_emacs_lisp_files} $(DESC_sec_compress_emacs_lisp_files)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_decompress_emacsportable_app} $(DESC_sec_decompress_emacsportable_app)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_decompress_emacs_lisp_files} $(DESC_sec_decompress_emacs_lisp_files)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_decompress_executables} $(DESC_sec_decompress_executables)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compress_executables} $(DESC_sec_compress_executables)
   !macroend
-  
   
 #+END_SRC
 : 
@@ -412,6 +497,32 @@ Remove all plug-in directory files, like 7zip.
   Function .onSelChange
     ${VER_SEL}
   FunctionEnd  
+#+END_SRC
+** Compress/Decompress Lisp Files
+*** Compress Emacs Lisp Files
+#+BEGIN_SRC nsis
+  Function CompressEl    
+    IfFileExists "$R9c" 0 not_found
+    IfFileExists "$EXEDIR\App\gw32\bin\bzip2.exe" bz2    
+    IfFileExists "$EXEDIR\App\gw32\bin\gzip.exe" gz    
+    DetailPrint "Cound not find bzip2.exe or gzip.exe, not compressing $R9"    
+    Goto end    
+    gz:    
+      DetailPrint "Compressing $R9"    
+      ExecDos::Exec "$EXEDIR\App\gw32\bin\gzip.exe -9 $R9"
+      Goto end
+    bz2:
+      DetailPrint "Compressing $R9"
+      ExecDos::Exec "$EXEDIR\App\gw32\bin\bzip2.exe -9 $R9"
+      Goto end
+    not_found:
+      DetailPrint "Not Compressing $R9, no .elc found."
+    end:
+      ClearErrors
+      StrCpy $0 1
+      Push $0
+  FunctionEnd
+  
 #+END_SRC
 
 * Descriptions

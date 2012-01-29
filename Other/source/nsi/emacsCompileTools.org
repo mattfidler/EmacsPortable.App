@@ -210,6 +210,7 @@ executables.
       ${ifSecNotRO} ${sec_hunspell} skip_build_tools
       ${ifSecNotRO} ${sec_sk} skip_build_tools
       ${ifSecNotRO} ${sec_required_gnu32_utilities} skip_build_tools
+      ${ifSecNotRO} ${sec_ct1} skip_build_tools
       ${setInstallGroup} ${sec_emacsportable_app_build_tools}
     skip_build_tools:
       ClearErrors

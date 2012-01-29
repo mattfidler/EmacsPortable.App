@@ -516,12 +516,11 @@ CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
 ** TODO Add Info from ezwin and gw32 and elsewhere to the infopath
 ** TODO Add to the manpath
 ** TODO Compress Info Files
-** TODO Compress Elisp Files
-** TODO Upx selected files (not the emacs binary!)
-** STARTED PuttyPortable support of TRAMP?
+** STARTED Compress Elisp Files
 :LOGBOOK:
-CLOCK: [2012-01-27 Fri 12:23]
+CLOCK: [2012-01-28 Sat 17:05]--[2012-01-28 Sat 23:56] =>  6:51
 :END:
+** TODO Upx selected files (not the emacs binary!)
 ** TODO Ezwin remove facility
 ** TODO More Hunspell Dictionaries, and/or use Firefox dictionaries.
 ** TODO Add EmacsPortable.App Extensions to eXpresso?
@@ -530,5 +529,8 @@ CLOCK: [2012-01-27 Fri 12:23]
 ** TODO Try to find Putty Local, and other local applications via the registry.
 ** TODO Stop Pageant on registry cleanup if launched by Emacs.
 ** TODO Allow user to select home directory in EmacsOptions.exe
+** TODO Remove PuTTY Portable startup screen when launching Pageant Portable.
+** TODO Make sure that portable starter kit from a zip file works.
+
 
 

@@ -386,170 +386,167 @@ FunctionEnd
 * Command Line Options
 ** Get Command Line Options
 #+BEGIN_SRC nsis
-
-!define GetCmdOptions "!insertmacro GetCmdOptions"
-
-!macro GetCmdOptions
-  Call GetCmdOptions
-!macroend
-Function GetCmdOptions
-  ## Gets Command Line Functions
-  Push $R0
   
-  ${GetParameters} $cmdLineParams
+  !define GetCmdOptions "!insertmacro GetCmdOptions"
   
-  ; /? param (help)
-  ClearErrors
-  ${GetOptions} $cmdLineParams '/?' $R0
-  IfErrors +3 0
-  MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-OR-FILENAME]...$\n$\n\
-      /?$\t$\tShow this help$\n\
-      /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
-      /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
-      /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
-      /VERSION=ver$\t$\tRun using Emacs versionver if exists.$\n"
-  Abort
-  
-  
-  Pop $R0
-  
-  ; Initialize options
-  
-  
-  StrCpy $option_fullwidth 0
-  StrCpy $option_fullheight 1
-  StrCpy $option_maximized 0
-  StrCpy $option_geometry "80x70+0+0"
-  StrCpy $option_background "black"
-  StrCpy $option_foreground "white"
-  StrCpy $option_daemon "1"             
-  StrCpy $option_debug ""
-  StrCpy $option_dos ""
-  StrCpy $option_q ""
-  StrCpy $option_version "24.0"
-  StrCpy $option_font "Inconsolata"
-  StrCpy $option_font_size 18
-  
-  StrCpy $option_emacsclient "emacsclientw.exe"
-  
-  ; Parse Parameters
-  Push $R0
-  Call parseParameters
-  Pop $R0
-FunctionEnd
+  !macro GetCmdOptions
+    Call GetCmdOptions
+  !macroend
+  Function GetCmdOptions
+    ## Gets Command Line Functions
+    Push $R0
+    
+    ${GetParameters} $cmdLineParams
+    
+    ; /? param (help)
+    ClearErrors
+    ${GetOptions} $cmdLineParams '/?' $R0
+    IfErrors +3 0
+    MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-OR-FILENAME]...$\n$\n\
+        /?$\t$\tShow this help$\n\
+        /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
+        /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
+        /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
+        /VERSION=ver$\t$\tRun using Emacs versionver if exists.$\n"
+    Abort
+    
+    
+    Pop $R0
+    
+    ; Initialize options
+    
+    
+    StrCpy $option_fullwidth 0
+    StrCpy $option_fullheight 1
+    StrCpy $option_maximized 0
+    StrCpy $option_geometry "80x70+0+0"
+    StrCpy $option_background "black"
+    StrCpy $option_foreground "white"
+    StrCpy $option_daemon "1"             
+    StrCpy $option_debug ""
+    StrCpy $option_dos ""
+    StrCpy $option_q ""
+    StrCpy $option_version "24.0"
+    StrCpy $option_font "Inconsolata"
+    StrCpy $option_font_size 18
+    
+    StrCpy $option_emacsclient "emacsclientw.exe"
+    
+    ; Parse Parameters
+    Push $R0
+    Call parseParameters
+    Pop $R0
+  FunctionEnd
 #+END_SRC
 ** Parse Parameters
 #+BEGIN_SRC nsis
-Function parseParameters
-  emacs_start:
-    StrCmp "$EXEFILE" "EmacsPortableApp.exe" emacs_ver_from_ini emacs_ver_from_exe
-  emacs_ver_from_exe:
-    StrLen $R2 $EXEFILE
-    IntOp $R2 17 - $R2
-    StrCpy $R0 $EXEFILE "" $R2
-    StrLen $R2 $R0
-    IntOp $R2 $R2 - 4
-    StrCpy $option_version $R0 $R2
-    IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe 0 emacs_ver_from_ini
-    ## See if EmacsPortableApp.exe is newer.
-    ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
-    IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
-    Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$option_version'
-    Abort
-    Goto emacs_ver_skip 
-  emacs_ver_from_ini:
-    IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 emacs_ver
-    ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
-    IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 emacs_ver_skip  
-    ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
-    IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
-    Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
-    CopyFiles /SILENT "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe"
-    Goto emacs_ver_skip
-  emacs_ver:
-    ExecWait $EXEDIR\EmacsOptions.exe
-    Goto emacs_start
-  emacs_ver_skip:
-    
-    ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
-    
-    ${ReadINIStrWithDefault} $option_maximized $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Maximized" $option_maximized
-    
-    ${ReadINIStrWithDefault} $option_fullwidth $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
-    
-    ${ReadINIStrWithDefault} $option_fullheight $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullheight" $option_fullheight
-    
-    ${ReadINIStrWithDefault} $option_font $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Font" $option_font
-    ${ReadINIStrWithDefault} $option_font_size $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "FontSize" $option_font_size
-    ${ReadINIStrWithDefault} $option_toolbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Toolbar" $option_toolbar
-    ${ReadINIStrWithDefault} $option_menubar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Menubar" $option_menubar
-    ${ReadINIStrWithDefault} $option_scrollbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "ScrollBars" $option_scrollbar
-    ${ReadINIStrWithDefault} $option_minibuffer $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Minibuffer" $option_minibuffer
-    ${ReadINIStrWithDefault} $option_background $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
-    ${ReadINIStrWithDefault} $option_foreground $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
-    ${ReadINIStrWithDefault} $option_daemon $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
-    StrCmp "1" $option_daemon 0 +2
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
-    
-    ${GetOptions} $cmdLineParams '/VERSION=' $R0
-    IfErrors +2 0
-    StrCpy $option_version $R0
-    
-    StrCpy $option_emacs "emacs-$option_version.exe"
-    
-    
-    ${GetOptions} $cmdLineParams '/DEBUG' $R0
-    IfErrors +3 0
-    StrCpy $option_debug " --debug-init"
-    Goto +7
-    IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 +5
-    ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
-    StrCmp $option_debug "1" 0 +3
-    StrCpy $option_debug " --debug-init"
-    Goto +2
-    StrCpy $option_debug ""
-    
-    ${GetOptions} $cmdLineParams '/Q' $R0
-    IfErrors +2 0
-    StrCpy $option_q " -Q"
-    
-    
-    
-    ${GetOptions} $cmdLineParams '/DOS' $R0
-    IfErrors +4 0
-    StrCpy $option_dos " -nw"
-    StrCpy $option_emacs "emacs-$option_version-dos.exe"
-    StrCpy $option_emacsclient "emacsclient.exe"
-    
-    
-    
-    ;; Now take out all known parameters
-    
-    ${StrReplace} $cmdLineParams "/Q" ""
-    StrCpy $cmdLineParams $0
-    ${StrReplace} $cmdLineParams "/DOS" ""
-    StrCpy $cmdLineParams $0
-    ${StrReplace} $cmdLineParams "/DEBUG" ""
-    StrCpy $cmdLineParams $0
-    ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""
-    StrCpy $cmdLineParams $0
-    
-    ${Trim} $cmdLineParams
-    StrCpy $cmdLineParams $0
-    
-    ## Now Setup server
-    StrCmp "" $option_dos 0 +3
-    setupwin:
-      IfFileExists "$TEMP\EmacsPortable.App-Server-$option_version" +2 0
-      CreateDirectory "$TEMP\EmacsPortable.App-Server-$option_version"
-      StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
-      Goto end
+  Function parseParameters
+    emacs_start:
+      StrCmp "$EXEFILE" "EmacsPortableApp.exe" emacs_ver_from_ini emacs_ver_from_exe
+    emacs_ver_from_exe:
+      StrLen $R2 $EXEFILE
+      IntOp $R2 17 - $R2
+      StrCpy $R0 $EXEFILE "" $R2
+      StrLen $R2 $R0
+      IntOp $R2 $R2 - 4
+      StrCpy $option_version $R0 $R2
+      IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe 0 emacs_ver_from_ini
+      ## See if EmacsPortableApp.exe is newer.
+      ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
+      IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
+      Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$option_version'
+      Abort
+      Goto emacs_ver_skip 
+    emacs_ver_from_ini:
+      IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 emacs_ver
+      ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
+      IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 emacs_ver_skip  
+      ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
+      IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
+      Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
+      CopyFiles /SILENT "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe"
+      Goto emacs_ver_skip
+    emacs_ver:
+      ExecWait $EXEDIR\EmacsOptions.exe
+      Goto emacs_start
+    emacs_ver_skip:
+      
+      ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
+      
+      ${ReadINIStrWithDefault} $option_maximized $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Maximized" $option_maximized
+      
+      ${ReadINIStrWithDefault} $option_fullwidth $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
+      
+      ${ReadINIStrWithDefault} $option_fullheight $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullheight" $option_fullheight
+      
+      ${ReadINIStrWithDefault} $option_font $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Font" $option_font
+      ${ReadINIStrWithDefault} $option_font_size $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "FontSize" $option_font_size
+      ${ReadINIStrWithDefault} $option_toolbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Toolbar" $option_toolbar
+      ${ReadINIStrWithDefault} $option_menubar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Menubar" $option_menubar
+      ${ReadINIStrWithDefault} $option_scrollbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "ScrollBars" $option_scrollbar
+      ${ReadINIStrWithDefault} $option_minibuffer $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Minibuffer" $option_minibuffer
+      ${ReadINIStrWithDefault} $option_background $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
+      ${ReadINIStrWithDefault} $option_foreground $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
+      ${ReadINIStrWithDefault} $option_daemon $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
+      StrCmp "1" $option_daemon 0 +2
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
+      
+      ${GetOptions} $cmdLineParams '/VERSION=' $R0
+      IfErrors +2 0
+      StrCpy $option_version $R0
+      
+      StrCpy $option_emacs "emacs-$option_version.exe"
+      
+      
+      ${GetOptions} $cmdLineParams '/DEBUG' $R0
+      IfErrors +3 0
+      StrCpy $option_debug " --debug-init"
+      Goto +7
+      IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 +5
+      ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
+      StrCmp $option_debug "1" 0 +3
+      StrCpy $option_debug " --debug-init"
+      Goto +2
+      StrCpy $option_debug ""
+      
+      ${GetOptions} $cmdLineParams '/Q' $R0
+      IfErrors +2 0
+      StrCpy $option_q " -Q"
+      
+      
+      
+      ${GetOptions} $cmdLineParams '/DOS' $R0
+      IfErrors +4 0
+      StrCpy $option_dos " -nw"
+      StrCpy $option_emacs "emacs-$option_version-dos.exe"
+      StrCpy $option_emacsclient "emacsclient.exe"
+      
+      
+      
+      ;; Now take out all known parameters
+      
+      ${StrReplace} $cmdLineParams "/Q" ""
+      StrCpy $cmdLineParams $0
+      ${StrReplace} $cmdLineParams "/DOS" ""
+      StrCpy $cmdLineParams $0
+      ${StrReplace} $cmdLineParams "/DEBUG" ""
+      StrCpy $cmdLineParams $0
+      ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""
+      StrCpy $cmdLineParams $0
+      
+      ${Trim} $cmdLineParams
+      StrCpy $cmdLineParams $0
+  
+      StrCmp "" $option_dos setupdos setupwin
     setupdos:
-      IfFileExists "$TEMP\epd-$option_version" +2 0
-      CreateDirectory "$TEMP\epd-$option_version"
       StrCpy $server_file "$TEMP\epd-$option_version\server"
+      Goto end
+    setupwin:
+      StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
     end:
-FunctionEnd
+      ClearErrors
+  FunctionEnd
+  
 #+END_SRC
 
 * Setup Environment
@@ -1022,6 +1019,28 @@ FunctionEnd
   
 #+END_SRC
 
+* Setup EmacsServer Directories
+#+BEGIN_SRC nsis
+  Function SetupServer
+    StrCmp "" $option_dos setupdos setupwin
+    ## Now Setup server
+    setupwin:
+      IfFileExists "$TEMP\EmacsPortable.App-Server-$option_version"  0 +2
+      RmDir /r "$TEMP\EmacsPortable.App-Server-$option_version"
+      CreateDirectory "$TEMP\EmacsPortable.App-Server-$option_version"
+      StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
+      Goto end
+    setupdos:
+      IfFileExists "$TEMP\epd-$option_version"  0 +2
+      RmDir /r "$TEMP\epd-$option_version"
+      CreateDirectory "$TEMP\epd-$option_version"
+      StrCpy $server_file "$TEMP\epd-$option_version\server"
+    end:
+      ClearErrors
+  FunctionEnd
+  
+#+END_SRC
+
 * Calling Commands
 ** Configure Emacs Command
 #+BEGIN_SRC nsis
@@ -1115,6 +1134,8 @@ FunctionEnd
   !macro emacs_setup
     DetailPrint "Setup Home path"
     Call GetHomePath
+    DetailPrint "Remove Stale Emacs Server, if it exists"
+    Call SetupServer
     DetailPrint "Setup Emacs EXE"
     ${SetupEmacsExe}
     DetailPrint "Setup Necessary DLLs"

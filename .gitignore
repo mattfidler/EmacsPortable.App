@@ -151,3 +151,7 @@ Readme.org_archive
 /App/ini/ezwin.ini
 /Other/source/nsi/emacsdownload-ezwin.nsi
 /Other/source/nsi/emacsdownload-rezwin.nsi
+/App/site-lisp/start.el.gz
+/Data/init/shared/startup-org.el.bz2
+/Other/source/nsi/esn-x-symbol.el.gz
+/Other/source/nsi/startup-org.el.bz2
