@@ -175,10 +175,11 @@ Which is called by the EmacsPortable launcher.
       (defun server-ensure-safe-dir (&rest args)
         t)
       (server-force-delete)
-      (server-start t))
+      (server-start))
     
   (ep-m "EmacsPortable.app")
   (require 'cl)
+  
 #+end_src
 * Pseudo Daemon
 By using autohotkey emacs and nsis, I have implemented a psuedo-daemon

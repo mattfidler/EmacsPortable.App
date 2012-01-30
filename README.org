@@ -356,11 +356,66 @@ test environment, and is likely not very reasonable to use.
 * Using Specific Applications
 ** Adding Paths (Windows Only)
 Most of the specific applications work by adding paths and changing
-environmental variables.  This is controlled by =App/paths.ini=.
+environmental variables.  This is controlled by =App/ini/paths.ini=.
 EmacsPortableApp looks at the following sections
-*** Local Paths [local]
-*** Portable Paths [portable]
-*** Relative Paths [exedir]
+*** General Paths
+**** Local Paths [local]
+Local paths are paths that emacs checks that are locally available.
+They are specified by NAME=Local Path Snippet.  An example of this is:
+#+BEGIN_SRC conf
+[local]
+git=msysgit\msysgit\bin
+git2=msysgit\bin
+gitmsys=msysgit\msysgit\mingw\bin
+gitmsys2=msysgit\mingw\bin
+#+END_SRC
+
+In this example =git= The following paths are checked:
+1) =c:\msysgit\msysgit\bin=
+   - The root is set to =c:\=
+2) =%ProgramFiles%\msysgit\msysgit\bin=
+   - The root is set to =%ProgramFiles%=
+
+If they exist they are added to the path environment before starting
+emacs.  If the directory in fact /exists/, then two additional ini
+sections are checked, =[local.git.path]= and =[local.git.set]=.  
+
+For the =git= local setup, there are two sections.  The first
+=local.git.path= is specified as follows:
+
+#+BEGIN_SRC conf
+[local.git.path]
+git_install_root=msysgit\msysgit
+#+END_SRC
+
+Then each key is added to the environment putting the root location
+before the right handed value.  In this case, the environmental
+variable is set to =c:\msysgit\msysgit= or
+=%ProgramFiles%\msysgit\msysgit= depending on which path was found.   
+
+The other type of section that is used is the =[local.git.set]=.  In
+the case of =git= this section is defined as:
+
+#+BEGIN_SRC conf
+[local.git.set]
+PLINK_PROTOCOL=ssh
+#+END_SRC
+
+Therefore, if =git= is found then the environmental variable
+=PLINK_PROTOCOL= is set to =ssh=.
+
+**** Portable Paths [portable]
+The portable paths are set in the same way as the local paths with the
+exception of the places they check for the existence of paths.  The
+=portable= section checks for paths in =USB:\=, and =USB:\PortableApps\=.
+**** Relative Paths [exedir]
+The =exedir= section checks for paths relative to the portable
+application. 
+*** Info Paths
+Emacs uses Info for most everything.  You can add =info= paths that
+Emacs doesn't know about by a similar manner as the general paths,
+above. 
+*** Unix Manual Paths
 ** Java-based Apps
 EmacsPortable supports [[http://plantuml.sourceforge.net/download.html][PlantUML]] and [[http://ditaa.sourceforge.net/][ditaa]] for [[http://orgmode.org][org-mode]] assuming that
 [[http://portableapps.com/apps/utilities/java_portable_launcher][JavaPortable]] is installed. 
@@ -548,6 +603,4 @@ CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
 :END:
 ** TODO Remove PuTTY Portable startup screen when launching Pageant Portable.
 ** TODO Make sure that portable starter kit from a zip file works.
-
-
-
+** TODO Update Emacs to 23.3 and 24.0.94

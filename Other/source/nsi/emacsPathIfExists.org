@@ -21,3 +21,35 @@ Var npath
 !define PathIfExist '!insertmacro "_PathIfExist"'
 
 #+END_SRC
+** Info If Exist
+Adding info paths
+#+BEGIN_SRC nsis
+  Var ninfo
+  !macro _InfoIfExist ARG1 GOTO
+    IfFileExists "${ARG1}" 0 +5
+    IntOp $ninfo $ninfo + 1
+    WriteINIStr "$TEMP\ep-env.ini" "info" "$ninfo" "${ARG1}"
+    DetailPrint "Add ${ARG1} to to INFOPATH"
+    Goto ${GOTO}
+  !macroend
+  
+  !define InfoIfExist '!insertmacro "_InfoIfExist"'
+  
+#+END_SRC
+
+
+** Man If Exist
+Adding man paths
+#+BEGIN_SRC nsis
+  Var nman
+  !macro _ManIfExist ARG1 GOTO
+    IfFileExists "${ARG1}" 0 +5
+    IntOp $nman $nman + 1
+    WriteINIStr "$TEMP\ep-env.ini" "man" "$nman" "${ARG1}"
+    DetailPrint "Add ${ARG1} to to MANPATH"
+    Goto ${GOTO}
+  !macroend
+  
+  !define ManIfExist '!insertmacro "_ManIfExist"'
+  
+#+END_SRC

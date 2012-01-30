@@ -659,8 +659,8 @@ FunctionEnd
       ReadINIStr $R2 "$EXEDIR\App\ini\paths.ini" "${WHAT}" "$R1"
   !macroend
   !define enumPathIni `!insertmacro enumPathIni`
-  
   !define enumPathEnd `!insertmacro enumPathEnd`
+  
   !macro enumPathEnd WHAT
     path_${WHAT}:
       EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}.$R1.path"
@@ -695,6 +695,8 @@ FunctionEnd
   Function SetupPath
     StrCpy $nini 0
     StrCpy $npath 0
+    StrCpy $ninfo 0
+    StrCpy $nman 0
     IfFileExists "$EXEDIR\App\ini\paths.ini" 0 skip_data_paths
     setup_paths:
       ${enumPathIni} "exedir"
@@ -735,6 +737,84 @@ FunctionEnd
       Goto path_local
       ${enumPathEnd} "local"
       
+      ## Now look into INFO files
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "exedir.info"
+      Pop $R0
+      StrCmp "$R0" "error" done_info_exedir
+    loop_info_exedir:
+      IntCmp $R0 "0" done_info_exedir done_info_exedir 0
+      Pop $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "exedir.info" "$R1"
+      ${InfoIfExist} "$EXEDIR\$R2" 0
+      IntOp $R0 $R0 - 1
+      Goto loop_info_exedir
+    done_info_exedir:
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.info"
+      Pop $R0
+      StrCmp "$R0" "error" done_info_portable
+    loop_info_portable:
+      IntCmp $R0 "0" done_info_portable done_info_portable 0
+      Pop $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "portable.info" "$R1"
+      ${InfoIfExist} "$usbs\$R2" 0
+      ${InfoIfExist} "$usbs\PortableApps\$R2" 0
+      IntOp $R0 $R0 - 1
+      Goto loop_info_portable
+    done_info_portable:
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "local.info"
+      Pop $R0
+      StrCmp "$R0" "error" done_info_local
+    loop_info_local:
+      IntCmp $R0 "0" done_info_local done_info_local 0
+      Pop $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "local.info" "$R1"
+      ${InfoIfExist} "$PROGRAMFILES\$R2" 0
+      ${InfoIfExist} "$PROGRAMFILES32\$R2" 0
+      ${InfoIfExist} "$PROGRAMFILES64\$R2" 0
+      ${InfoIfExist} "c:\$R2" 0
+      IntOp $R0 $R0 - 1
+      Goto loop_info_local
+    done_info_local:
+  
+      ## Now look into MAN files
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "exedir.man"
+      Pop $R0
+      StrCmp "$R0" "error" done_man_exedir
+    loop_man_exedir:
+      IntCmp $R0 "0" done_man_exedir done_man_exedir 0
+      Pop $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "exedir.man" "$R1"
+      ${ManIfExist} "$EXEDIR\$R2" 0
+      IntOp $R0 $R0 - 1
+      Goto loop_man_exedir
+    done_man_exedir:
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.man"
+      Pop $R0
+      StrCmp "$R0" "error" done_man_portable
+    loop_man_portable:
+      IntCmp $R0 "0" done_man_portable done_man_portable 0
+      Pop $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "portable.man" "$R1"
+      ${ManIfExist} "$usbs\$R2" 0
+      ${ManIfExist} "$usbs\PortableApps\$R2" 0
+      IntOp $R0 $R0 - 1
+      Goto loop_man_portable
+    done_man_portable:
+      EnumINI::Section "$EXEDIR\App\ini\paths.ini" "local.man"
+      Pop $R0
+      StrCmp "$R0" "error" done_man_local
+    loop_man_local:
+      IntCmp $R0 "0" done_man_local done_man_local 0
+      Pop $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "local.man" "$R1"
+      ${ManIfExist} "$PROGRAMFILES\$R2" 0
+      ${ManIfExist} "$PROGRAMFILES32\$R2" 0
+      ${ManIfExist} "$PROGRAMFILES64\$R2" 0
+      ${ManIfExist} "c:\$R2" 0
+      IntOp $R0 $R0 - 1
+      Goto loop_man_local
+    done_man_local:
+      
     skip_data_paths:
       ## PythonPortable.
       #${Locate} "$usbs\PortableApps\" "/L=D /M=*Python* /S= /G=0" "addpath"
@@ -751,6 +831,8 @@ FunctionEnd
     skipr:
       ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
       WriteINIStr "$TEMP\ep-env.ini" "path" "n" "$npath"
+      WriteINIStr "$TEMP\ep-env.ini" "info" "n" "$ninfo"
+      WriteINIStr "$TEMP\ep-env.ini" "man" "n" "$nman"
       #ok  
   FunctionEnd
   
@@ -1014,7 +1096,7 @@ FunctionEnd
     StrCpy $R1 "$usbs\PortableApps\PuTTYPortable\PageantPortable.exe"
     IfFileExists $R1 launch_putty end
     launch_putty:
-      Exec "$EXEDIR\App\eps\runp.exe $R1 $R0"
+      Exec "$EXEDIR\App\eps\run.exe $R1 $R0"
     found_pageant:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPPAGEANT", "1").r0'
     end:

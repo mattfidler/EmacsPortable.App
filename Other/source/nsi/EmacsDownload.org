@@ -498,33 +498,6 @@ Remove all plug-in directory files, like 7zip.
     ${VER_SEL}
   FunctionEnd  
 #+END_SRC
-** Compress/Decompress Lisp Files
-*** Compress Emacs Lisp Files
-#+BEGIN_SRC nsis
-  Function CompressEl    
-    IfFileExists "$R9c" 0 not_found
-    IfFileExists "$EXEDIR\App\gw32\bin\bzip2.exe" bz2    
-    IfFileExists "$EXEDIR\App\gw32\bin\gzip.exe" gz    
-    DetailPrint "Cound not find bzip2.exe or gzip.exe, not compressing $R9"    
-    Goto end    
-    gz:    
-      DetailPrint "Compressing $R9"    
-      ExecDos::Exec "$EXEDIR\App\gw32\bin\gzip.exe -9 $R9"
-      Goto end
-    bz2:
-      DetailPrint "Compressing $R9"
-      ExecDos::Exec "$EXEDIR\App\gw32\bin\bzip2.exe -9 $R9"
-      Goto end
-    not_found:
-      DetailPrint "Not Compressing $R9, no .elc found."
-    end:
-      ClearErrors
-      StrCpy $0 1
-      Push $0
-  FunctionEnd
-  
-#+END_SRC
-
 * Descriptions
 ** Languages
 #+BEGIN_SRC nsis
