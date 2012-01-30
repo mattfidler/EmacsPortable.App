@@ -567,7 +567,10 @@ rm ~/key
 To use the settings of PuTTYPortable, you have to have a PuTTYPortable
 session open.
 *** PuTTY and Proxy settings
-PuTTY currently stores proxy settings in the registry. 
+PuTTY currently stores proxy settings in the registry. If
+EmacsPortable.App is started up AND PuTTY Pageant has not started up,
+then the EmacsPortable.App will write the Proxy settings to Putty, so
+that plink connections work regardless of the proxy that you are using.
 * Icons
 Icons came from various places:
 -  [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]

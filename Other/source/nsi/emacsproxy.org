@@ -7,6 +7,10 @@
   Var PROXY_ID
   Var PROXY_IDE
   Var PROXY_NAME
+  Var PROXY_SERVER
+  Var PROXY_PORT
+  Var PROXY_USER
+  Var PROXY_PASS
 #+END_SRC
 
 ** Read Line Function 
@@ -76,18 +80,23 @@
     IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
     ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    StrCpy "$PROXY_SERVER" "$R0"
     StrCmp "$R0" "" end
     StrCpy "$R1" "$R0"
     ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    StrCpy "$PROXY_PORT" "$R0"  
     StrCmp "$R0" "" +2 0
     StrCpy "$R1" "$R1:$R0"
     ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    StrCpy $PROXY_USER "$R0"
+    
     StrCmp "$R0" "" +2 0
     StrCpy "$R2" "$R0"
     ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    StrCpy $PROXY_PASS $R0
     StrCmp "$R0" "" +3 0
     StrCmp "$R2" "" +2 0
     StrCpy "$R2" "$R2:$R0"

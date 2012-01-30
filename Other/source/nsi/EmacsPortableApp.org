@@ -1097,6 +1097,27 @@ FunctionEnd
     IfFileExists $R1 launch_putty end
     launch_putty:
       Exec "$EXEDIR\App\eps\run.exe $R1 $R0"
+      DetailPrint "Waiting for pageant to start..."
+    look_pg:
+      FindProcDLL::FindProc "pageant.exe"
+      StrCmp $R0 "1"  modify_putty_proxy wait
+    wait:
+      Sleep 1
+      Goto look_pg
+    modify_putty_proxy:
+      StrCmp "" $PROXY_SERVER modify_putty_no_proxy
+      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPort" $PROXY_PORT
+      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyHost" "$PROXY_SERVER"
+      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyUsername" "$PROXY_USER"
+      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPassword" "$PROXY_PASS"
+      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyMethod" 3
+      Goto found_pageant
+    modify_putty_no_proxy:
+      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPort" 0
+      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyHost" ""
+      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyUsername" ""
+      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPassword" ""
+      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyMethod" 0
     found_pageant:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPPAGEANT", "1").r0'
     end:
