@@ -18,9 +18,9 @@ ${rmfont}: rmfont.ahk ../img/ico/fonts.ico
 ${eps}: EmacsPortableServer.ahk ../img/ico/appicon.ico
 	cmd /c "@ahk2exe /in EmacsPortableServer.ahk /out ${win_dir}\EmacsPortableServer.exe /icon ${e_ico}"
 
-${run}: runemacs.ahk ../img/ico/appicon.ico
+${run}: runemacs.ahk ../img/ico/appicon.ico runemacs-header.ahk
 	cmd /c "@ahk2exe /in runemacs.ahk /out ${win_dir}\run.exe /icon ${e_ico}"
-${run2}: runemacs2.ahk ../img/ico/appicon.ico
+${run2}: runemacs2.ahk ../img/ico/appicon.ico runemacs-header.ahk
 	cmd /c "@ahk2exe /in runemacs2.ahk /out ${win_dir}\run2.exe /icon ${e_ico}"
 
 clean:

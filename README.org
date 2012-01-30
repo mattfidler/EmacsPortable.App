@@ -585,8 +585,12 @@ CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
 *** TODO Figure out a way to remove specific components of the Emacs binaries
 
 ** TODO Zip windows binaries and then extract to temporary directory
-** TODO Add Info from ezwin and gw32 and elsewhere to the infopath
-** TODO Add to the manpath
+** DONE Add Info from ezwin and gw32 and elsewhere to the infopath
+CLOSED: [2012-01-29 Sun 23:44]
+- State "DONE"       from "TODO"       [2012-01-29 Sun 23:44]
+** DONE Add to the manpath
+CLOSED: [2012-01-29 Sun 23:44]
+- State "DONE"       from "TODO"       [2012-01-29 Sun 23:44]
 ** TODO Compress Info Files
 ** TODO Ezwin remove facility
 ** TODO More Hunspell Dictionaries, and/or use Firefox dictionaries.
@@ -601,6 +605,7 @@ CLOSED: [2012-01-29 Sun 15:37]
 :LOGBOOK:
 CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
 :END:
-** TODO Remove PuTTY Portable startup screen when launching Pageant Portable.
+** HOLD Remove PuTTY Portable startup screen when launching Pageant Portable.
+- State "DONE"       from "STARTED"    [2012-01-29 Sun 23:45]
 ** TODO Make sure that portable starter kit from a zip file works.
 ** TODO Update Emacs to 23.3 and 24.0.94

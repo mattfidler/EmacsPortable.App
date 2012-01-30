@@ -5,7 +5,7 @@
 ;; Author: Lennart Borgman
 ;; Created: Tue Nov 22 01:07:13 2005
 ;; Version: 0.52
-;; Last-Updated: Thu Jan 26 13:26:31 2012 (-0600)
+;; Last-Updated: Sun Jan 29 23:50:28 2012 (-0600)
 ;; Keywords:
 ;; Compatibility: Emacs 22
 ;;
