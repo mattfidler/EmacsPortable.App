@@ -464,10 +464,10 @@ Supports MSYS portable.
 *** EzWin
 ** PuTTY
 *** PuTTY and magit
-Since magit and ssh does not work correctly, you can use PuTTY to
-connect to your host via plink.  Note that you must connect to the
-host first via PuTTY or you will get one of the following error
-messages:
+Since magit and OpenSSH does not work correctly in windows, you can
+use PuTTY to connect to your host via plink.  Note that you must
+connect to the host first via PuTTY or you will get one of the
+following error messages:
 
 : The server's host key is not cached in the registry. You
 : have no guarantee that the server is the computer you
@@ -566,6 +566,8 @@ rm ~/key
 *** PuTTYPortable
 To use the settings of PuTTYPortable, you have to have a PuTTYPortable
 session open.
+*** PuTTY and Proxy settings
+PuTTY currently stores proxy settings in the registry. 
 * Icons
 Icons came from various places:
 -  [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
@@ -609,3 +611,5 @@ CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
 - State "DONE"       from "STARTED"    [2012-01-29 Sun 23:45]
 ** TODO Make sure that portable starter kit from a zip file works.
 ** TODO Update Emacs to 23.3 and 24.0.94
+** TODO Make the proxy settings a little less finicky.
+** TODO Change PuTTY Proxy settings when proxy settings are detected.

@@ -287,8 +287,11 @@ killed. Using this we can create a function that:
     "This function returns nil and sets ep-emacs-kill-frame to t"
     (setq ep-emacs-kill-frame t)
     nil)
+  (defvar ep-kill-emacs-hook nil
+    "True Kill Emacs hook.")
   (defun ep-remove-reg ()
     "Removes Registry settings on exit."
+    (run-hooks 'ep-kill-emacs-hook)
     (when (file-readable-p (concat (getenv "TEMP") "/EP-RemoveReg.exe"))
       (message "Removing Registry Settings.")
       (shell-command-to-string (concat (getenv "TEMP") "/EP-RemoveReg.exe /VERSION=" emacs-ver))))

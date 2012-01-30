@@ -5,7 +5,7 @@
 ;; Author: Lennart Borgman
 ;; Created: Tue Nov 22 01:07:13 2005
 ;; Version: 0.52
-;; Last-Updated: Sun Jan 29 23:50:28 2012 (-0600)
+;; Last-Updated: Mon Jan 30 09:48:10 2012 (-0600)
 ;; Keywords:
 ;; Compatibility: Emacs 22
 ;;
@@ -40,7 +40,7 @@
 ;;; Change log:
 ;; 26-Jan-2012    Matthew L. Fidler  
 ;;    Last-Updated: Thu Dec 28 15:34:00 2006 (3600 +0100)
-;;    Changed to work with EmacsPortable.App
+;;    Changed to work with portable MSYS and  EmacsPortable.App
 ;;
 ;; 2005-12-15 More careful check of shell exec.
 ;; 2005-12-21 (w32shell-delayed-customize): No dialog box.
