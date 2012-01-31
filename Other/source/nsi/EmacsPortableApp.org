@@ -1076,6 +1076,8 @@ FunctionEnd
 2) Launches paegent
 #+BEGIN_SRC nsis
   Function setupPutty
+    Var /GLOBAL LaunchPutty
+    StrCpy $LaunchPutty ""
     FindProcDLL::FindProc "pageant.exe"
     StrCmp $R0 "1" found_pageant 0
     
@@ -1091,33 +1093,14 @@ FunctionEnd
     StrCpy $R0 "$EXEDIR\$R0"
     
     IfFileExists $R0 0 end
-    StrCpy $R1 "$usbs\PuTTYPortable\PageantPortable.exe" 
+    StrCpy $R1 "$usbs\PuTTYPortable" 
     IfFileExists $R1 launch_putty 
-    StrCpy $R1 "$usbs\PortableApps\PuTTYPortable\PageantPortable.exe"
+    StrCpy $R1 "$usbs\PortableApps\PuTTYPortable"
     IfFileExists $R1 launch_putty end
     launch_putty:
-      Exec "$EXEDIR\App\eps\run.exe $R1 $R0"
-      DetailPrint "Waiting for pageant to start..."
-    look_pg:
-      FindProcDLL::FindProc "pageant.exe"
-      StrCmp $R0 "1"  modify_putty_proxy wait
-    wait:
-      Sleep 1
-      Goto look_pg
-    modify_putty_proxy:
-      StrCmp "" $PROXY_SERVER modify_putty_no_proxy
-      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPort" $PROXY_PORT
-      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyHost" "$PROXY_SERVER"
-      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyUsername" "$PROXY_USER"
-      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPassword" "$PROXY_PASS"
-      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyMethod" 3
-      Goto found_pageant
-    modify_putty_no_proxy:
-      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPort" 0
-      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyHost" ""
-      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyUsername" ""
-      WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyPassword" ""
-      WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default Settings" "ProxyMethod" 0
+      Exec "$EXEDIR\App\eps\run.exe $R1\PageantPortable.exe $R0"
+      StrCpy $LaunchPutty "1"
+      
     found_pageant:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPPAGEANT", "1").r0'
     end:
@@ -1127,6 +1110,36 @@ FunctionEnd
   !define SetupPutty `call setupPutty`
   
 #+END_SRC
+
+Now Finalize Putty Proxy settings
+
+#+BEGIN_SRC nsis
+  !define puttystr `WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
+  !define puttyint `WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
+  Function FinalizePutty
+    StrCmp "" $LaunchPutty end
+    StrCmp "" $PROXY_SERVER clear_proxy set_proxy
+    set_proxy:
+      ${puttystr} "ProxyHost" $PROXY_SERVER
+      ${puttystr} "ProxyUsername" $PROXY_USER
+      ${puttystr} "ProxyPassword" $PROXY_PASS
+      ${puttyint} "ProxyPort" $PROXY_PORT
+      ${puttyint} "ProxyMethod" 3
+      Goto end
+    clear_proxy:
+      ${puttystr} "ProxyHost" ""
+      ${puttystr} "ProxyUsername" ""
+      ${puttystr} "ProxyPassword" ""
+      ${puttyint} "ProxyPort" ""
+      ${puttyint} "ProxyMethod" 0
+      Goto end
+    end:
+      ClearErrors
+  FunctionEnd
+  !define FinalizePutty `Call FinalizePutty`
+  
+#+END_SRC
+
 
 * Setup EmacsServer Directories
 #+BEGIN_SRC nsis
@@ -1243,6 +1256,8 @@ FunctionEnd
   !macro emacs_setup
     DetailPrint "Setup Home path"
     Call GetHomePath
+    DetailPrint "Setup PuTTy if available"
+    ${SetupPutty}
     DetailPrint "Remove Stale Emacs Server, if it exists"
     Call SetupServer
     DetailPrint "Setup Emacs EXE"
@@ -1253,8 +1268,6 @@ FunctionEnd
     ${InstallFonts}
     DetailPrint "Setup Proxy"
     ${SetupProxy}
-    DetailPrint "Setup PuTTy if available"
-    ${SetupPutty}
     DetailPrint "Add to Environment Variables"
     ${AddToEnvironment}
     DetailPrint "Add Org-protocol"
@@ -1320,12 +1333,15 @@ FunctionEnd
        StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
      start_emacs_gdb:
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
+       ${FinalizePutty}
        Goto loop
      start_emacs_regular:
        Exec "$EXEDIR\App\eps\run.exe $emacs"
+       ${FinalizePutty}
        Goto loop
      start_emacs_dos:
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
+       ${FinalizePutty}
        Goto end
      loop:
        StrCmp "1" $option_daemon 0 end
