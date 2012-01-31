@@ -619,6 +619,13 @@ CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
 ** HOLD Remove PuTTY Portable startup screen when launching Pageant Portable.
 - State "DONE"       from "STARTED"    [2012-01-29 Sun 23:45]
 ** TODO Make sure that portable starter kit from a zip file works.
-** TODO Update Emacs to 23.3 and 24.0.94
+** DONE Update Emacs to 23.3 and 24.0.94
+CLOSED: [2012-01-30 Mon 21:35]
+- State "DONE"       from "TODO"       [2012-01-30 Mon 21:35]
 ** TODO Make the proxy settings a little less finicky.
-** TODO Change PuTTY Proxy settings when proxy settings are detected.
+** DONE Change PuTTY Proxy settings when proxy settings are detected.
+CLOSED: [2012-01-30 Mon 21:34]
+- State "DONE"       from "TODO"       [2012-01-30 Mon 21:34]
+
+** TODO  Make launching of PuTTY optional.
+** TODO EmacsPortable.App will launch whatever emacs is running.

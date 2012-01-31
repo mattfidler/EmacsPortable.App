@@ -440,6 +440,16 @@ FunctionEnd
 #+END_SRC
 ** Parse Parameters
 #+BEGIN_SRC nsis
+  Function SetValues
+    StrLen $R1 "$EXEDIR\App\emacs-"
+    StrLen $R2 $R9
+    IntOp $R2 $R1 - $R2
+    StrCpy $R1 $R9 "" $R2
+    FindProcDLL::FindProc "emacs-$R1.exe"
+    StrCmp $R0 "1" 0 +2
+    StrCpy $option_version $R1
+    Push $0
+  FunctionEnd
   Function parseParameters
     emacs_start:
       StrCmp "$EXEFILE" "EmacsPortableApp.exe" emacs_ver_from_ini emacs_ver_from_exe
@@ -460,7 +470,11 @@ FunctionEnd
     emacs_ver_from_ini:
       IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 emacs_ver
       ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
-      IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 emacs_ver_skip  
+      FindProcDLL::FindProc "emacs-$option_version.exe"
+      StrCmp $R0 "1" ver_found_ini
+      ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+    ver_found_ini:
+      IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 emacs_ver_skip
       ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
       IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
       Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
@@ -536,7 +550,7 @@ FunctionEnd
       
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
-  
+      
       StrCmp "" $option_dos setupwin setupdos
     setupdos:
       StrCpy $server_file "$TEMP\epd-$option_version\server"
