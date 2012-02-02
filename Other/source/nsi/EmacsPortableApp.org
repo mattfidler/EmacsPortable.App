@@ -1012,11 +1012,12 @@ FunctionEnd
 ** Copy Dlls to the correct position
 #+BEGIN_SRC nsis
   !define dllcp `!insertmacro _dllcp`
-  !macro _dllcp FILENAME
-    IfFileExists "$emacs\${FILENAME}" +3
-    IfFileExists "$EXEDIR\App\gw32\bin\${FILENAME}" 0 +2
-    CopyFiles /SILENT "$EXEDIR\App\gw32\bin\${FILENAME}" "$emacs\${FILENAME}"
+  !macro _dllcp FILENAME FILETO
+    IfFileExists "$emacs\${FILETO}" +3
+    IfFileExists "$EXEDIR\App\${FILENAME}" 0 +2
+    CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs\${FILETO}"
   !macroend
+  
   Function CpDll       
     IfFileExists "$EXEDIR\App\ini\copy.ini" 0 end_copy
     EnumINI::Section "$EXEDIR\App\ini\copy.ini" "copy"
@@ -1025,7 +1026,8 @@ FunctionEnd
     loop:
       IntCmp "$R0" "0" end_copy
       Pop $R1
-      ${dllcp} $R1
+      ReadIniStr $R2 "$EXEDIR\App\ini\copy.ini" "copy" "$R1"
+      ${dllcp} $R1 $R2
       IntOp $R0 $R0 - 1
       Goto loop
     end_copy:

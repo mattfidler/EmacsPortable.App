@@ -5,7 +5,7 @@
 ;; Author: Lennart Borgman
 ;; Created: Tue Nov 22 01:07:13 2005
 ;; Version: 0.52
-;; Last-Updated: Mon Jan 30 09:48:10 2012 (-0600)
+;; Last-Updated: Wed Feb  1 11:36:23 2012 (-0600)
 ;; Keywords:
 ;; Compatibility: Emacs 22
 ;;
@@ -231,10 +231,11 @@ Returns non-nil if success."
                (setq shell "bash")
                (setenv "PS1" "Cygwin \\w > "))
              )
-          (  (equal shellname "msys")
+          (  (equal shellname "msys")(concat usb-drive-letter
+                                             "PortableApps/MSYSPortable/App/MSYS/bin")
              (setq bin (w32shell-verify-bindir 'w32shell-msys-bin "sh.exe"))
              (when bin
-               (setq shell "sh")
+               (setq shell (expand-file-name "sh.exe" w32shell-msys-bin))
                (setenv "PS1" "MSYS \\w > "))
              )
           (  (equal shellname "cmd")
@@ -339,7 +340,13 @@ Options - Customize EmacsW32 if you are using EmacsW32."
                                     (concat usb-drive-letter
                                             "PortableApps/MSYSPortable/App/MSYS/msys.bat"))
                                    (concat usb-drive-letter
-                                           "PortableApps/MSYSPortable/App/MSYS/bin")))
+                                           "PortableApps/MSYSPortable/App/MSYS/bin")                         (if (file-exists-p
+                                                                                                                  (concat usb-drive-letter
+                                                                                                                          "PortableApps/CommonFiles/MinGW/msys/1.0/bin"))
+                                                                                                                 (concat usb-drive-letter
+                                                                                                                         "PortableApps/CommonFiles/MinGW/msys/1.0/bin")
+                                                                                                               "")
+                                           ))
   "Path to MSYS bin directory.
 Note that you can set this automatically from the menus through
 Options - Customize EmacsW32 if you are using EmacsW32."

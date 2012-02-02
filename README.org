@@ -229,10 +229,19 @@ the entire file directly with the following.
 - Installing more elisp libraries :: The easiest way to install new
 libraries is through the Emacs Lisp Package Archive (see [[#emacs-lisp-package-archive][Emacs
 Lisp Package Archive]] below).  When a library is not available
-through ELPA you can grab it's source and place it directly in
-the =/Data/src= directory.  Any packages found there will automatically
-be added to your load-path when Emacs starts up, and are
-guaranteed not to conflict with future updates.
+through ELPA, or the library is outdated for your tastes you have two
+options:
+1. You can grab it's source and place it directly in the =/Data/src=
+   directory.  Any packages found there will automatically be added
+   to your load-path when Emacs starts up, and are guaranteed not to
+   conflict with future updates.
+2. You can use el-get to install the package.
+
+Note that el-get allows you to be more up-to-date since it usually
+syncs with the software developer's repository.  This is good and bad,
+so beware the bleeding edge. As a consequence, this requires command
+line versions of =git= and other package managers to be available to
+el-get.  
 ** Using Pre-installed libraries
 - Making use of the two pre-installed libraries :: By default the
 starter kit downloads and installs two generally helpful elisp

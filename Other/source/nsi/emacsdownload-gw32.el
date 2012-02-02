@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Thu Jan 26 19:03:12 2012 (-0600)
+;; Last-Updated: Tue Jan 31 10:19:38 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 76
+;;     Update #: 77
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -70,7 +70,7 @@
         ("Patch" "used by ediff-patch-file and others to apply patches.")
         ;;("TexInfo" "used to build Emacs' manuals.")
         ("Unzip" "used by archive-mode for extracting zip files.")
-        ;;("Xpm" "library to support XPM images (bundled with Emacs binaries)")
+        ("Xpm" "library to support XPM images (bundled with Emacs binaries)")
         ("Zip" "used by archive-mode for editing zip files.")
         ("Zlib" "required by LibPng (also in GTK). ")))
       (ini "")

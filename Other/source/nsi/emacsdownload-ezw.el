@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 26 16:33:22 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Thu Jan 26 20:34:25 2012 (-0600)
+;; Last-Updated: Tue Jan 31 10:19:06 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 11
+;;     Update #: 12
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -54,6 +54,7 @@
          ("FindUtils" "for grep-find and other file searches.")
          ("Grep" "for searching through files with grep.")
          ("TexInfo" "used to build Emacs' manuals.")
+         ("GnuTLS" "Adds network transport support for Emacs")
          ))
       (fn "")
       (ini "")
