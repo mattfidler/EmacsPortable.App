@@ -61,11 +61,11 @@
   
   Function EnabledAdaptersCallback
     Pop $3
-    DetailPrint "Get Mac Address"
-    IpConfig::GetNetworkAdapterMACAddress $3
-    Pop $0
-    Pop $1
-    StrCpy $PROXY_ID "$PROXY_ID$1"
+    #DetailPrint "Get Mac Address"
+    #IpConfig::GetNetworkAdapterMACAddress $3
+    #Pop $0
+    #Pop $1
+    #StrCpy $PROXY_ID "$PROXY_ID$1"
     GetFunctionAddress $4 IPAddressesCallback
     IpConfig::GetNetworkAdapterIPAddressesCB $3 $4
   FunctionEnd
@@ -76,7 +76,7 @@
     StrCpy $PROXY_ID ""
     GetFunctionAddress $2 EnabledAdaptersCallback
     IpConfig::GetEnabledNetworkAdaptersIDsCB $2
-    ${BlowFish_Encrypt} $PROXY_NAME $PROXY_ID $PROXY_ID
+    StrCpy $PROXY_NAME $PROXY_ID
     IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
     ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
     ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"

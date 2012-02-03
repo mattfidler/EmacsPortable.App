@@ -40,13 +40,7 @@ Thumbs.db
 /Data/src/*.el.gz
 /Data/src/*.elc
 /Data/src/*/
-/Data/Home/.ssh*
-/Data/Home/.bash*
-/Data/Home/.gitconfig
-/Data/Home/.smex*
-/Data/Home/.emacs*
-/Data/Home/org*
-/Data/Home/.sh_history
+/Data/Home/*
 Readme.org_archive
 
 # Actual Emacs Files #

@@ -933,10 +933,9 @@ the implementation
   (if (and (executable-find "git")
            (getenv "HTTP_PROXY"))
       (progn
-        (shell-command-to-string (concat "git config --global http.proxy"
+        (shell-command-to-string (concat "git config --global http.proxy "
                                          (getenv "HTTP_PROXY"))))
     (shell-command-to-string (concat "git config --global --unset http.proxy")))
-  
 #+END_SRC
 
 ** cvs
@@ -947,8 +946,6 @@ keep current with bleeding edge software.
 #+BEGIN_SRC emacs-lisp
   (setq el-get-dir (expand-file-name (concat usb-app-dir "lisp/el-get/")))
   (add-to-list 'load-path (concat el-get-dir "el-get/"))
-  
-  
   ;; Working developer edition of el-get.
   (condition-case err
       (progn
@@ -960,8 +957,12 @@ keep current with bleeding edge software.
                (let (el-get-master-branch)
                  (end-of-buffer)
                  (eval-print-last-sexp))))))
+        (add-to-list 'el-get-recipe-path
+                     (concat usb-app-dir "lisp/rcp"))
         (el-get 'sync))
     (error nil))
+  
+  
   
   ;;(add-to-list 'load-path "~/.emacs.d/el-get/el-get")
   ;;(require 'el-get)

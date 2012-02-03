@@ -148,6 +148,7 @@ it alone when OTHER_SEC is read-only.
       ClearErrors
       StrCpy $R9 ".exe"
     use_inetc:
+      IfFileExists "$TEMP\portable$R9" found
       inetc::get /CONNECTTIMEOUT 20 /NOCOOKIES /TRANSLATE "Downloading ..." \
           "Connecting..." second minute hour s "%dkB (%d%%) of %dkB @ %d.%01dkB/s" \
           " (%d %s%s remaining)" $R0 "$TEMP\portable$R9" /END
@@ -198,11 +199,18 @@ it alone when OTHER_SEC is read-only.
     found:
       StrCmp "$R9" ".exe" is_exe
       StrCmp "$R9" ".7z" is_7z
+      StrCmp "$R9" ".zip" is_zip
+      Goto end
+    is_zip:
+      ReadINIStr $R0 "${mirror}" "${WHAT}" "out"
+      ClearErrors
+      SetOutPath "$PA\$R0"
+      ZipDll::extractall "$TEMP\portable.zip"  "$PA\$R0"
+      Delete "$TEMP\portable.zip"
       Goto end
     is_7z:
       ReadINIStr $R0 "${mirror}" "${WHAT}" "out"
       ClearErrors
-      MessageBox MB_OK "$PA\$R0"
       SetOutPath "$PA\$R0"
       Nsis7z::ExtractWithDetails "$TEMP\portable.7z" "Installing package ${WHAT}..."
       Delete "$TEMP\portable.7z"

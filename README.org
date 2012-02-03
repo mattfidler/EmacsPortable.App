@@ -436,17 +436,20 @@ would need to be installed for [[http://plantuml.sourceforge.net/download.html][
 By installing [[http://www.portablepython.com][Python Portable]] into your =PortableApps= Directory,
 python is available to Emacs.  This is useful for installing Bazaar,
 which Emacs uses as its version control.
+** Version control Software
 *** Bazaar
-Look at https://launchpad.net/bzr-windows-installers
+I have created a portable Bazaar.  There are some reports of troubling
+errors. 
+*** Subversion in Windows
+Not quite portable, but you can get the binaries [[http://www.visualsvn.com/downloads/][here]].
 
-Portable Python includes:
-- NetworkX 
-- PySerial 
-- PyScripter
-- PyWin32
-- RPyC
+Running in subversion from within EmacsPortable.App /is/ portable,
+though.  Emacs will set the =%AppData%= Environment variable to
+=Data/AppData= and set =%ALLUSERSPROFILE%= to =Data/AppData=
 
-In addition Bazaar requires
+
+
+
 
 ** SumatraPDF Portable
 Using AUCTeX inverse-search and forward search is supported with
