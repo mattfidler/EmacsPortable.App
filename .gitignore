@@ -155,5 +155,5 @@ Readme.org_archive
 /App/site-lisp/start.el.gz
 /Other/source/nsi/esn-x-symbol.el.gz
 /App/eps/*.exe
-/Data/init/shared/startup-org.el.bz2
-/Data/init/shared/startup-org.el.bz2
+/App/lisp/kicker/*
+/Data/init/shared/*

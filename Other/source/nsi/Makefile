@@ -30,55 +30,55 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 	makensis Emacs-Q.nsi
 
 EmacsDos.nsi: EmacsShortcuts.el
-	cmd /c "emacs -Q --batch -l ./EmacsShortcuts.el"
+	emacs -Q --batch -l ./EmacsShortcuts.el
 
 Emacs-Q.nsi: EmacsShortcuts.el
-	cmd /c "emacs -Q --batch -l ./EmacsShortcuts.el"
+	emacs -Q --batch -l ./EmacsShortcuts.el
 
 EmacsDebug.nsi: EmacsShortcuts.el
-	cmd /c "emacs -Q --batch -l ./EmacsShortcuts.el"
+	emacs -Q --batch -l ./EmacsShortcuts.el
 
 EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh
-	cmd /c "set ORG_FILE=""EmacsPortableOptions.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableOptions.org)"
 
 EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh
-	cmd /c "set ORG_FILE=""EmacsPortableApp.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableApp.org)"
 
 emacsPathIfExists.nsh: emacsPathIfExists.org
-	cmd /c "set ORG_FILE=""emacsPathIfExists.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'emacsPathIfExists.org)"
 
 EmacsDownload.nsi: EmacsDownload.org ${download_extras}
-	cmd /c "set ORG_FILE=""EmacsDownload.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownload.org)"
 
 emacsproxy.nsh: emacsproxy.org 
-	cmd /c "set ORG_FILE=""emacsproxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'emacsproxy.org)"
 
 EmacsDownload-ezwin.nsi: emacsdownload-ezw.el ../../../App/ini/mirrors.ini
-	cmd /c "emacs -Q --batch -l ./emacsdownload-ezw.el"
+	emacs -Q --batch -l ./emacsdownload-ezw.el
 
 EmacsDownload-vers.nsi: emacsdownload-vers.el ../../../App/ini/mirrors.ini
-	cmd /c "emacs -Q --batch -l ./emacsdownload-vers.el"
+	emacs -Q --batch -l ./emacsdownload-vers.el
 
 EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
-	cmd /c "emacs -Q --batch -l ./emacsdownload-pae.el"
+	emacs -Q --batch -l ./emacsdownload-pae.el
 
 emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/mirrors.ini
-	cmd /c "emacs -Q --batch -l ./emacsdownload-gw32.el"
+	emacs -Q --batch -l ./emacsdownload-gw32.el
 
 EmacsRemoveRegistry.nsi: EmacsRemoveRegistry.org emacsproxy.nsh
-	cmd /c "set ORG_FILE=""EmacsRemoveRegistry.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsRemoveRegistry.org)"
 
 SetProxy.nsi: SetProxy.org emacsproxy.nsh
-	cmd /c "set ORG_FILE=""SetProxy.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'SetProxy.org)"
 
 install-net.nsi: install-net.org ${download_extras}
-	cmd /c "set ORG_FILE=""install-net.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'install-net.org)"
 
 EmacsDownloadShared.nsh: EmacsDownloadShared.org
-	cmd /c "set ORG_FILE=""EmacsDownloadShared.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownloadShared.org)"
 
 EmacsCompileTools.nsh: emacsCompileTools.org
-	cmd /c "set ORG_FILE=""emacsCompileTools.org"" & emacs -Q --batch -l ./build.el --eval ""(build-nsi)"""
+	emacs -Q --batch -l ./build.el --eval "(build-nsi 'emacsCompileTools.org)"
 
 clean:
 	rm EmacsCompileTools.nsi

@@ -66,407 +66,18 @@ This sets the variables for EmacsPortable.App
            data-directory)
   
 #+END_SRC
-* Fancy Splash-screen to show EmacsPortable.app instead of Emacs
-:PROPERTIES:
-:ID: cb3ae3d6-4087-4d9d-bb6e-0bc6bb8012ff
-:END:
-#+begin_src emacs-lisp
-  (defun fancy-splash-head ()
-    "Insert the head part of the splash screen into the current buffer."
-    ;; Redefined this
-    (let* ((image-file (cond ((stringp fancy-splash-image)
-                              fancy-splash-image)
-                             ((display-color-p)
-                              (concat usb-app-dir "/img/"
-                                      (cond ((image-type-available-p 'svg)
-                                             "emacsportable.svg")
-                                            ((image-type-available-p 'png)
-                                             "emacsportable.png")
-                                            ((image-type-available-p 'jpeg)
-                                             "emacsportable.jpg")
-                                            ((image-type-available-p 'xpm)
-                                             "emacsportable.xpm")
-                                            ((<= (display-planes) 8)
-                                             (if (image-type-available-p 'xpm)
-                                                 "emacsportable.xpm"
-                                               "emacsportable.pbm"))
-                                            (t "emacsportable.pbm"))))
-                             (t (concat usb-app-dir "/img/emacsportable.pbm"))))
-           (img (create-image image-file))
-           (image-width (and img (car (image-size img))))
-           (window-width (window-width (selected-window))))
-      (when img
-        (when (> window-width image-width)
-          ;; Center the image in the window.
-          (insert (propertize " " 'display
-                              `(space :align-to (+ center (-0.5 . ,img)))))
-  
-          ;; Change the color of the XPM version of the splash image
-          ;; so that it is visible with a dark frame background.
-          (when (and (memq 'xpm img)
-                     (eq (frame-parameter nil 'background-mode) 'dark))
-            (setq img (append img '(:color-symbols (("#000000" . "gray30"))))))
-  
-          ;; Insert the image with a help-echo and a link.
-          (make-button (prog1 (point) (insert-image img)) (point)
-                       'face 'default
-                       'help-echo "mouse-2, RET: Browse https://github.com/mlf176f2/EmacsPortable.App/"
-                       'action (lambda (button) (browse-url "https://github.com/mlf176f2/EmacsPortable.App/"))
-                       'follow-link t)
-          (insert "\n\n")))))
-  
-  
-    (ep-m "Startup screen")
-  
-#+end_src
-
-* New frames in EmacsPortable.app
-:PROPERTIES:
-:ID: ff11d00d-fe0c-499f-9e35-1a3d703bf0c8
-:END:
-To use the NSIS daemon, we need to be able to start a frame on
-demand.  This is done with the =new-emacs= function:
-
-#+begin_src emacs-lisp
-  (defvar ep-kill-emacs-query-functions nil
-    "Variable to save `kill-emacs-query-functions'")
-  (defun new-emacs (&optional rename &rest arg)
-    "Starts a new emacs frame (called windows in the rest of the computing world)"
-    (interactive)
-    (when window-system
-      (let (tmp
-            (sf (selected-frame)))
-        (when ep-kill-emacs-query-functions
-          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
-          (setq ep-kill-emacs-query-functions nil))
-        (select-frame (new-frame))
-        (when rename
-          (modify-frame-parameters (selected-frame) (list (cons 'name (concat "___EmacsPortableDaemon_" emacs-ver "___"))))
-          (select-frame sf))
-        (if (= 0 (length arg))
-            (cond
-             (t
-              (about-emacs)))
-          (mapc (lambda(x)
-                  (when (file-exists-p x)
-                    (find-file x)))
-                arg))
-        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
-          (ecb-minor-mode)))))
-   
-  
-#+end_src
-
-Which is called by the EmacsPortable launcher.
-
-* Start the Emacs Server
-#+BEGIN_SRC emacs-lisp
-      
-    ;; Start server and load-bar.
-    (when (and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
-      (setq server-auth-dir (concat (getenv "TEMP")
-                                    (if window-system 
-                                        "\\EmacsPortable.App-Server-"
-                                      "\\epd-") emacs-ver))
-      (when (not (file-exists-p server-auth-dir))
-        (make-directory server-auth-dir t))
-      (require 'server)
-        ;; Since this is in the temporary directory it should always be safe.
-      (defun server-ensure-safe-dir (&rest args)
-        t)
-      (server-force-delete)
-      (server-start))
-    
-  (ep-m "EmacsPortable.app")
-  (require 'cl)
-  
-#+end_src
-* Pseudo Daemon
-By using autohotkey emacs and nsis, I have implemented a psuedo-daemon
-mode for EmacsPortable.
-
-The components for this are:
-- The [[*NSIS%20loader%20script][NSIS loader script]]
-- The [[Autohotkey script][Autohotkey script]]
-- [[NSIS launcher script][NSIS launcher script]]
-- [[EmacsPortable.App loader script][EmacsPortable.App loader script]]
-** NSIS loader script
-:PROPERTIES:
-:ID: 918199a7-df18-4abe-a251-033926c0671e
-:END:
-The [[file:../../Other/source/nsi/loademacs.nsi::%3B%3B%3B%20loademacs.nsi%20---%20Loads%20Emacs][loademacs.nsi]] NSIS script implements a progress bar.  Currently it
-is just a psudo-progress bar that really doesn't know when Emacs will
-finish loading.  However, by looking at file =runningep.flg= in the
-temporary directory, it also tells the user what is loading.  This is
-already currently implemented in the emacs minibuffer.  However, if I
-am going to hide one of the frames to create a psudo-daemon, the user
-will not be able to see this.  Therefore, I implemented this
-interface.
-
-Currently it will continue the progress bar until it detects that
-=runninep.flg= is no longer in the temporary directory OR =emacs.exe=
-is no longer running.
-
-Currently this poses a problem if the site-wide initialization has some
-error.  It will continue to load indefinitely.  I'm not currently sure
-how to track this except for some large condition-case which deletes
-the file when loading.
-
-This has been suspended.  I like looking at emacs while it loads.
-There is more information for this type of display.
-** Autohotkey script
-:PROPERTIES:
-:ID: 850a5d6b-f80e-4a2c-b395-ced494a87750
-:END:
-The auto-hotkey [[file:source/ahk/EmacsPortableServer.ahk::%3B%3B%20(at%20your%20option)%20any%20later%20version.][EmacsPortableServer.ahk]] script keeps the psuedo-daemon
-frame from being displayed and subsequently closed on accident.
-** NSIS launcher script
-:PROPERTIES:
-:ID: 1d13200e-3329-4f3a-8320-58d413fe3fd0
-:END:
-The launcher script launches both the [[id:918199a7-df18-4abe-a251-033926c0671e][NSIS loader script]] and
-[[id:850a5d6b-f80e-4a2c-b395-ced494a87750][Autohotkey script]].  Its just a nsis launcher to call both at the same time.
-** Start the Psuedo-Daemon
-:PROPERTIES:
-:ID: 918f409a-aa5b-460d-aaee-5d05926605dd
-:END:
-#+begin_src emacs-lisp
-  ;; Deactivate message advice
-  ;;(ad-disable-advice 'message 'around 'ep-loadup-bar-advice)
-  (when window-system
-    (when (and (string-equal system-type "windows-nt")
-               (getenv "EMACS_DAEMON"))
-      (setq ep-server t)
-      (new-emacs t)))
-  
-#+end_src
-
-** Mimicking the kill-emacs behavior in the daemon
-:PROPERTIES:
-:ID: 30d39dde-8336-4c3b-93c4-ae49496c1e2b
-:END:
-
-While the Pseudo-Daemon shouldn't be exited, it should appear to the
-user that they have exited emacs. To do this, when only one frame is
-visible, the following is required:
-
-- Ask to save all buffers
-- Run the corresponding =kill-emacs-query-functions=
-- If these are successful, kill the current frame, and reassign the
-  hooks to nil (saving the value) so that a subsequent real kill-emacs
-  won't have to run these hooks again.
-
-To do this, I need to mimic =save-buffers-kill-emacs= when there is
-only one frame left other than the hidden =___EmacsPortableDaemon_%version___=
-frame.
-
-The first step is to create a special function that:
-
- 1. Sets an external variable, =ep-emacs-kill-frame= to t
- 2. Returns nil,
-
-By appending this function to the =kill-emacs-query-functions= hook and calling
-=save-buffers-kill-emacs=, Emacs should run all the appropriate
-functions and set =ep-emacs-kill-frame= if the Emacs frame should be
-killed. Using this we can create a function that:
-
- - Adds and removes the special function
-   (=ep-save-buffers-pseudo-kill-emacs=) to the =kill-emacs-query-functions= so
-   that it can run =save-buffers-kill-emacs= without actually killing
-   emacs.
- - If all the queries are successful,
-   + Save the =kill-emacs-query-functions= to an
-     external variable and set to nil
-   + Return t
- - Otherwise return nil
-
-#+begin_src emacs-lisp
-  (defvar ep-emacs-kill-frame nil
-    "Variable that tells if the pseudo-kill-emacs run was sucessful.")
-  (defun ep-save-buffers-nil-fn ()
-    "This function returns nil and sets ep-emacs-kill-frame to t"
-    (setq ep-emacs-kill-frame t)
-    nil)
-  (defvar ep-kill-emacs-hook nil
-    "True Kill Emacs hook.")
-  (defun ep-remove-reg ()
-    "Removes Registry settings on exit."
-    (run-hooks 'ep-kill-emacs-hook)
-    (when (file-readable-p (concat (getenv "TEMP") "/EP-RemoveReg.exe"))
-      (message "Removing Registry Settings.")
-      (shell-command-to-string (concat (getenv "TEMP") "/EP-RemoveReg.exe /VERSION=" emacs-ver))))
-  (add-hook 'kill-emacs-hook 'ep-remove-reg)
-  (defvar ep-saved-kill-emacs-hook nil)
-  (defun ep-save-buffers-pseudo-kill-emacs ()
-    "Faking `save-buffers-kill-emacs' when last visible frame is removed."
-    (let ((server (memq 'server-force-stop kill-emacs-hook)))
-      (setq ep-kill-emacs-query-functions nil)
-      (add-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn t)
-      (save-buffers-kill-emacs)
-      (remove-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn)
-      (remove-hook 'kill-emacs-hook 'ep-remove-reg)
-      (setq ep-saved-kill-emacs-hook kill-emacs-hook)
-      (when server
-        (remove-hook 'kill-emacs-hook 'server-force-stop))
-      (run-hooks 'kill-emacs-hook)
-      (setq kill-emacs-hook nil)
-      (when server
-        (add-hook 'kill-emacs-hook 'server-force-stop))
-      (add-hook 'kill-emacs-hook 'ep-remove-reg)
-      (if (not ep-emacs-kill-frame) nil
-        (setq ep-emacs-kill-frame nil)
-        (setq ep-kill-emacs-query-functions kill-emacs-query-functions)
-        (setq kill-emacs-query-functions nil)
-        t)))
-  
-  (defadvice save-buffers-kill-emacs (around ep-save-buffer-kill-emacs activate)
-    "Checks to see if `ep-kill-emacs-query-functions' has functions
-  stored in it.  If it does, do not try to save files again (they
-  should have already been prompted for)."
-    (cond
-     (ep-kill-emacs-query-functions
-         (kill-emacs))
-     (t
-      ad-do-it)))
-  
-#+end_src
-
-The last step is to call this when the last frame is being deleted.
-
-#+begin_src emacs-lisp
-  (defun ep-is-last-frame-p ()
-    "Determines if this is the last frame (only under Windows-nt)"
-    (when (and (getenv "EMACS_DAEMON") 
-               (string-equal system-type "windows-nt"))
-      (let ((frames (frame-list))
-            server-found
-            ret)
-        (when (and ep-server (= 2 (length frames)))
-          (mapc (lambda(frame)
-                  (setq server-found (or server-found (string= (concat "___EmacsPortableDaemon_" emacs-ver "___")
-                                                               (format "%s" (frame-parameter frame 'name))))))
-                frames)
-          (when server-found
-            (setq ret t)))
-        ret)))
-  
-  (defvar ep-delete-frame-hooks nil)
-  
-  (defun ep-del-frame-query ()
-    "Queries to delete frame."
-    (if (not (ep-is-last-frame-p)) t
-      (ep-save-buffers-pseudo-kill-emacs)))
-  
-  (add-hook 'ep-delete-frame-hooks 'ep-del-frame-query)
-  
-  (defadvice delete-frame (around ep-delete-frame activate)
-    "Advice to only call delete-frame if `ep-delete-frame-hooks'
-  are run successfully."
-    (when (run-hook-with-args-until-failure 'ep-delete-frame-hooks)
-      ad-do-it))
-  
-#+end_src
-* Keep from customization collision
-Try to set things in a way that dosen't affect customize.  Lifted from
-ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
-#+BEGIN_SRC emacs-lisp
-  (defmacro ep-tell (variable)
-    "Tell Customize to recognize that VARIABLE has been set (changed).
-  VARIABLE is a symbol that names a user option."
-    `(put ,variable 'customized-value (list (custom-quote (eval ,variable)))))
-  
-  (defmacro ep-saved-p (option)
-    "Return only not nil if OPTION is a defcustom-option and has a
-  saved value. Option is a variable and is literal \(not evaluated)."
-    `(and (get (quote ,option) 'custom-type)
-          (get (quote ,option) 'saved-value)))
-  
-  (defmacro ep-setq (option value)
-    "Sets OPTION to VALUE if and only if OPTION is not already saved
-  by customize. Option is a variable and is literal \(not evaluated)."
-    `(and (not (ep-saved-p ,option))
-          (set (quote ,option) ,value)
-          (ep-tell (quote ,option))))
-  
-#+END_SRC
-
-* EmacsPortable.App loader script
-:PROPERTIES:
-:ID: 35b325b3-dcd1-42cf-921f-ff98f8bb22d0
-:END:
-   This starts the pseudo-daemon.  If you are running Windows it:
-1. Waits for the server to start
-2. Changes the name of the current frame to
-   =___EmacsPortableDaemon_%version%___=
-3. Starts up the nsis psudo-loading bar.
-
-   
-
-#+BEGIN_SRC emacs-lisp
-  
-  (defun new-emacs (&rest arg)
-    "Starts a new emacs frame (called windows in the rest of the computing world)"
-    (interactive)
-    (when ep-saved-kill-emacs-hook
-      (mapc (lambda(x)
-              (add-hook 'kill-emacs-hook x))
-            ep-saved-kill-emacs-hook)
-      (setq ep-saved-kill-emacs-hook nil))
-    (when window-system
-      (let (tmp)
-        (when ep-kill-emacs-query-functions
-          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
-          (setq ep-kill-emacs-query-functions nil))
-        (select-frame (new-frame))
-        (if (= 0 (length arg))
-            (cond
-             (t
-              (about-emacs)
-              (message "%s" (substitute-command-keys
-                             "When done with this frame, type \\[delete-frame]"))))
-          (mapc (lambda(x)
-                  (when (file-exists-p x)
-                    (find-file x)))
-                arg))
-        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
-          (ecb-minor-mode)))))  
-#+END_SRC
-    
-* Needed starting settings
-** Special path variables
-:PROPERTIES:
-:ID: a78ceacb-d6c7-4f8b-afb2-237db13b9b66
-:END:
-Moved to site-init.el
-
-#+begin_src emacs-lisp
-  
-#+end_src
-
-** Frame name
-:PROPERTIES:
-:ID: 883e8775-2cfc-4e44-b51f-800598e14c80
-:END:
-#+begin_src emacs-lisp
-  (if (eq system-type 'windows-nt)
-      (setq frame-title-format (list (with-temp-buffer
-                                       (insert "Emacs")
-                                       (insert (if (string= (downcase (substring usb-drive-letter 0 1))
-                                                            (downcase (substring data-directory 0 1)))
-                                                   (concat "Portable@"
-                                                           (downcase (substring usb-drive-letter 0 1)))
-                                                 "Local"
-                                                 ))
-                                       (insert "-")
-                                       (insert emacs-ver)
-                                       (insert " %b")
-                                       (buffer-substring (point-min) (point-max))
-                                       )
-                                     '(buffer-file-name ": %f")))
-    (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
-
-#+end_src
 * Paths and load-path
+** Set package directory, autoload file and custom file.
+This 
+#+BEGIN_SRC emacs-lisp
+  (setq autoload-file (expand-file-name
+                       (concat usb-site-lisp-dir "../Data/saves/loaddefs.el")))
+  (setq package-user-dir (expand-file-name
+                          (concat usb-app-dir "/lisp/elpa")))
+  (setq custom-file (expand-file-name
+                     (concat usb-site-lisp-dir "../Data/saves/custom.el")))
+#+END_SRC
+
 ** Set appropriate load paths
 ** Add Path to Java if exists
 :PROPERTIES:
@@ -800,6 +411,406 @@ This also attempts to speed up the recent files cleanup list by
     
 #+end_src
 
+* Fancy Splash-screen to show EmacsPortable.app instead of Emacs
+:PROPERTIES:
+:ID: cb3ae3d6-4087-4d9d-bb6e-0bc6bb8012ff
+:END:
+#+begin_src emacs-lisp
+  (defun fancy-splash-head ()
+    "Insert the head part of the splash screen into the current buffer."
+    ;; Redefined this
+    (let* ((image-file (cond ((stringp fancy-splash-image)
+                              fancy-splash-image)
+                             ((display-color-p)
+                              (concat usb-app-dir "/img/"
+                                      (cond ((image-type-available-p 'svg)
+                                             "emacsportable.svg")
+                                            ((image-type-available-p 'png)
+                                             "emacsportable.png")
+                                            ((image-type-available-p 'jpeg)
+                                             "emacsportable.jpg")
+                                            ((image-type-available-p 'xpm)
+                                             "emacsportable.xpm")
+                                            ((<= (display-planes) 8)
+                                             (if (image-type-available-p 'xpm)
+                                                 "emacsportable.xpm"
+                                               "emacsportable.pbm"))
+                                            (t "emacsportable.pbm"))))
+                             (t (concat usb-app-dir "/img/emacsportable.pbm"))))
+           (img (create-image image-file))
+           (image-width (and img (car (image-size img))))
+           (window-width (window-width (selected-window))))
+      (when img
+        (when (> window-width image-width)
+          ;; Center the image in the window.
+          (insert (propertize " " 'display
+                              `(space :align-to (+ center (-0.5 . ,img)))))
+  
+          ;; Change the color of the XPM version of the splash image
+          ;; so that it is visible with a dark frame background.
+          (when (and (memq 'xpm img)
+                     (eq (frame-parameter nil 'background-mode) 'dark))
+            (setq img (append img '(:color-symbols (("#000000" . "gray30"))))))
+  
+          ;; Insert the image with a help-echo and a link.
+          (make-button (prog1 (point) (insert-image img)) (point)
+                       'face 'default
+                       'help-echo "mouse-2, RET: Browse https://github.com/mlf176f2/EmacsPortable.App/"
+                       'action (lambda (button) (browse-url "https://github.com/mlf176f2/EmacsPortable.App/"))
+                       'follow-link t)
+          (insert "\n\n")))))
+  
+  
+    (ep-m "Startup screen")
+  
+#+end_src
+
+* New frames in EmacsPortable.app
+:PROPERTIES:
+:ID: ff11d00d-fe0c-499f-9e35-1a3d703bf0c8
+:END:
+To use the NSIS daemon, we need to be able to start a frame on
+demand.  This is done with the =new-emacs= function:
+
+#+begin_src emacs-lisp
+  (defvar ep-kill-emacs-query-functions nil
+    "Variable to save `kill-emacs-query-functions'")
+  (defun new-emacs (&optional rename &rest arg)
+    "Starts a new emacs frame (called windows in the rest of the computing world)"
+    (interactive)
+    (when window-system
+      (let (tmp
+            (sf (selected-frame)))
+        (when ep-kill-emacs-query-functions
+          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+          (setq ep-kill-emacs-query-functions nil))
+        (select-frame (new-frame))
+        (when rename
+          (modify-frame-parameters (selected-frame) (list (cons 'name (concat "___EmacsPortableDaemon_" emacs-ver "___"))))
+          (select-frame sf))
+        (if (= 0 (length arg))
+            (cond
+             (t
+              (about-emacs)))
+          (mapc (lambda(x)
+                  (when (file-exists-p x)
+                    (find-file x)))
+                arg))
+        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
+          (ecb-minor-mode)))))
+   
+  
+#+end_src
+
+Which is called by the EmacsPortable launcher.
+
+* Start the Emacs Server
+#+BEGIN_SRC emacs-lisp
+    ;; Start server and load-bar.
+    (when (and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
+      (setq server-auth-dir (concat (getenv "TEMP")
+                                    (if window-system 
+                                        "\\EmacsPortable.App-Server-"
+                                      "\\epd-") emacs-ver))
+      (when (not (file-exists-p server-auth-dir))
+        (make-directory server-auth-dir t))
+      (require 'server)
+        ;; Since this is in the temporary directory it should always be safe.
+      (defun server-ensure-safe-dir (&rest args)
+        t)
+      (server-force-delete)
+      (server-start))
+    
+  (ep-m "EmacsPortable.app")
+  (require 'cl)
+  
+#+end_src
+* Pseudo Daemon
+By using autohotkey emacs and nsis, I have implemented a psuedo-daemon
+mode for EmacsPortable.
+
+The components for this are:
+- The [[*NSIS%20loader%20script][NSIS loader script]]
+- The [[Autohotkey script][Autohotkey script]]
+- [[NSIS launcher script][NSIS launcher script]]
+- [[EmacsPortable.App loader script][EmacsPortable.App loader script]]
+** NSIS loader script
+:PROPERTIES:
+:ID: 918199a7-df18-4abe-a251-033926c0671e
+:END:
+The [[file:../../Other/source/nsi/loademacs.nsi::%3B%3B%3B%20loademacs.nsi%20---%20Loads%20Emacs][loademacs.nsi]] NSIS script implements a progress bar.  Currently it
+is just a psudo-progress bar that really doesn't know when Emacs will
+finish loading.  However, by looking at file =runningep.flg= in the
+temporary directory, it also tells the user what is loading.  This is
+already currently implemented in the emacs minibuffer.  However, if I
+am going to hide one of the frames to create a psudo-daemon, the user
+will not be able to see this.  Therefore, I implemented this
+interface.
+
+Currently it will continue the progress bar until it detects that
+=runninep.flg= is no longer in the temporary directory OR =emacs.exe=
+is no longer running.
+
+Currently this poses a problem if the site-wide initialization has some
+error.  It will continue to load indefinitely.  I'm not currently sure
+how to track this except for some large condition-case which deletes
+the file when loading.
+
+This has been suspended.  I like looking at emacs while it loads.
+There is more information for this type of display.
+** Autohotkey script
+:PROPERTIES:
+:ID: 850a5d6b-f80e-4a2c-b395-ced494a87750
+:END:
+The auto-hotkey [[file:source/ahk/EmacsPortableServer.ahk::%3B%3B%20(at%20your%20option)%20any%20later%20version.][EmacsPortableServer.ahk]] script keeps the psuedo-daemon
+frame from being displayed and subsequently closed on accident.
+** NSIS launcher script
+:PROPERTIES:
+:ID: 1d13200e-3329-4f3a-8320-58d413fe3fd0
+:END:
+The launcher script launches both the [[id:918199a7-df18-4abe-a251-033926c0671e][NSIS loader script]] and
+[[id:850a5d6b-f80e-4a2c-b395-ced494a87750][Autohotkey script]].  Its just a nsis launcher to call both at the same time.
+** Start the Psuedo-Daemon
+:PROPERTIES:
+:ID: 918f409a-aa5b-460d-aaee-5d05926605dd
+:END:
+#+begin_src emacs-lisp
+  ;; Deactivate message advice
+  ;;(ad-disable-advice 'message 'around 'ep-loadup-bar-advice)
+  (when window-system
+    (when (and (string-equal system-type "windows-nt")
+               (getenv "EMACS_DAEMON"))
+      (setq ep-server t)
+      (new-emacs t)))
+  
+#+end_src
+
+** Mimicking the kill-emacs behavior in the daemon
+:PROPERTIES:
+:ID: 30d39dde-8336-4c3b-93c4-ae49496c1e2b
+:END:
+
+While the Pseudo-Daemon shouldn't be exited, it should appear to the
+user that they have exited emacs. To do this, when only one frame is
+visible, the following is required:
+
+- Ask to save all buffers
+- Run the corresponding =kill-emacs-query-functions=
+- If these are successful, kill the current frame, and reassign the
+  hooks to nil (saving the value) so that a subsequent real kill-emacs
+  won't have to run these hooks again.
+
+To do this, I need to mimic =save-buffers-kill-emacs= when there is
+only one frame left other than the hidden =___EmacsPortableDaemon_%version___=
+frame.
+
+The first step is to create a special function that:
+
+ 1. Sets an external variable, =ep-emacs-kill-frame= to t
+ 2. Returns nil,
+
+By appending this function to the =kill-emacs-query-functions= hook and calling
+=save-buffers-kill-emacs=, Emacs should run all the appropriate
+functions and set =ep-emacs-kill-frame= if the Emacs frame should be
+killed. Using this we can create a function that:
+
+ - Adds and removes the special function
+   (=ep-save-buffers-pseudo-kill-emacs=) to the =kill-emacs-query-functions= so
+   that it can run =save-buffers-kill-emacs= without actually killing
+   emacs.
+ - If all the queries are successful,
+   + Save the =kill-emacs-query-functions= to an
+     external variable and set to nil
+   + Return t
+ - Otherwise return nil
+
+#+begin_src emacs-lisp
+  (defvar ep-emacs-kill-frame nil
+    "Variable that tells if the pseudo-kill-emacs run was sucessful.")
+  (defun ep-save-buffers-nil-fn ()
+    "This function returns nil and sets ep-emacs-kill-frame to t"
+    (setq ep-emacs-kill-frame t)
+    nil)
+  (defvar ep-kill-emacs-hook nil
+    "True Kill Emacs hook.")
+  (defun ep-remove-reg ()
+    "Removes Registry settings on exit."
+    (run-hooks 'ep-kill-emacs-hook)
+    (when (file-readable-p (concat (getenv "TEMP") "/EP-RemoveReg.exe"))
+      (message "Removing Registry Settings.")
+      (shell-command-to-string (concat (getenv "TEMP") "/EP-RemoveReg.exe /VERSION=" emacs-ver))))
+  (add-hook 'kill-emacs-hook 'ep-remove-reg)
+  (defvar ep-saved-kill-emacs-hook nil)
+  (defun ep-save-buffers-pseudo-kill-emacs ()
+    "Faking `save-buffers-kill-emacs' when last visible frame is removed."
+    (let ((server (memq 'server-force-stop kill-emacs-hook)))
+      (setq ep-kill-emacs-query-functions nil)
+      (add-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn t)
+      (save-buffers-kill-emacs)
+      (remove-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn)
+      (remove-hook 'kill-emacs-hook 'ep-remove-reg)
+      (setq ep-saved-kill-emacs-hook kill-emacs-hook)
+      (when server
+        (remove-hook 'kill-emacs-hook 'server-force-stop))
+      (run-hooks 'kill-emacs-hook)
+      (setq kill-emacs-hook nil)
+      (when server
+        (add-hook 'kill-emacs-hook 'server-force-stop))
+      (add-hook 'kill-emacs-hook 'ep-remove-reg)
+      (if (not ep-emacs-kill-frame) nil
+        (setq ep-emacs-kill-frame nil)
+        (setq ep-kill-emacs-query-functions kill-emacs-query-functions)
+        (setq kill-emacs-query-functions nil)
+        t)))
+  
+  (defadvice save-buffers-kill-emacs (around ep-save-buffer-kill-emacs activate)
+    "Checks to see if `ep-kill-emacs-query-functions' has functions
+  stored in it.  If it does, do not try to save files again (they
+  should have already been prompted for)."
+    (cond
+     (ep-kill-emacs-query-functions
+         (kill-emacs))
+     (t
+      ad-do-it)))
+  
+#+end_src
+
+The last step is to call this when the last frame is being deleted.
+
+#+begin_src emacs-lisp
+  (defun ep-is-last-frame-p ()
+    "Determines if this is the last frame (only under Windows-nt)"
+    (when (and (getenv "EMACS_DAEMON") 
+               (string-equal system-type "windows-nt"))
+      (let ((frames (frame-list))
+            server-found
+            ret)
+        (when (and ep-server (= 2 (length frames)))
+          (mapc (lambda(frame)
+                  (setq server-found (or server-found (string= (concat "___EmacsPortableDaemon_" emacs-ver "___")
+                                                               (format "%s" (frame-parameter frame 'name))))))
+                frames)
+          (when server-found
+            (setq ret t)))
+        ret)))
+  
+  (defvar ep-delete-frame-hooks nil)
+  
+  (defun ep-del-frame-query ()
+    "Queries to delete frame."
+    (if (not (ep-is-last-frame-p)) t
+      (ep-save-buffers-pseudo-kill-emacs)))
+  
+  (add-hook 'ep-delete-frame-hooks 'ep-del-frame-query)
+  
+  (defadvice delete-frame (around ep-delete-frame activate)
+    "Advice to only call delete-frame if `ep-delete-frame-hooks'
+  are run successfully."
+    (when (run-hook-with-args-until-failure 'ep-delete-frame-hooks)
+      ad-do-it))
+  
+#+end_src
+* Keep from customization collision
+Try to set things in a way that dosen't affect customize.  Lifted from
+ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
+#+BEGIN_SRC emacs-lisp
+  (defmacro ep-tell (variable)
+    "Tell Customize to recognize that VARIABLE has been set (changed).
+  VARIABLE is a symbol that names a user option."
+    `(put ,variable 'customized-value (list (custom-quote (eval ,variable)))))
+  
+  (defmacro ep-saved-p (option)
+    "Return only not nil if OPTION is a defcustom-option and has a
+  saved value. Option is a variable and is literal \(not evaluated)."
+    `(and (get (quote ,option) 'custom-type)
+          (get (quote ,option) 'saved-value)))
+  
+  (defmacro ep-setq (option value)
+    "Sets OPTION to VALUE if and only if OPTION is not already saved
+  by customize. Option is a variable and is literal \(not evaluated)."
+    `(and (not (ep-saved-p ,option))
+          (set (quote ,option) ,value)
+          (ep-tell (quote ,option))))
+  
+#+END_SRC
+
+* EmacsPortable.App loader script
+:PROPERTIES:
+:ID: 35b325b3-dcd1-42cf-921f-ff98f8bb22d0
+:END:
+   This starts the pseudo-daemon.  If you are running Windows it:
+1. Waits for the server to start
+2. Changes the name of the current frame to
+   =___EmacsPortableDaemon_%version%___=
+3. Starts up the nsis psudo-loading bar.
+
+   
+
+#+BEGIN_SRC emacs-lisp
+  
+  (defun new-emacs (&rest arg)
+    "Starts a new emacs frame (called windows in the rest of the computing world)"
+    (interactive)
+    (when ep-saved-kill-emacs-hook
+      (mapc (lambda(x)
+              (add-hook 'kill-emacs-hook x))
+            ep-saved-kill-emacs-hook)
+      (setq ep-saved-kill-emacs-hook nil))
+    (when window-system
+      (let (tmp)
+        (when ep-kill-emacs-query-functions
+          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+          (setq ep-kill-emacs-query-functions nil))
+        (select-frame (new-frame))
+        (if (= 0 (length arg))
+            (cond
+             (t
+              (about-emacs)
+              (message "%s" (substitute-command-keys
+                             "When done with this frame, type \\[delete-frame]"))))
+          (mapc (lambda(x)
+                  (when (file-exists-p x)
+                    (find-file x)))
+                arg))
+        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
+          (ecb-minor-mode)))))  
+#+END_SRC
+    
+* Needed starting settings
+** Special path variables
+:PROPERTIES:
+:ID: a78ceacb-d6c7-4f8b-afb2-237db13b9b66
+:END:
+Moved to site-init.el
+
+#+begin_src emacs-lisp
+  
+#+end_src
+
+** Frame name
+:PROPERTIES:
+:ID: 883e8775-2cfc-4e44-b51f-800598e14c80
+:END:
+#+begin_src emacs-lisp
+  (if (eq system-type 'windows-nt)
+      (setq frame-title-format (list (with-temp-buffer
+                                       (insert "Emacs")
+                                       (insert (if (string= (downcase (substring usb-drive-letter 0 1))
+                                                            (downcase (substring data-directory 0 1)))
+                                                   (concat "Portable@"
+                                                           (downcase (substring usb-drive-letter 0 1)))
+                                                 "Local"
+                                                 ))
+                                       (insert "-")
+                                       (insert emacs-ver)
+                                       (insert " %b")
+                                       (buffer-substring (point-min) (point-max))
+                                       )
+                                     '(buffer-file-name ": %f")))
+    (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
+
+#+end_src
+
 * Bugs and Speed
 :PROPERTIES:
 :ID: 5f0b0410-d812-466d-a569-36ccd8442c86
@@ -946,61 +957,191 @@ keep current with bleeding edge software.
 #+BEGIN_SRC emacs-lisp
   (setq el-get-dir (expand-file-name (concat usb-app-dir "lisp/el-get/")))
   (add-to-list 'load-path (concat el-get-dir "el-get/"))
-  ;; Working developer edition of el-get.
-  (condition-case err
-      (progn
-        (unless (require 'el-get nil t)
-          (when (executable-find "git")
-            (url-retrieve
-             "https://raw.github.com/dimitri/el-get/master/el-get-install.el"
-             (lambda (s)
-               (let (el-get-master-branch)
-                 (end-of-buffer)
-                 (eval-print-last-sexp))))))
-        (add-to-list 'el-get-recipe-path
-                     (concat usb-app-dir "lisp/rcp"))
-        (el-get 'sync))
-    (error nil))
-  
-  
-  
-  ;;(add-to-list 'load-path "~/.emacs.d/el-get/el-get")
-  ;;(require 'el-get)
-  ;; 
-  ;;;; local sources
-  ;;(setq el-get-sources
-  ;;      '((:name magit
-  ;;               :after (lambda () (global-set-key (kbd "C-x C-z") 'magit-status)))
-  ;;        
-  ;;        (:name asciidoc
-  ;;               :type elpa
-  ;;               :after (lambda ()
-  ;;                        (autoload 'doc-mode "doc-mode" nil t)
-  ;;                        (add-to-list 'auto-mode-alist '("\\.adoc$" . doc-mode))
-  ;;                        (add-hook 'doc-mode-hook '(lambda ()
-  ;;                                                    (turn-on-auto-fill)
-  ;;                                                    (require 'asciidoc)))))
-  ;;        
-  ;;        (:name lisppaste        :type elpa)
-  ;;        (:name emacs-goodies-el :type apt-get)))
-  ;; 
-  ;;(setq my-packages
-  ;;      (append
-  ;;       '(cssh el-get switch-window vkill google-maps nxhtml xcscope yasnippet)
-  ;;       (mapcar 'el-get-source-name el-get-sources)))
-  ;; 
-  ;;(el-get 'sync my-packages)
-  
-  
+#+END_SRC
+* Start the kicker, if present
+Start the EmacsPortable.App kicker.
+#+BEGIN_SRC emacs-lisp
+  (let ((kicker (concat usb-app-dir "/lisp/kicker/init.el")))
+    (when (file-readable-p kicker)
+      (load-file kicker)))
 #+END_SRC
 
-* Start the starter kit, if present
-The EmacsPortable.App starter kit is a fork from another starter kit
-and is located [[https://github.com/mlf176f2/emacs-portable-starter-kit][here]].
+* Load System, User, and Shared Initialization files
+** Load source function
+ Load either an encrypted org-file, an org-file, a lisp file, or a
+ compiled lisp file.  Delete intermediary files
+
+ #+BEGIN_SRC emacs-lisp
+   (defun ep-load-org (file)
+     "Loads Emacs Lisp source code blocks like `org-babel-load-file'.  However, byte-compiles the files as well as tangles them..."
+     (flet ((age (file)
+                 (float-time
+                  (time-subtract (current-time)
+                                 (nth 5 (or (file-attributes (file-truename file))
+                                            (file-attributes file)))))))
+       (let* ((base-name (file-name-sans-extension file))
+              (exported-file (concat base-name ".el"))
+              (compiled-file (concat base-name ".elc")))
+         (message "Base Name %s" base-name)
+         (unless (and (file-exists-p exported-file)
+                      (> (age file) (age exported-file)))
+           (message "Trying to Tangle %s" file)
+           (condition-case err
+               (progn
+                 (org-babel-tangle-file file exported-file "emacs-lisp")
+                 (ep-m (format "Tangled %s to %s"
+                               file exported-file)))
+             (error (message "Error Tangling %s" file))))
+         (when (file-exists-p exported-file)
+           (if (and (file-exists-p compiled-file)
+                    (> (age exported-file) (age compiled-file)))
+               (progn
+                 (condition-case err
+                     (load-file compiled-file)
+                   (error (message "Error Loading %s" compiled-file)))
+                 (ep-m (format "Loaded %s" compiled-file)))
+             (condition-case err
+                 (byte-compile-file exported-file t)
+               (error (message "Error Byte-compiling and loading %s" exported-file)))
+             (ep-m (format "Byte-compiled & loaded %s" exported-file))
+             ;; Fallback and load source
+             (if (file-exists-p compiled-file)
+                 (set-file-times compiled-file) ; Touch file.
+               (condition-case err
+                   (load-file exported-file)
+                 (error (message "Error loading %s" exported-file)))
+               (ep-m (format "Loaded %s since byte-compile failed."
+                             exported-file))))))))
+   
+   (defun ep-load-user (name)
+     "Loads a user-name's configuration"
+     (ep-load-user-or-system name t))
+   (defun ep-load-system (name)
+     "Loads a system configuration"
+     (ep-load-user-or-system name))
+   (defun ep-load-init-dir (&optional dir-name)
+     (let ((name (or dir-name (concat usb-app-dir "../Data/init/shared"))))
+       (ep-load-user-or-system nil nil name)))    
+   
+   (defun ep-load-user-or-system (name &optional is-user is-dir)
+     "Loads either a user-name's configuration OR system
+     configuration.  This prefers org-files and will compile them as
+     far as possible.  It can accept many .el and .elc files if their
+     upstream program is not available/found
+     "
+     (flet ((in-dir (file &optional ext)
+                    (expand-file-name (concat file ext)
+                                      (or is-dir
+                                          (concat usb-app-dir "../Data/init/"
+                                                  (if is-user
+                                                      "user"
+                                                    "system")))))
+            (age (file)
+                 (float-time
+                  (time-subtract (current-time)
+                                 (nth 5 (or (file-attributes (file-truename file))
+                                            (file-attributes file))))))
+            (load-cfg (ini-file)
+                      (let* ((base-name (file-name-sans-extension ini-file))
+                             (org-gpg (concat base-name ".org.gpg"))
+                             (org (concat base-name ".org"))
+                             (file (concat base-name ".el"))
+                             (compiled-file (concat base-name ".elc")))
+                        (if (file-readable-p org-gpg)
+                            (ep-load-org org-gpg)
+                          (if (file-readable-p org)
+                              (ep-load-org org)
+                            (if (file-readable-p file)
+                                (when (file-exists-p file)
+                                  (if (and (file-exists-p compiled-file)
+                                           (> (age file) (age compiled-file)))
+                                      (load-file compiled-file)
+                                    (byte-compile-file file t)
+                                    ;; Fall-back and load source
+                                    (unless (file-exists-p compiled-file)
+                                      (load-file file))))
+                              (if (file-readable-p compiled-file)
+                                  (load-file compiled-file))))))))
+       (flet ((dir-cfgs (dir)
+                        ;; Return a list of highest level configuration org,
+                        ;; el elc, and then load the configuration.
+                        (when (file-readable-p dir)
+                          (add-to-list 'load-path dir)
+                          (let ((files (directory-files dir t ".*[.]\\(org\\(.gpg\\)?\\|el\\|elc\\)$")))
+                            (remove-if #'(lambda(item)
+                                           (let ((base-name (file-name-sans-extension item)))
+                                             (cond
+                                              ((string-match "elc$" item)
+                                               (or (file-readable-p (concat base-name ".el"))
+                                                   (file-readable-p (concat base-name ".org"))))
+                                              ((string-match "el$" item)
+                                               (file-readable-p (concat base-name ".org")))
+                                              (t
+                                               nil))))
+                                       files)
+                            (mapc (lambda(file)
+                                    (message "Loading %s" file)
+                                    (load-cfg file))
+                                  files)))))
+         (let ((org2 (in-dir name ".org"))
+               (dir2 (in-dir name)))
+           (if is-dir
+               (progn
+                 (dir-cfgs is-dir))
+             (load-cfg org2)
+             (dir-cfgs dir2))))))
+   
+   (ep-load-init-dir)
+   (ep-load-system system-name)
+   (ep-load-user user-login-name) 
+   
+ #+END_SRC
+* Add eXpresso Support, if available
+I would like EmacsPortable.App to use the associations that eXpresso
+uses.  This is only on a windows machine, when =sex-mode= from nXhtml
+is loaded.
 #+BEGIN_SRC emacs-lisp
-  (let ((starter-kit (concat usb-app-dir "/portable-starter-kit/init.el")))
-    (when (file-readable-p starter-kit)
-      (load-file starter-kit)))
+  (defvar ep-expresso-assocs nil)
+  (defun ep-load-expresso ()
+    (let (loads)
+      (when (eq system-type 'windows-nt)
+        (when (boundp 'usb-drive-letter)
+          (when (file-readable-p
+                 (format "%sPortableApps/eXpresso/Data/eXpresso.ini"
+                         usb-drive-letter))
+            (with-temp-buffer
+              (insert-file-contents (format "%sPortableApps/eXpresso/Data/eXpresso.ini"
+                                            usb-drive-letter))
+              (goto-char (point-min))
+              (when (re-search-forward "[associations]" nil t)
+                (while (re-search-forward "\\(.*?\\)=\\(.*\\)" nil t)
+                  (unless (string= "host" (match-string 2))
+                    (add-to-list 'loads 
+                                 `(,(downcase (match-string 1)) .
+                                   ,(expand-file-name 
+                                     (match-string 2)
+                                     (format "%sPortableApps/eXpresso/"
+                                             usb-drive-letter))))))))
+            (setq ep-expresso-assocs loads))))))
   
+  (when nil
+    (defadvice w32-browser (around ep-expresso)
+      "Add eXpresso associations to `w32-browser'"
+      (let ((file (ad-get-argument 0)) ext assoc)
+        (setq ext (file-name-extension file))
+        (setq assoc (assoc ext ep-expresso-assocs))
+        (if (not assoc)
+            ad-do-it
+          ;; Open it in another appliaction...
+          (setq assoc (cdr assoc))
+          )
+        )))
+  
+  (eval-after-load "sex-mode"
+    (defadvice sex-get-apps (around ep-expresso)
+      "Add eXpresso associations to `sex-mode'"
+      (let ((sex-file-apps (append sex-file-apps)))
+        ad-do-it))
+    (ad-activate 'sex-get-apps))
 #+END_SRC
 

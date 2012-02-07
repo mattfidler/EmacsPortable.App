@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Tue Jan 31 10:19:38 2012 (-0600)
+;; Last-Updated: Fri Feb  3 14:16:47 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 77
+;;     Update #: 78
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -68,7 +68,7 @@
         ("Make" "used by compile for building projects (also in MinGW)")
         ("OpenSSL" "used by gnus to talk to servers over SSL.")
         ("Patch" "used by ediff-patch-file and others to apply patches.")
-        ;;("TexInfo" "used to build Emacs' manuals.")
+        ("TexInfo" "used to build Emacs' manuals.")
         ("Unzip" "used by archive-mode for extracting zip files.")
         ("Xpm" "library to support XPM images (bundled with Emacs binaries)")
         ("Zip" "used by archive-mode for editing zip files.")

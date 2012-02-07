@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Sat Jan 28 18:44:25 2012 (-0600)
+;; Last-Updated: Fri Feb  3 15:19:34 2012 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 67
+;;     Update #: 69
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -73,10 +73,11 @@
         (insert-file-contents (expand-file-name tmp build-dir)))
       (save-buffer (current-buffer)))))
 
-(defun build-nsi (&optional eval-lisp org-file)
+(defun build-nsi (&optional org-f eval-lisp )
   "Build NSIS script from org-mode."
   (let ((case-fold-search t)
         org-dir
+        (org-file (format "%s" (symbol-name org-f)))
         org-files)
     (if org-file
         (setq org-files (list (expand-file-name org-file build-dir)))

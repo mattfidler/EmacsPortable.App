@@ -5,3 +5,4 @@
 *.png
 *.html
 *.pdf
+/startup-org.el.gz

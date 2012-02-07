@@ -461,12 +461,8 @@ FunctionEnd
       IntOp $R2 $R2 - 4
       StrCpy $option_version $R0 $R2
       IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe 0 emacs_ver_from_ini
-      ## See if EmacsPortableApp.exe is newer.
-      ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
-      IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
       Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$option_version'
       Abort
-      Goto emacs_ver_skip 
     emacs_ver_from_ini:
       IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 emacs_ver
       ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
@@ -561,6 +557,7 @@ FunctionEnd
       DetailPrint "Removed stale server files"
       ClearErrors
   FunctionEnd
+  
 #+END_SRC
 
 * Setup Environment
@@ -1161,7 +1158,6 @@ Now Finalize Putty Proxy settings
   !define FinalizePutty `Call FinalizePutty`
   
 #+END_SRC
-
 
 * Setup EmacsServer Directories
 #+BEGIN_SRC nsis

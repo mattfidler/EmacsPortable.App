@@ -1,16 +1,25 @@
 ;; Load Latest Org-mode
 (require 'cl)
-(let ((elisp-source-dir
-       (expand-file-name "../lisp/src/"
-                         (file-name-directory (or load-file-name (buffer-file-name))))))
-  ;; load specific files
-  (when (file-exists-p elisp-source-dir)
-    ;; add the src directory to the load path
-    (add-to-list 'load-path elisp-source-dir)
-    (let ((default-directory elisp-source-dir))
-      (normal-top-level-add-subdirs-to-load-path))))
+;; from www.emacswiki.org/emacs/LoadPath
+(let ((default-directory
+        (expand-file-name "../lisp/src/"
+                          (file-name-directory (or load-file-name (buffer-file-name))))))
+  (setq load-path
+        (append
+         (let ((load-path (copy-sequence load-path))) ;; Shadow
+           (normal-top-level-add-subdirs-to-load-path))
+         load-path)))
 
-(setq load-path (reverse load-path))
+(let ((default-directory
+        (expand-file-name "../../Data/src/"
+                          (file-name-directory (or load-file-name (buffer-file-name))))))
+  (setq load-path
+        (append
+         (let ((load-path (copy-sequence load-path))) ;; Shadow
+           (normal-top-level-add-subdirs-to-load-path))
+         load-path)))
+
+
 
 (require 'org-install nil t)
 (require 'org nil t) 
