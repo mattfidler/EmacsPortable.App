@@ -138,8 +138,11 @@ EmacsPortableApp.exe launcher.
       (when (string-match "^~app[/\\\\]" ret)
         (setq ret (replace-match usb-app-dir t t ret)))
       
-      (when (string-match "^~sk[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "portable-starter-kit/")
+      (when (string-match "^~kick[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-app-dir "lisp/kicker/")
+                                 t t ret)))
+      (when (string-match "^~rcp[/\\\\]" ret)
+        (setq ret (replace-match (concat usb-app-dir "lisp/rcp/")
                                  t t ret)))
       (when (string-match "^~data[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
@@ -292,8 +295,11 @@ EmacsPortableApp.exe launcher.
                                             (concat usb-app-dir "../Data/src/")))
                                   . "~src/")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "portable-starter-kit/")))
-                                  . "~sk/")
+                                           (expand-file-name (concat usb-app-dir "lisp/kicker/")))
+                                  . "~kick/")
+                                 (,(concat "\\`"
+                                           (expand-file-name (concat usb-app-dir "lisp/rcp/")))
+                                  . "~rcp/")
                                  (,(concat "\\`"
                                            (expand-file-name (concat usb-app-dir "/")))
                                   . "~app/")
@@ -357,6 +363,8 @@ EmacsPortableApp.exe launcher.
                 "~elpa/"
                 "~el-get/"
                 "~h/"
+                "~rcp/"
+                "~kick/"
                 ))
          (reg (concat "^"
                       (regexp-opt (append lst
