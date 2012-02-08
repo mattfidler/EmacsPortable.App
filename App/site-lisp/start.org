@@ -138,7 +138,7 @@ EmacsPortableApp.exe launcher.
       (when (string-match "^~app[/\\\\]" ret)
         (setq ret (replace-match usb-app-dir t t ret)))
       
-      (when (string-match "^~kick[/\\\\]" ret)
+      (when (string-match "^~kick\\(:er?\\)?[/\\\\]" ret)
         (setq ret (replace-match (concat usb-app-dir "lisp/kicker/")
                                  t t ret)))
       (when (string-match "^~rcp[/\\\\]" ret)
