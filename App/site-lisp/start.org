@@ -752,37 +752,6 @@ ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
    =___EmacsPortableDaemon_%version%___=
 3. Starts up the nsis psudo-loading bar.
 
-   
-
-#+BEGIN_SRC emacs-lisp
-  
-  (defun new-emacs (&rest arg)
-    "Starts a new emacs frame (called windows in the rest of the computing world)"
-    (interactive)
-    (when ep-saved-kill-emacs-hook
-      (mapc (lambda(x)
-              (add-hook 'kill-emacs-hook x))
-            ep-saved-kill-emacs-hook)
-      (setq ep-saved-kill-emacs-hook nil))
-    (when window-system
-      (let (tmp)
-        (when ep-kill-emacs-query-functions
-          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
-          (setq ep-kill-emacs-query-functions nil))
-        (select-frame (new-frame))
-        (if (= 0 (length arg))
-            (cond
-             (t
-              (about-emacs)
-              (message "%s" (substitute-command-keys
-                             "When done with this frame, type \\[delete-frame]"))))
-          (mapc (lambda(x)
-                  (when (file-exists-p x)
-                    (find-file x)))
-                arg))
-        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
-          (ecb-minor-mode)))))  
-#+END_SRC
     
 * Needed starting settings
 ** Special path variables
@@ -924,6 +893,13 @@ be fixed by advices on some primitive functions
     (if (and (eq system-type 'darwin)
                (save-match-data
                  (string-match "^[A-Za-z]:[/\\]" (nth 0 (ad-get-args 0))))) nil
+      ad-do-it))
+  
+  (defadvice file-remote-p (around emacs-portable-advice activate)
+    "This advice keeps Emacs from assuming that c:\ is a remote file and trying to connect to a remote that doesn't exist."
+    (if (and (eq system-type 'darwin)
+             (save-match-data
+               (string-match "^[A-Za-z]:[/\\]" (nth 0 (ad-get-args 0))))) t
       ad-do-it))
   
   (defadvice file-exists-p (around emacs-portable-advice activate)

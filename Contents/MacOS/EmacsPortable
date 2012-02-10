@@ -1,6 +1,4 @@
 #!/bin/bash --login
-#echo $0 > /tmp/emacsportable
-
 
 EMACSDIR=`dirname $0`
 if [ $EMACSDIR = "." ]; then
@@ -83,7 +81,9 @@ fi
 if [ "$OPTYPE" == "USB" ]; then
     OPHOME=`echo $OPHOME | sed 's/USB:\///'`
     HOME="$EPUSB$OPHOME"
+    export HOME
 fi
+
 #HOME=$EPUSB/Documents
     
 echo HOME: $HOME $OPHOME $OPTYPE
@@ -93,7 +93,10 @@ echo TEMP: $TEMP
 echo DICPATH: $DICPATH
 #echo PATH: $PATH
 echo EMACSDIR: $EMACSDIR
+
 echo EMACSVER: $EMACSVER
+
+
 echo EMACSAPP: $EMACSAPP
 echo EMACSDATA: $EMACSDATA
 echo EMACSLOADPATH: $EMACSLOADPATH
@@ -107,8 +110,19 @@ if [ -e $DATPATH/ini/Environment.ini ]; then
     rm /tmp/ep-environment.sh
     sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/ini/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
     echo "" >> /tmp/ep-environment.sh
+    ./flip.osx -u /tmp/ep-environment.sh
     source /tmp/ep-environment.sh
-fi 
+fi
+
+if [ -e $DATPATH/init/shared/Environment.ini ]; then
+    rm /tmp/ep-environment.sh
+    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/init/shared/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
+    echo "" >> /tmp/ep-environment.sh
+    ./flip.osx -u /tmp/ep-environment.sh
+    source /tmp/ep-environment.sh
+fi
+
+ 
 echo ERGOEMACS_KEYBOARD_LAYOUT: $ERGOEMACS_KEYBOARD_LAYOUT
 
 export OHOME
@@ -131,4 +145,4 @@ if ! [ -e $EMACSDATA/DOC-$REALVER ]; then
   cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
 fi 
 
-$EMACSDIR/Emacs $OPT
+$EMACSDIR/Emacs --debug-init $OPT

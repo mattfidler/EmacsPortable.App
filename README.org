@@ -642,3 +642,4 @@ CLOSED: [2012-01-30 Mon 21:34]
 
 ** TODO  Make launching of PuTTY optional.
 ** TODO EmacsPortable.App will launch whatever emacs is running.
+** TODO Figure out why mac loadup isn't working correctly.

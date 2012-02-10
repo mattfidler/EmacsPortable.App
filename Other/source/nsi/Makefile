@@ -1,4 +1,5 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi
+EMACS=emacs
 
 all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe
 
@@ -30,55 +31,55 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 	makensis Emacs-Q.nsi
 
 EmacsDos.nsi: EmacsShortcuts.el
-	emacs -Q --batch -l ./EmacsShortcuts.el
+       $(EMACS) -Q --batch -l ./EmacsShortcuts.el 
 
 Emacs-Q.nsi: EmacsShortcuts.el
-	emacs -Q --batch -l ./EmacsShortcuts.el
+	$(EMACS) -Q --batch -l ./EmacsShortcuts.el
 
 EmacsDebug.nsi: EmacsShortcuts.el
-	emacs -Q --batch -l ./EmacsShortcuts.el
+	$(EMACS) -Q --batch -l ./EmacsShortcuts.el
 
 EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableOptions.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableOptions.org)"
 
 EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableApp.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableApp.org)"
 
 emacsPathIfExists.nsh: emacsPathIfExists.org
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'emacsPathIfExists.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsPathIfExists.org)"
 
 EmacsDownload.nsi: EmacsDownload.org ${download_extras}
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownload.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownload.org)"
 
 emacsproxy.nsh: emacsproxy.org 
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'emacsproxy.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsproxy.org)"
 
 EmacsDownload-ezwin.nsi: emacsdownload-ezw.el ../../../App/ini/mirrors.ini
-	emacs -Q --batch -l ./emacsdownload-ezw.el
+	$(EMACS) -Q --batch -l ./emacsdownload-ezw.el
 
 EmacsDownload-vers.nsi: emacsdownload-vers.el ../../../App/ini/mirrors.ini
-	emacs -Q --batch -l ./emacsdownload-vers.el
+	$(EMACS) -Q --batch -l ./emacsdownload-vers.el
 
 EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
-	emacs -Q --batch -l ./emacsdownload-pae.el
+	$(EMACS) -Q --batch -l ./emacsdownload-pae.el
 
 emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/mirrors.ini
-	emacs -Q --batch -l ./emacsdownload-gw32.el
+	$(EMACS) -Q --batch -l ./emacsdownload-gw32.el
 
 EmacsRemoveRegistry.nsi: EmacsRemoveRegistry.org emacsproxy.nsh
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsRemoveRegistry.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsRemoveRegistry.org)"
 
 SetProxy.nsi: SetProxy.org emacsproxy.nsh
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'SetProxy.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'SetProxy.org)"
 
 install-net.nsi: install-net.org ${download_extras}
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'install-net.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'install-net.org)"
 
 EmacsDownloadShared.nsh: EmacsDownloadShared.org
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownloadShared.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownloadShared.org)"
 
 EmacsCompileTools.nsh: emacsCompileTools.org
-	emacs -Q --batch -l ./build.el --eval "(build-nsi 'emacsCompileTools.org)"
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsCompileTools.org)"
 
 clean:
 	rm EmacsCompileTools.nsi

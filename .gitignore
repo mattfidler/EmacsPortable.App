@@ -157,3 +157,4 @@ Readme.org_archive
 /App/eps/*.exe
 /App/lisp/kicker/*
 /Data/init/shared/*
+/Contents/MacOS/._flip.osx

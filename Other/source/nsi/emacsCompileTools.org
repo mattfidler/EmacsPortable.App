@@ -269,44 +269,44 @@ This will allow a compile of EmacsPortable.App, assuming:
    =$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler=
  - NSIS Portable Compiler is in =$PA\NSISPortableANSI\App\NSIS=
 #+BEGIN_SRC nsis
-  Var found_emacs
-  Var called_emacs
-  Function AddEmacsPath
-    StrCpy "$called_emacs" "1"
-    ${PathIfExist} "$INSTDIR\App\gw32\bin"
-    ${PathIfExist} "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler"
-    ${PathIfExist} "$PA\NSISPortableANSI\App\NSIS"
-   
-    StrCpy $R1 ""
-    ${Locate} "$INSTDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
-    StrCpy $found_emacs $R1
-    StrCmp $found_emacs "" 0 +3
-    MessageBox MB_OK "Could not Locate Emacs."
-    Goto end
-    ${PathIfExist} "$R1"
-    end:
-      ClearErrors
-  FunctionEnd
-  Function compileEmacsPortableApp
-    StrCmp $called_emacs "1" +2 0
-    Call AddEmacsPath
-    StrCmp $found_emacs "" end 0
-    SetOutPath "$INSTDIR\App\eps"
+    Var found_emacs
+    Var called_emacs
+    Function AddEmacsPath
+      StrCpy "$called_emacs" "1"
+      ${PathIfExist} "$INSTDIR\App\gw32\bin"
+      ${PathIfExist} "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler"
+      ${PathIfExist} "$PA\NSISPortableANSI\App\NSIS"
+      
+      StrCpy $R1 ""
+      ${Locate} "$INSTDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
+      StrCpy $found_emacs $R1
+      StrCmp $found_emacs "" 0 +3
+      MessageBox MB_OK "Could not Locate Emacs."
+      Goto end
+      ${PathIfExist} "$R1"
+      end:
+        ClearErrors
+    FunctionEnd
+    Function compileEmacsPortableApp
+      StrCmp $called_emacs "1" +2 0
+      Call AddEmacsPath
+      StrCmp $found_emacs "" end 0
+      SetOutPath "$INSTDIR\App\eps"
+      
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make clean"
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make"
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make clean"
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make" 
+      end:
+        ClearErrors
+    FunctionEnd
+    Function SetEmacs
+      IfFileExists "$R9\bin" 0 end
+      StrCpy $R1 "$R9\bin"
+      end:
+        StrCpy $0 1
+        Push $0
+    FunctionEnd    
     
-    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make clean"
-    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make"
-    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make clean"
-    ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make" 
-    end:
-      ClearErrors
-  FunctionEnd
-  Function SetEmacs
-    IfFileExists "$R9\bin" 0 end
-    StrCpy $R1 "$R9\bin"
-    end:
-      StrCpy $0 1
-      Push $0
-  FunctionEnd    
-  
 #+END_SRC
 
