@@ -921,6 +921,18 @@ the implementation
     (ep-m "Tramp (for Putty)")
     (setq tramp-default-method "plink"))
 #+END_SRC
+* Fix mac/windows communication issues on mac.
+  #+BEGIN_SRC emacs-lisp
+    (when (eq system-type 'darwin)
+      (setq tramp-file-name-regexp-unified "\\`/\\([^[/:]\\{2,\\}\\|[^/]\\{2,\\}]\\):")
+      (require 'tramp)
+      (when (assoc "\\`/\\([^[/:]+\\|[^/]+]\\):" file-name-handler-alist)
+        (let ((a1 (rassq 'tramp-file-name-handler file-name-handler-alist)))
+          (setq file-name-handler-alist (delq a1 file-name-handler-alist))
+          (add-to-list 'file-name-handler-alist
+                       `("\\`/\\([^[/:]\\{2,\\}\\|[^/]\\{2,\\}]\\):" . tramp-file-name-handler)))))
+    
+  #+END_SRC
 
 * Fix Proxy settings for various programs
 ** git
