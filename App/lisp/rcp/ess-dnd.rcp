@@ -1,5 +1,0 @@
-(:name ess-dnd
-       :website "https://github.com/mlf176f2/ess-dnd"
-       :description "Drag and Drop code support for ESS"
-       :type git
-       :url "https://github.com/mlf176f2/ess-dnd.git")
