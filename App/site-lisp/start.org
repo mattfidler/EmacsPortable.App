@@ -752,7 +752,6 @@ ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
    =___EmacsPortableDaemon_%version%___=
 3. Starts up the nsis psudo-loading bar.
 
-    
 * Needed starting settings
 ** Special path variables
 :PROPERTIES:
@@ -947,6 +946,37 @@ the implementation
 
 ** cvs
 ** svn
+* Set default shell to bash 
+El-get uses many Unix recipes.  Therefore, bash should be used when
+available.
+#+BEGIN_SRC emacs-lisp
+  (when (eq system-type 'windows-nt)
+    (let (bash)
+      (cond
+       ((file-exists-p "~usb/PortableApps/CommonFiles/MinGW/msys/1.0/bin/bash.exe")
+        (setq bash (expand-file-name "~usb/PortableApps/CommonFiles/MinGW/msys/1.0/bin/bash.exe")))
+       ((and (getenv "MSYS") (file-exists-p (format "%s/msys/1.0/bin/bash.exe" (getenv "MSYS"))))
+        (setq bash (format "%s/msys/1.0/bin/bash.exe" (getenv "MSYS"))))
+       ((and (getenv "CYGWIN_DIR") (file-exists-p (format "%s/bin/bash.exe" (getenv "CYGWIN_DIR"))))
+        (setq bash (format "%s/bin/bash.exe" (getenv "CYGWIN_DIR")))))
+      (when bash
+        (setq shell-file-name bash)
+        (setenv "SHELL" bash)
+        (setenv "PATH" (concat (getenv "PATH") ";"
+                               (file-name-sans-extension bash)))
+        (push (file-name-sans-extension bash) exec-path)
+        (setq explicit-shell-file-name bash)
+        (setq ediff-shell bash)
+        (setq explicit-shell-args '("--login" "-i"))
+        (set (intern (format "explicit-%s-args"
+                             (file-name-sans-extension
+                              (file-name-nondirectory bash)))) '("--login" "-i")))))
+  
+#+END_SRC
+
+#+results:
+| --login | -i |
+
 * Add el-get support
 El-get is a very nice package management system that allows you to
 keep current with bleeding edge software.  
@@ -1064,17 +1094,19 @@ Start the EmacsPortable.App kicker.
                         (when (file-readable-p dir)
                           (add-to-list 'load-path dir)
                           (let ((files (directory-files dir t ".*[.]\\(org\\(.gpg\\)?\\|el\\|elc\\)$")))
-                            (remove-if #'(lambda(item)
-                                           (let ((base-name (file-name-sans-extension item)))
-                                             (cond
-                                              ((string-match "elc$" item)
-                                               (or (file-readable-p (concat base-name ".el"))
-                                                   (file-readable-p (concat base-name ".org"))))
-                                              ((string-match "el$" item)
-                                               (file-readable-p (concat base-name ".org")))
-                                              (t
-                                               nil))))
-                                       files)
+                            (setq files (remove-if #'(lambda(item)
+                                                       (let ((base-name (file-name-sans-extension item)))
+                                                         (cond
+                                                          ((string-match "elc$" item)
+                                                           (or (file-readable-p (concat base-name ".el"))
+                                                               (file-readable-p (concat base-name ".org"))
+                                                               (file-readable-p (concat base-name ".gpg"))))
+                                                          ((string-match "el$" item)
+                                                           (or (file-readable-p (concat base-name ".org"))
+                                                               (file-readable-p (concat base-name ".gpg"))))
+                                                          (t
+                                                           nil))))
+                                                   files))
                             (mapc (lambda(file)
                                     (message "Loading %s" file)
                                     (load-cfg file))

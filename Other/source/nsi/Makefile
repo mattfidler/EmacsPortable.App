@@ -31,7 +31,7 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 	makensis Emacs-Q.nsi
 
 EmacsDos.nsi: EmacsShortcuts.el
-       $(EMACS) -Q --batch -l ./EmacsShortcuts.el 
+	$(EMACS) -Q --batch -l ./EmacsShortcuts.el 
 
 Emacs-Q.nsi: EmacsShortcuts.el
 	$(EMACS) -Q --batch -l ./EmacsShortcuts.el

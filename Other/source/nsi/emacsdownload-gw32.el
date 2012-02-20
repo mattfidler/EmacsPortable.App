@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Feb  3 14:16:47 2012 (-0600)
-;;           By: Matthew L. Fidler
-;;     Update #: 78
+;; Last-Updated: Sat Feb 18 16:44:52 2012 (-0600)
+;;           By: us041375
+;;     Update #: 80
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -69,7 +69,8 @@
         ("OpenSSL" "used by gnus to talk to servers over SSL.")
         ("Patch" "used by ediff-patch-file and others to apply patches.")
         ("TexInfo" "used to build Emacs' manuals.")
-        ("Unzip" "used by archive-mode for extracting zip files.")
+	 ("Sed" "Used to build magit")
+	 ("Unzip" "used by archive-mode for extracting zip files.")
         ("Xpm" "library to support XPM images (bundled with Emacs binaries)")
         ("Zip" "used by archive-mode for editing zip files.")
         ("Zlib" "required by LibPng (also in GTK). ")))

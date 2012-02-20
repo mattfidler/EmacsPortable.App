@@ -1,0 +1,14 @@
+(:name org-mode
+       :website "http://orgmode.org/"
+       :description "Org-mode is for keeping notes, maintaining ToDo lists, doing project planning, and authoring with a fast and effective plain-text system."
+       :type git
+       :url "http://orgmode.org/org-mode.git"
+       :info "doc"
+       :build `,(mapcar
+                 (lambda (target)
+                   (list "make" target (concat "EMACS=" (shell-quote-argument el-get-emacs))))
+                 '("all"))
+       :load-path ("." "lisp" "contrib/lisp")
+       :autoloads nil
+       :features org-install)
+

@@ -1,0 +1,8 @@
+(:name ess
+       :description "Emacs Speaks Statistics: statistical programming within Emacs"
+       :type http-zip
+       :url "http://ess.r-project.org/downloads/ess/ess-5.14.zip"
+       :info "doc/info/"
+       :load-path ("lisp")
+       :features ess-site)
+
