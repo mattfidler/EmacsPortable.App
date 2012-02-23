@@ -1,0 +1,4 @@
+(:name md-readme
+       :type git
+       :description "Markdown-formatted READMEs for your ELisp"
+       :url "https://github.com/thomas11/md-readme.git")

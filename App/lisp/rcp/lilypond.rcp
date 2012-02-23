@@ -1,0 +1,5 @@
+(:name lilypond
+       :type emacsmirror
+       :description "Lilypond mode for editing lilypond sources."
+       :autoloads nil
+       :load "lilypond-init.el")

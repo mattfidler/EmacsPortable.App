@@ -33,9 +33,9 @@ FULLHEIGHT=`cat $EPINI | egrep "[Ff]ull[Hh]eight *= *" | tr -d '\15' | cut -f 2 
 
 OPT=""
 
-if [ "$GEOMETRY"  != "" ]; then
-    OPT="$OPT -g $GEOMETRY"
-fi
+## if [ "$GEOMETRY"  != "" ]; then
+##     OPT="$OPT --geometry $GEOMETRY"
+## fi
 
 if [ "$BACKGROUND" != "" ]; then
     OPT="$OPT -bg $BACKGROUND"
@@ -144,5 +144,5 @@ echo REALVER: $REALVER
 if ! [ -e $EMACSDATA/DOC-$REALVER ]; then
   cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
 fi 
-
+echo  $OPT
 $EMACSDIR/Emacs --debug-init $OPT

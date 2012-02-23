@@ -631,7 +631,10 @@ CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
 :END:
 ** HOLD Remove PuTTY Portable startup screen when launching Pageant Portable.
 - State "DONE"       from "STARTED"    [2012-01-29 Sun 23:45]
-** TODO Make sure that portable starter kit from a zip file works.
+** CANCELLED Make sure that portable starter kit from a zip file works.
+CLOSED: [2012-02-20 Mon 11:27]
+- State "CANCELLED"  from "TODO"       [2012-02-20 Mon 11:27] \\
+  No longer use portable starter kit.
 ** DONE Update Emacs to 23.3 and 24.0.94
 CLOSED: [2012-01-30 Mon 21:35]
 - State "DONE"       from "TODO"       [2012-01-30 Mon 21:35]
@@ -642,4 +645,6 @@ CLOSED: [2012-01-30 Mon 21:34]
 
 ** TODO  Make launching of PuTTY optional.
 ** TODO EmacsPortable.App will launch whatever emacs is running.
-** TODO Figure out why mac loadup isn't working correctly.
+** DONE Figure out why mac loadup isn't working correctly.
+CLOSED: [2012-02-20 Mon 11:28]
+- State "DONE"       from "TODO"       [2012-02-20 Mon 11:28]

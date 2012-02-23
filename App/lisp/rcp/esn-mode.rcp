@@ -2,4 +2,4 @@
        :description "Emacs Speaks NONMEM"
        :type git
        :url "https://github.com/mlf176f2/Emacs-Speaks-NONMEM.git"
-       :features '(esn-start))
+       :features esn-start)
