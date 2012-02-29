@@ -601,6 +601,9 @@ Icons came from various places:
 ** TODO Make a portable browser a selectable EmacsOption
 [2011-12-15 Thu 13:15]
 ** TODO When Cygwin is found drop GnuWin32 Support, or make it secondary.
+*** TODO Email [[outlook:00000000D828B23AB54D3743ADC344CEEFD9F057842F2000][M&S draft objective 2012 (Sarangapani, Ramesh)]] 
+  
+ [2012-02-27 Mon 08:16]
 ** STARTED Remove Emacs Binaries
 :LOGBOOK:
 CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
@@ -648,3 +651,9 @@ CLOSED: [2012-01-30 Mon 21:34]
 ** DONE Figure out why mac loadup isn't working correctly.
 CLOSED: [2012-02-20 Mon 11:28]
 - State "DONE"       from "TODO"       [2012-02-20 Mon 11:28]
+** TODO Fix EmacsPortable.App startup so that the USB drive is considered to be the drive that EmacsPortable.App is on if it has a PortableApps directory.
+:LOGBOOK:
+CLOCK: [2012-02-23 Thu 09:44]--[2012-02-23 Thu 09:45] =>  0:01
+:END:
+[2012-02-23 Thu 09:44]
+[[file:~/org/pde4-nasal.org::*C92-011][C92-011]]

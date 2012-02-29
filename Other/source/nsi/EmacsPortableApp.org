@@ -660,15 +660,16 @@ FunctionEnd
 ** Setup Path Variables
 #+BEGIN_SRC nsis
   !macro enumPathIni WHAT
-    ;; Parse ${WHAT}
-    EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}"
-    Pop $R0
-    StrCmp $R0 "error" done_${WHAT}
+  ;; Parse ${WHAT}
+  EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}"
+  Pop $R0
+  StrCmp $R0 "error" done_${WHAT}
     loop_${WHAT}:
       IntCmp $R0 "0" done_${WHAT} done_${WHAT} 0
       Pop $R1
       ReadINIStr $R2 "$EXEDIR\App\ini\paths.ini" "${WHAT}" "$R1"
   !macroend
+  
   !define enumPathIni `!insertmacro enumPathIni`
   !define enumPathEnd `!insertmacro enumPathEnd`
   
@@ -718,9 +719,15 @@ FunctionEnd
       ${enumPathEnd} "exedir"
       
       ${enumPathIni} "portable"
+      GetFullPathName $R6 "$EXEDIR\.."
+      ${PathIfExist} "$R6\PortableApps\$R2" found_p_dd
+      ${PathIfExist} "$R6\$R2" path_portable
       ${PathIfExist} "$usbs\PortableApps\$R2" found_pa
       ${PathIfExist} "$usbs\$R2" found_usb
       Goto no_portable
+    found_p_dd:
+      StrCpy "$R6" "$R6\PortableApps"
+      Goto path_portable
     found_pa:
       StrCpy "$R6" "$usbs\PortableApps"
       Goto path_portable
@@ -844,7 +851,7 @@ FunctionEnd
       WriteINIStr "$TEMP\ep-env.ini" "path" "n" "$npath"
       WriteINIStr "$TEMP\ep-env.ini" "info" "n" "$ninfo"
       WriteINIStr "$TEMP\ep-env.ini" "man" "n" "$nman"
-      #ok  
+      #ok
   FunctionEnd
   
   
