@@ -641,13 +641,6 @@ killed. Using this we can create a function that:
     nil)
   (defvar ep-kill-emacs-hook nil
     "True Kill Emacs hook.")
-  (defun ep-remove-reg ()
-    "Removes Registry settings on exit."
-    (run-hooks 'ep-kill-emacs-hook)
-    (when (file-readable-p (concat (getenv "TEMP") "/EP-RemoveReg.exe"))
-      (message "Removing Registry Settings.")
-      (shell-command-to-string (concat (getenv "TEMP") "/EP-RemoveReg.exe /VERSION=" emacs-ver))))
-  (add-hook 'kill-emacs-hook 'ep-remove-reg)
   (defvar ep-saved-kill-emacs-hook nil)
   (defun ep-save-buffers-pseudo-kill-emacs ()
     "Faking `save-buffers-kill-emacs' when last visible frame is removed."
@@ -656,7 +649,6 @@ killed. Using this we can create a function that:
       (add-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn t)
       (save-buffers-kill-emacs)
       (remove-hook 'kill-emacs-query-functions 'ep-save-buffers-nil-fn)
-      (remove-hook 'kill-emacs-hook 'ep-remove-reg)
       (setq ep-saved-kill-emacs-hook kill-emacs-hook)
       (when server
         (remove-hook 'kill-emacs-hook 'server-force-stop))
@@ -664,7 +656,6 @@ killed. Using this we can create a function that:
       (setq kill-emacs-hook nil)
       (when server
         (add-hook 'kill-emacs-hook 'server-force-stop))
-      (add-hook 'kill-emacs-hook 'ep-remove-reg)
       (if (not ep-emacs-kill-frame) nil
         (setq ep-emacs-kill-frame nil)
         (setq ep-kill-emacs-query-functions kill-emacs-query-functions)

@@ -36,6 +36,7 @@ Icon "..\img\ico\appicon.ico"
 ** Variables
 #+BEGIN_SRC nsis
 Var nver
+Var lastver
 var option_version
 var cmdLineParams
 var FONT_REG
@@ -129,150 +130,128 @@ FunctionEnd
     Exch $R0
 !macroend
 #+END_SRC
-** Parse Parameters
-#+BEGIN_SRC nsis
-Function parseParameters
-  ${GetOptions} $cmdLineParams '/VERSION=' $R0
-  IfErrors +2 0
-  StrCpy "$option_version" "$R0"
-  ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""  
-FunctionEnd
-
-!define GetCmdOptions "!insertmacro GetCmdOptions"
-
-!macro GetCmdOptions
-  Call GetCmdOptions
-!macroend
-Function GetCmdOptions
-  ## Gets Command Line Functions
-  Push $R0
-  
-  ${GetParameters} $cmdLineParams
-  
-  
-  ClearErrors
-  
-  Pop $R0
-  
-  ; Initialize options
-  
-  StrCpy $option_version "0"
-  
-  ; Parse Parameters
-  Push $R0
-  Call parseParameters
-  Pop $R0
-FunctionEnd
-#+END_SRC
 ** Initialization functions
 #+BEGIN_SRC nsis
 Function .onInit
-  ${GetCmdOptions}
+  
 FunctionEnd
 #+END_SRC
 * Main Section
 #+BEGIN_SRC nsis
-Section "Main" sec_main ; Checked
-  ; Description:
-  ; Main
-  StrCpy $nver 0
-  EnumINI::Section "$TEMP\ep-reg.ini" "run"
-  Pop $R2
-  StrCmp "$R2" "error" done
-  loop_run:
-    IntCmp "0" "$R2" loop_end loop_end 0
-    Pop $R1
-    StrCmp "$R1" "$option_version" skip_cnt
-    FindProcDLL::FindProc "emacs-$option_version.exe"
-    StrCmp "$R0" "1"  skip_cnt
-    IntOp $nver $nver + 1
-  skip_cnt:
-    IntOp $R2 $R2 - 1
-    Goto loop_run
-  loop_end:
-    
-  StrCmp 0 $nver none_left done
-  none_left:
-    ClearErrors
-    IfFileExists "$TEMP\ep-rmfont.exe" 0 skip_font_rm
-    ReadIniStr $R0 "$TEMP\ep-reg.ini" "font.rm" "fontdir"
-    IfErrors 0 +3
-    Delete "$TEMP\ep-rmfont.exe"
-    Goto skip_font_rm
-    ExecWait "$\"$TEMP\ep-rmfont$\" $\"$R0$\""
-    Delete "$TEMP\ep-rmfont.exe"
-  skip_font_rm:
-    ClearErrors
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
-    IfErrors main-9x main-NT 
-  main-NT:
-    StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-    goto main-go
-    
-  main-9x:
-    StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
-    goto main-go
-    
-  main-go:
-    ClearErrors
-    EnumINI::Section "$TEMP\ep-reg.ini" "font.tmp"
+  Section "Main" sec_main ; Checked
+    ; Description:
+    ; Main  
+    System::Call 'kernel32::CreateMutexA(i 0, i 0, t "EP-RemoveReg.exe") i .r1 ?e'
     Pop $R0
-    StrCmp $R0 "error" skip_font
-  loop_font:
-    IntCmp "0" "$R0" skip_font skip_font 0
-    Pop $R1
-    ReadIniStr $R2 "$TEMP\ep-reg.ini" "font.rm" "$R1"
-    System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
-    DeleteRegValue HKLM "$FONT_REG" "$R2"
-    Delete /REBOOTOK "$FONTS\$R2"
-    IntOp $R0 $R0 - 1
-    goto loop_font
-  skip_font:
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
-    IfErrors look_for_acrobat 0
-    IfFileExists "$R0\Javascripts" 0 look_for_acrobat
-    StrCpy $R0 "$R0\Javascripts"
-    Goto delete_org_protocol_js
-    
-  look_for_acrobat:
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
-    IfErrors delete_open_with 0
-    IfFileExists "$R0\Javascripts" 0 delete_open_with
-    StrCpy $R0 "$R0\Javascripts"
-  delete_org_protocol_js:
-    IfFileExists "$R0\org-capture.js" 0 +2
-    Delete "$R0\org-capture.js"
-    IfFileExists "$R0\org-remember.js" 0 +2
-    Delete "$R0\org-remember.js"
-    IfFileExists "$R0\org-store-link.js" 0 +2
-    Delete "$R0\org-store-link.js"
-  delete_open_with:
-    ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\EP-RemoveReg.exe"
-    DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
-    DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"
-    DeleteRegKey HKEY_CLASSES_ROOT "org-protocol"
-    
-    ; Restore registry keys
-  viewsource_ie:
-    ClearErrors
-    ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup"
-    IfErrors viewsource 0
-    WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$0"
-    DeleteRegKey HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor\Editor Name-backup"
-    Goto viewsource
-  viewsource:
-    ClearErrors
-    ReadRegStr $0 HKCR "htmlfile\shell\edit\command" "-backup"
-    IfErrors done 0
-    WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$0"
-    DeleteRegKey HKCR "htmlfile\shell\edit\command\-backup"
-    Goto done
-    IfFileExists "$TEMP\ep-reg.ini" 0 done
-    Delete "$TEMP\ep-reg.ini"
-    Delete "$TEMP\ep-RemoveReg.exe"
-  done:
-    ClearErrors
-    SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
-SectionEnd ; sec_main
+    StrCmp $R0 0 0 done
+    ;; Wait for EmacsPortableApp.exe to stop
+    wait_for_emacsportable_launcher_stop:
+      FindProcDLL::FindProc "EmacsPortableApp.exe"
+      StrCmp "$R0" "1" 0 look_for_running_emacs
+      Sleep 1000
+      Goto wait_for_emacsportable_launcher_stop
+    look_for_running_emacs:
+      StrCpy $nver 0
+      EnumINI::Section "$TEMP\ep-reg.ini" "run"
+      Pop $R2
+      StrCmp "$R2" "error" done
+    loop_run:
+      IntCmp $R2 0 loop_end loop_end 0
+      Pop $R1
+      FindProcDLL::FindProc "emacs-$R1.exe"
+      StrCmp "$R0" "1" wait_for_close skip_cnt
+    wait_for_close:
+      Sleep 1000
+      StrCpy $nver "1"
+      FindProcDLL::FindProc "emacs-$R1.exe"
+      StrCmp "$R0" "1" wait_for_close skip_cnt
+    skip_cnt:
+      IntOp $R2 $R2 - 1
+      Goto loop_run
+    loop_end:
+      StrCmp 0 $nver none_left look_for_running_emacs
+    none_left:
+      ClearErrors
+      IfFileExists "$TEMP\ep-rmfont.exe" 0 skip_font_rm
+      ReadIniStr $R0 "$TEMP\ep-reg.ini" "font.rm" "fontdir"
+      IfErrors 0 +3
+      Delete "$TEMP\ep-rmfont.exe"
+      Goto skip_font_rm
+      ExecWait "$\"$TEMP\ep-rmfont$\" $\"$R0$\""
+      Delete "$TEMP\ep-rmfont.exe"
+    skip_font_rm:
+      ClearErrors
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
+      IfErrors main-9x main-NT 
+    main-NT:
+      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+      goto main-go
+      
+    main-9x:
+      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
+      goto main-go
+      
+    main-go:
+      ClearErrors
+      EnumINI::Section "$TEMP\ep-reg.ini" "font.tmp"
+      Pop $R0
+      StrCmp $R0 "error" skip_font
+    loop_font:
+      IntCmp "0" "$R0" skip_font skip_font 0
+      Pop $R1
+      ReadIniStr $R2 "$TEMP\ep-reg.ini" "font.rm" "$R1"
+      System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
+      DeleteRegValue HKLM "$FONT_REG" "$R2"
+      Delete /REBOOTOK "$FONTS\$R2"
+      IntOp $R0 $R0 - 1
+      goto loop_font
+    skip_font:
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+      IfErrors look_for_acrobat 0
+      IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+      StrCpy $R0 "$R0\Javascripts"
+      Goto delete_org_protocol_js
+      
+    look_for_acrobat:
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+      IfErrors delete_open_with 0
+      IfFileExists "$R0\Javascripts" 0 delete_open_with
+      StrCpy $R0 "$R0\Javascripts"
+    delete_org_protocol_js:
+      IfFileExists "$R0\org-capture.js" 0 +2
+      Delete "$R0\org-capture.js"
+      IfFileExists "$R0\org-remember.js" 0 +2
+      Delete "$R0\org-remember.js"
+      IfFileExists "$R0\org-store-link.js" 0 +2
+      Delete "$R0\org-store-link.js"
+    delete_open_with:
+      ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\EP-RemoveReg.exe"
+      DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
+      DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"
+      DeleteRegKey HKEY_CLASSES_ROOT "org-protocol"
+      
+      ; Restore registry keys
+    viewsource_ie:
+      ClearErrors
+      ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup"
+      IfErrors viewsource 0
+      WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$0"
+      DeleteRegKey HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor\Editor Name-backup"
+      Goto viewsource
+    viewsource:
+      ClearErrors
+      ReadRegStr $0 HKCR "htmlfile\shell\edit\command" "-backup"
+      IfErrors done 0
+      WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$0"
+      DeleteRegKey HKCR "htmlfile\shell\edit\command\-backup"
+      Goto done
+      IfFileExists "$TEMP\ep-reg.ini" 0 done
+      Delete "$TEMP\ep-reg.ini"
+      Delete "$TEMP\ep-RemoveReg.exe"
+    done:
+      ClearErrors
+      SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+  SectionEnd ; sec_main
+  
 #+END_SRC
 
