@@ -1,0 +1,149 @@
+#!/bin/bash --login
+
+EMACSDIR=`dirname $0`
+if [ $EMACSDIR = "." ]; then
+    EMACSDIR=`pwd`
+fi
+EPUSB=`echo $EMACSDIR | sed 's/\(\/Volumes\/[^\/]*\/\).*/\1/'`
+EPOTHER=`echo $EMACSDIR | sed 's/Contents.*/Other\//'`
+DICPATH=`echo $EMACSDIR | sed 's/Contents.*/App\/hunspell\/epdic/'`
+DATPATH=`echo $EMACSDIR | sed 's/Contents.*/Data/'`
+EXEDIR=`echo $EMACSDIR | sed 's/Contents.*//'`
+HUNSPELL=`echo $EMACSDIR | sed 's/Contents.*/App\/hunspell\/binX/'`
+OHOME=$HOME
+PATH=$HUNSPELL:$PATH
+TEMP=/tmp/
+
+##Get what version of Emacs is specified.
+EMACSAPP=`echo $EMACSDIR | sed 's/Contents.*/App/'`
+EMACSDAT=`echo $EMACSDIR | sed 's/Contents.*/Data/'`
+
+EPINI=$EMACSDAT/ini/EmacsPortableApp.ini
+
+EMACSVER=`cat $EPINI | egrep "[vV]ersion *= *" | tr -d '\15' | cut -f 2 -d "="`
+GEOMETRY=`cat $EPINI | egrep "[Gg]eometry *= *" | tr -d '\15' | cut -f 2 -d "="`
+FOREGROUND=`cat $EPINI | egrep "[Ff]oreground *= *" | tr -d '\15' | cut -f 2 -d "="`
+BACKGROUND=`cat $EPINI | egrep "[Bb]ackground *= *" | tr -d '\15' | cut -f 2 -d "="`
+
+MAXIMIZED=`cat $EPINI | egrep "[Mm]aximized *= *" | tr -d '\15' | cut -f 2 -d "="`
+
+FULLWIDTH=`cat $EPINI | egrep "[Ff]ull[Ww]idth *= *" | tr -d '\15' | cut -f 2 -d "="`
+
+FULLHEIGHT=`cat $EPINI | egrep "[Ff]ull[Hh]eight *= *" | tr -d '\15' | cut -f 2 -d "="`
+
+OPT=""
+
+## if [ "$GEOMETRY"  != "" ]; then
+##     OPT="$OPT --geometry $GEOMETRY"
+## fi
+
+if [ "$BACKGROUND" != "" ]; then
+    OPT="$OPT -bg $BACKGROUND"
+fi
+
+if [ "$FOREGROUND" != "" ]; then
+    OPT="$OPT -fg $FOREGROUND"
+fi
+
+if [ "$MAXIMIZED" == "1" ]; then
+    OPT="$OPT -mm"
+fi
+
+if [ "$FULLWIDTH" == "1" ]; then
+    OPT="$OPT -fw"
+fi
+
+if [ "$FULLHEIGHT" == "1" ]; then
+    OPT="$OPT -fh"
+fi
+
+## Set Emacs Specific Directories
+
+
+EMACSDATA="${EMACSAPP}/emacs-${EMACSVER}/etc"
+EMACSDOC="${EMACSAPP}/emacs-${EMACSVER}/etc"
+
+EMACSLOADPATH=/usr/share/emacs/23.3/lisp:$EMACSAPP/site-lisp/
+
+EMACSDIR=$EMACSAPP/emacs-$EMACSVER/MacOS
+
+
+OPHOME=`cat $EPINI | egrep "[Hh]ome *= *" | tr -d '\15' | cut -f 2 -d "=" | sed 's/\\\\/\\//g' | sed 's/\\/$//'`
+
+OPTYPE=`echo $OPHOME | sed 's/\(USB\).*/\1/' | sed 's/\(EXEDIR\).*/\1/'`
+
+if [ "$OPTYPE" == "EXEDIR" ]; then
+    OPHOME=`echo $OPHOME | sed 's/EXEDIR:\///'`
+    HOME="$EXEDIR$OPHOME"
+    export HOME
+fi
+
+if [ "$OPTYPE" == "USB" ]; then
+    OPHOME=`echo $OPHOME | sed 's/USB:\///'`
+    HOME="$EPUSB$OPHOME"
+    export HOME
+fi
+
+#HOME=$EPUSB/Documents
+
+echo HOME: $HOME $OPHOME $OPTYPE
+echo EPUSB: $EPUSB
+echo EPOTHER: $EPOTHER
+echo TEMP: $TEMP
+echo DICPATH: $DICPATH
+#echo PATH: $PATH
+echo EMACSDIR: $EMACSDIR
+
+echo EMACSVER: $EMACSVER
+
+
+echo EMACSAPP: $EMACSAPP
+echo EMACSDATA: $EMACSDATA
+echo EMACSLOADPATH: $EMACSLOADPATH
+echo GEOMETRY: $GEOMETRY
+echo FOREGROUND: $FOREGROUND
+echo BACKGROUND: $BACKGROUND
+echo OPT: $OPT
+echo DATPATH: $DATPATH
+
+if [ -e $DATPATH/ini/Environment.ini ]; then
+    rm /tmp/ep-environment.sh
+    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/ini/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
+    echo "" >> /tmp/ep-environment.sh
+    ##./flip.osx -u /tmp/ep-environment.sh
+    source /tmp/ep-environment.sh
+fi
+
+if [ -e $DATPATH/init/shared/Environment.ini ]; then
+    rm /tmp/ep-environment.sh
+    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/init/shared/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
+    echo "" >> /tmp/ep-environment.sh
+    ##./flip.osx -u /tmp/ep-environment.sh
+    source /tmp/ep-environment.sh
+fi
+
+ 
+echo ERGOEMACS_KEYBOARD_LAYOUT: $ERGOEMACS_KEYBOARD_LAYOUT
+
+export OHOME
+export EPUSB
+export EPOTHER
+export TEMP
+export DICPATH
+export PATH
+export EMACSDIR
+export EMACSDATA
+export EMACSLOADPATH
+export EMACSDOC
+export EMACSVER
+
+## REALVER=`$EMACSDIR/Emacs --version 2>&1 | head -n1 | sed 's/[^0-9]*\([0-9].*\)/\1/'`
+
+## echo REALVER: $REALVER
+##
+## if ! [ -e $EMACSDATA/DOC-$REALVER ]; then
+##   cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
+## fi
+## echo  $OPT
+## $EMACSDIR/Emacs --debug-init $OPT
+emacs --debug-init $OPT

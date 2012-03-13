@@ -576,6 +576,7 @@ FunctionEnd
       IfFileExists "$9$option_home_usb\.emacs" set_home 0
       IfFileExists "$9$option_home_usb\_emacs" set_home 0
       IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_home
+      IfFileExists "$9Apps\EmacsPortable.App\EmacsPortableApp.exe" set_home
       IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_home
       IfFileExists "$9PotableApps" set_home
       Goto findcygwin
@@ -586,8 +587,10 @@ FunctionEnd
       
     is_emacs_portable:
       IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_usb
+      IfFileExists "$9Apps\EmacsPortable.App\EmacsPortableApp.exe" set_usb
       IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_usb
       IfFileExists "$9PortableApps" set_usb
+      IfFileExists "$9Apps" set_usb
       Goto findcygwin
       
     set_usb:
@@ -661,20 +664,20 @@ FunctionEnd
 ** Setup Path Variables
 #+BEGIN_SRC nsis
   !macro enumPathIni WHAT
-  ;; Parse ${WHAT}
-  EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}"
-  Pop $R0
-  StrCmp $R0 "error" done_${WHAT}
+    ;; Parse ${WHAT}
+    EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}"
+    Pop $R0
+    StrCmp $R0 "error" done_${WHAT}
     loop_${WHAT}:
       IntCmp $R0 "0" done_${WHAT} done_${WHAT} 0
       Pop $R1
       ReadINIStr $R2 "$EXEDIR\App\ini\paths.ini" "${WHAT}" "$R1"
-      !macroend
+  !macroend
   
-      !define enumPathIni `!insertmacro enumPathIni`
-      !define enumPathEnd `!insertmacro enumPathEnd`
+  !define enumPathIni `!insertmacro enumPathIni`
+  !define enumPathEnd `!insertmacro enumPathEnd`
   
-      !macro enumPathEnd WHAT
+  !macro enumPathEnd WHAT
     path_${WHAT}:
       EnumINI::Section "$EXEDIR\App\ini\paths.ini" "${WHAT}.$R1.path"
       Pop $R7
@@ -703,156 +706,170 @@ FunctionEnd
       IntOp $R0 $R0 - 1
       Goto loop_${WHAT}
     done_${WHAT}: 
-      !macroend
+    !macroend
   
-      Function SetupPath
-        StrCpy $nini 0
-        StrCpy $npath 0
-        StrCpy $ninfo 0
-        StrCpy $nman 0
-        IfFileExists "$EXEDIR\App\ini\paths.ini" 0 skip_data_paths
-        setup_paths:
-          ${enumPathIni} "exedir"
-          ${PathIfExist} "$EXEDIR\$R2" found_exedir
-          Goto no_exedir
-        found_exedir:
-          StrCpy "$R6" "$EXEDIR"
-          ${enumPathEnd} "exedir"
-          
-          ${enumPathIni} "portable"
-          GetFullPathName $R6 "$EXEDIR\.."
-          ${PathIfExist} "$R6PortableApps\$R2" found_p_dd
-          ${PathIfExist} "$R6$R2" path_portable
-          ${PathIfExist} "$usbs\PortableApps\$R2" found_pa
-          ${PathIfExist} "$usbs\$R2" found_usb
-          Goto no_portable
-        found_p_dd:
-          StrCpy "$R6" "$R6\PortableApps"
-          Goto path_portable
-        found_pa:
-          StrCpy "$R6" "$usbs\PortableApps"
-          Goto path_portable
-        found_usb:
-          StrCpy "$R6" "$usbs"
-          ${enumPathEnd} "portable"
-          
-          ${enumPathIni} "local"
-          ${PathIfExist} "$PROGRAMFILES\$R2" found_p
-          ${PathIfExist} "$PROGRAMFILES32\$R2" found_p32
-          ${PathIfExist} "$PROGRAMFILES64\$R2" found_p64
-          ${PathIfExist} "c:\$R2" found_c
-          Goto no_local
-        found_p:
-          StrCpy "$R6" "$PROGRAMFILES"
-          Goto path_local
-        found_p32:
-          StrCpy "$R6" "$PROGRAMFILES32"
-          Goto path_local
-        found_p64:
-          StrCpy "$R6" "$PROGRAMFILES64"
-          Goto path_local
-        found_c:
-          StrCpy "$R6" "c:\"
-          Goto path_local
-          ${enumPathEnd} "local"
-          
-          ## Now look into INFO files
-          EnumINI::Section "$EXEDIR\App\ini\paths.ini" "exedir.info"
-          Pop $R0
-          StrCmp "$R0" "error" done_info_exedir
-        loop_info_exedir:
-          IntCmp $R0 "0" done_info_exedir done_info_exedir 0
-          Pop $R1
-          ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "exedir.info" "$R1"
-          ${InfoIfExist} "$EXEDIR\$R2" 0
-          IntOp $R0 $R0 - 1
-          Goto loop_info_exedir
-        done_info_exedir:
-          EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.info"
-          Pop $R0
-          StrCmp "$R0" "error" done_info_portable
-        loop_info_portable:
-          IntCmp $R0 "0" done_info_portable done_info_portable 0
-          Pop $R1
-          ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "portable.info" "$R1"
-          ${InfoIfExist} "$usbs\$R2" 0
-          ${InfoIfExist} "$usbs\PortableApps\$R2" 0
-          IntOp $R0 $R0 - 1
-          Goto loop_info_portable
-        done_info_portable:
-          EnumINI::Section "$EXEDIR\App\ini\paths.ini" "local.info"
-          Pop $R0
-          StrCmp "$R0" "error" done_info_local
-        loop_info_local:
-          IntCmp $R0 "0" done_info_local done_info_local 0
-          Pop $R1
-          ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "local.info" "$R1"
-          ${InfoIfExist} "$PROGRAMFILES\$R2" 0
-          ${InfoIfExist} "$PROGRAMFILES32\$R2" 0
-          ${InfoIfExist} "$PROGRAMFILES64\$R2" 0
-          ${InfoIfExist} "c:\$R2" 0
-          IntOp $R0 $R0 - 1
-          Goto loop_info_local
-        done_info_local:
+    Function SetupPath
+      StrCpy $nini 0
+      StrCpy $npath 0
+      StrCpy $ninfo 0
+      StrCpy $nman 0
+      IfFileExists "$EXEDIR\App\ini\paths.ini" 0 skip_data_paths
+      setup_paths:
+        ${enumPathIni} "exedir"
+        ${PathIfExist} "$EXEDIR\$R2" found_exedir
+        Goto no_exedir
+      found_exedir:
+        StrCpy "$R6" "$EXEDIR"
+        ${enumPathEnd} "exedir"
+        
+        ${enumPathIni} "portable"
+        GetFullPathName $R6 "$EXEDIR\.."
+        ${PathIfExist} "$R6PortableApps\$R2" found_p_dd
+        ${PathIfExist} "$R6Apps\$R2" found_p_dd2
+        ${PathIfExist} "$R6$R2" path_portable
+        ${PathIfExist} "$usbs\PortableApps\$R2" found_pa
+        ${PathIfExist} "$usbs\$R2" found_usb
+        Goto no_portable
+      found_p_dd:
+        StrCpy "$R6" "$R6\PortableApps"
+        Goto path_portable
+      found_p_dd2:
+        StrCpy "$R6" "$R6\Apps"
+        Goto path_portable
+      found_pa:
+        StrCpy "$R6" "$usbs\PortableApps"
+        Goto path_portable
+      found_usb:
+        StrCpy "$R6" "$usbs"
+        ${enumPathEnd} "portable"
+        
+        ${enumPathIni} "local"
+        ${PathIfExist} "$PROGRAMFILES\$R2" found_p
+        ${PathIfExist} "$PROGRAMFILES32\$R2" found_p32
+        ${PathIfExist} "$PROGRAMFILES64\$R2" found_p64
+        ${PathIfExist} "c:\$R2" found_c
+        Goto no_local
+      found_p:
+        StrCpy "$R6" "$PROGRAMFILES"
+        Goto path_local
+      found_p32:
+        StrCpy "$R6" "$PROGRAMFILES32"
+        Goto path_local
+      found_p64:
+        StrCpy "$R6" "$PROGRAMFILES64"
+        Goto path_local
+      found_c:
+        StrCpy "$R6" "c:\"
+        Goto path_local
+        ${enumPathEnd} "local"
+        
+        ## Now look into INFO files
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "exedir.info"
+        Pop $R0
+        StrCmp "$R0" "error" done_info_exedir
+      loop_info_exedir:
+        IntCmp $R0 "0" done_info_exedir done_info_exedir 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "exedir.info" "$R1"
+        ${InfoIfExist} "$EXEDIR\$R2" 0
+        IntOp $R0 $R0 - 1
+        Goto loop_info_exedir
+      done_info_exedir:
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.info"
+        Pop $R0
+        StrCmp "$R0" "error" done_info_portable
+      loop_info_portable:
+        IntCmp $R0 "0" done_info_portable done_info_portable 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "portable.info" "$R1"
+        ${InfoIfExist} "$usbs\$R2" 0
+        ${InfoIfExist} "$usbs\PortableApps\$R2" 0
+        ${InfoIfExist} "$usbs\Apps\$R2" 0
+        IntOp $R0 $R0 - 1
+        Goto loop_info_portable
+      done_info_portable:
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "local.info"
+        Pop $R0
+        StrCmp "$R0" "error" done_info_local
+      loop_info_local:
+        IntCmp $R0 "0" done_info_local done_info_local 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "local.info" "$R1"
+        ${InfoIfExist} "$PROGRAMFILES\$R2" 0
+        ${InfoIfExist} "$PROGRAMFILES32\$R2" 0
+        ${InfoIfExist} "$PROGRAMFILES64\$R2" 0
+        ${InfoIfExist} "c:\$R2" 0
+        IntOp $R0 $R0 - 1
+        Goto loop_info_local
+      done_info_local:
   
-          ## Now look into MAN files
-          EnumINI::Section "$EXEDIR\App\ini\paths.ini" "exedir.man"
-          Pop $R0
-          StrCmp "$R0" "error" done_man_exedir
-        loop_man_exedir:
-          IntCmp $R0 "0" done_man_exedir done_man_exedir 0
-          Pop $R1
-          ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "exedir.man" "$R1"
-          ${ManIfExist} "$EXEDIR\$R2" 0
-          IntOp $R0 $R0 - 1
-          Goto loop_man_exedir
-        done_man_exedir:
-          EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.man"
-          Pop $R0
-          StrCmp "$R0" "error" done_man_portable
-        loop_man_portable:
-          IntCmp $R0 "0" done_man_portable done_man_portable 0
-          Pop $R1
-          ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "portable.man" "$R1"
-          ${ManIfExist} "$usbs\$R2" 0
-          ${ManIfExist} "$usbs\PortableApps\$R2" 0
-          IntOp $R0 $R0 - 1
-          Goto loop_man_portable
-        done_man_portable:
-          EnumINI::Section "$EXEDIR\App\ini\paths.ini" "local.man"
-          Pop $R0
-          StrCmp "$R0" "error" done_man_local
-        loop_man_local:
-          IntCmp $R0 "0" done_man_local done_man_local 0
-          Pop $R1
-          ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "local.man" "$R1"
-          ${ManIfExist} "$PROGRAMFILES\$R2" 0
-          ${ManIfExist} "$PROGRAMFILES32\$R2" 0
-          ${ManIfExist} "$PROGRAMFILES64\$R2" 0
-          ${ManIfExist} "c:\$R2" 0
-          IntOp $R0 $R0 - 1
-          Goto loop_man_local
-        done_man_local:
-          
-        skip_data_paths:
-          ## PythonPortable.
-          #${Locate} "$usbs\PortableApps\" "/L=D /M=*Python* /S= /G=0" "addpath"
-          #${Locate} "$usbs\" "/L=D /M=*Python* /S= /G=0" "addpath"
-          
-          ## Add R Portable if present
-          ${PathIfExist} $usbs\PortableApps\R-Portable\App\bin 0
-          ${PathIfExist} $usbs\PortableApps\RPortable\App\bin 0
-          
-          IfFileExists $usbs\PortableApps\R-Portable\R-Portable.ini 0 skipr
-          ${ReadINIStrWithDefault} $Rpath $usbs\PortableApps\R-Portable\R-Portable.ini "R-Portable" "ProgramDirectory" "App\R-2.11.0"
-          ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin 0
-          ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin\i386 0
-        skipr:
-          ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
-          WriteINIStr "$TEMP\ep-env.ini" "path" "n" "$npath"
-          WriteINIStr "$TEMP\ep-env.ini" "info" "n" "$ninfo"
-          WriteINIStr "$TEMP\ep-env.ini" "man" "n" "$nman"
-          #ok
+        ## Now look into MAN files
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "exedir.man"
+        Pop $R0
+        StrCmp "$R0" "error" done_man_exedir
+      loop_man_exedir:
+        IntCmp $R0 "0" done_man_exedir done_man_exedir 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "exedir.man" "$R1"
+        ${ManIfExist} "$EXEDIR\$R2" 0
+        IntOp $R0 $R0 - 1
+        Goto loop_man_exedir
+      done_man_exedir:
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.man"
+        Pop $R0
+        StrCmp "$R0" "error" done_man_portable
+      loop_man_portable:
+        IntCmp $R0 "0" done_man_portable done_man_portable 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "portable.man" "$R1"
+        ${ManIfExist} "$usbs\$R2" 0
+        ${ManIfExist} "$usbs\PortableApps\$R2" 0
+        ${ManIfExist} "$usbs\Apps\$R2" 0
+        IntOp $R0 $R0 - 1
+        Goto loop_man_portable
+      done_man_portable:
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "local.man"
+        Pop $R0
+        StrCmp "$R0" "error" done_man_local
+      loop_man_local:
+        IntCmp $R0 "0" done_man_local done_man_local 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\App\ini\paths.ini" "local.man" "$R1"
+        ${ManIfExist} "$PROGRAMFILES\$R2" 0
+        ${ManIfExist} "$PROGRAMFILES32\$R2" 0
+        ${ManIfExist} "$PROGRAMFILES64\$R2" 0
+        ${ManIfExist} "c:\$R2" 0
+        IntOp $R0 $R0 - 1
+        Goto loop_man_local
+      done_man_local:
+        
+      skip_data_paths:
+        ## PythonPortable.
+        #${Locate} "$usbs\PortableApps\" "/L=D /M=*Python* /S= /G=0" "addpath"
+        #${Locate} "$usbs\" "/L=D /M=*Python* /S= /G=0" "addpath"
+        
+        ## Add R Portable if present
+        ${PathIfExist} $usbs\PortableApps\R-Portable\App\bin 0
+        ${PathIfExist} $usbs\PortableApps\RPortable\App\bin 0
+  
+        ${PathIfExist} $usbs\Apps\R-Portable\App\bin 0
+        ${PathIfExist} $usbs\Apps\RPortable\App\bin 0
+        
+        IfFileExists $usbs\PortableApps\R-Portable\R-Portable.ini 0 skipr
+        ${ReadINIStrWithDefault} $Rpath $usbs\PortableApps\R-Portable\R-Portable.ini "R-Portable" "ProgramDirectory" "App\R-2.11.0"
+        ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin 0
+        ${PathIfExist} $usbs\PortableApps\R-Portable\$Rpath\bin\i386 0
+  
+        IfFileExists $usbs\Apps\R-Portable\R-Portable.ini 0 skipr
+        ${ReadINIStrWithDefault} $Rpath $usbs\Apps\R-Portable\R-Portable.ini "R-Portable" "ProgramDirectory" "App\R-2.11.0"
+        ${PathIfExist} $usbs\Apps\R-Portable\$Rpath\bin 0
+        ${PathIfExist} $usbs\Apps\R-Portable\$Rpath\bin\i386 0
+      skipr:
+        ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
+        WriteINIStr "$TEMP\ep-env.ini" "path" "n" "$npath"
+        WriteINIStr "$TEMP\ep-env.ini" "info" "n" "$ninfo"
+        WriteINIStr "$TEMP\ep-env.ini" "man" "n" "$nman"
+        #ok
       FunctionEnd
   
   
@@ -1061,6 +1078,14 @@ FunctionEnd
     IfFileExists "$EXEDIR\..\..\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
     StrCpy $R0 "$EXEDIR\..\..\7-ZipPortable\App\7-Zip\7z.exe"
     Goto found_7z
+  
+    IfFileExists "$EXEDIR\..\PortableApps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
+    StrCpy $R0 "$EXEDIR\..\PortableApps\7-ZipPortable\App\7-Zip\7z.exe"
+    Goto found_7z
+  
+    IfFileExists "$EXEDIR\..\Apps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
+    StrCpy $R0 "$EXEDIR\..\Apps\7-ZipPortable\App\7-Zip\7z.exe"
+    Goto found_7z
     
     IfFileExists "$usbs\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
     StrCpy $R0 "$usbs\7-ZipPortable\App\7-Zip\7z.exe"
@@ -1069,6 +1094,11 @@ FunctionEnd
     IfFileExists "$usbs\PortableApps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
     StrCpy $R0 "$usbs\PortableApps\7-ZipPortable\App\7-Zip\7z.exe"
     Goto found_7z
+  
+    IfFileExists "$usbs\Apps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
+    StrCpy $R0 "$usbs\Apps\7-ZipPortable\App\7-Zip\7z.exe"
+    Goto found_7z
+    
     Goto end
     found_7z:
       ## Now zip
@@ -1170,8 +1200,13 @@ FunctionEnd
     IfFileExists $R0 0 end
     StrCpy $R1 "$usbs\PuTTYPortable" 
     IfFileExists $R1 launch_putty 
+  
     StrCpy $R1 "$usbs\PortableApps\PuTTYPortable"
+    IfFileExists $R1 launch_putty
+    
+    StrCpy $R1 "$usbs\Apps\PuTTYPortable"
     IfFileExists $R1 launch_putty end
+    
     launch_putty:
       Exec "$EXEDIR\App\eps\run.exe $R1\PageantPortable.exe $R0"
       StrCpy $LaunchPutty "1"
@@ -1250,12 +1285,20 @@ Now Finalize Putty Proxy settings
     debug_exe:
       IfFileExists "$msys\bin\gdb.exe" msys_exe
       IfFileExists "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe" msys_pa
+      IfFileExists "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe" msys_pa2
       Goto cygwin_exe
     msys_pa:
       IfFileExists "$EXEDIR\App\gdbinit" 0 +3
       StrCpy $emacs `""""$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
       Goto +2
       StrCpy $emacs `""""$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
+      StrCpy $found_gdb "1"
+      Goto setup_options
+    msys_pa2:
+      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
+      StrCpy $emacs `""""$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
+      Goto +2
+      StrCpy $emacs `""""$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
       StrCpy $found_gdb "1"
       Goto setup_options
     msys_exe:
@@ -1320,6 +1363,7 @@ Now Finalize Putty Proxy settings
       StrCpy $emacs `$emacs""""`
   FunctionEnd
   !define EmacsCmd "Call EmacsCmd"  
+  
 #+END_SRC
 
 ** Setup things necessary to call Emacs

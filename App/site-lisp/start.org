@@ -1154,13 +1154,14 @@ is loaded.
           ;; Open it in another appliaction...
           (setq assoc (cdr assoc))
           )
-        )))
+        )
+      
+      (eval-after-load "sex-mode"
+        (defadvice sex-get-apps (around ep-expresso)
+          "Add eXpresso associations to `sex-mode'"
+          (let ((sex-file-apps (append sex-file-apps)))
+            ad-do-it))
+        (ad-activate 'sex-get-apps))))
   
-  (eval-after-load "sex-mode"
-    (defadvice sex-get-apps (around ep-expresso)
-      "Add eXpresso associations to `sex-mode'"
-      (let ((sex-file-apps (append sex-file-apps)))
-        ad-do-it))
-    (ad-activate 'sex-get-apps))
 #+END_SRC
 
