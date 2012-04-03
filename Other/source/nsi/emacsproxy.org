@@ -79,23 +79,31 @@
     StrCpy $PROXY_NAME $PROXY_ID
     IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
     ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
     StrCpy "$PROXY_SERVER" "$R0"
     StrCmp "$R0" "" end
     StrCpy "$R1" "$R0"
     ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
     StrCpy "$PROXY_PORT" "$R0"  
     StrCmp "$R0" "" +2 0
     StrCpy "$R1" "$R1:$R0"
     ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
     StrCpy $PROXY_USER "$R0"
     
     StrCmp "$R0" "" +2 0
     StrCpy "$R2" "$R0"
     ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-    ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
     StrCpy $PROXY_PASS $R0
     StrCmp "$R0" "" +3 0
     StrCmp "$R2" "" +2 0
