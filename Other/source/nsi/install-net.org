@@ -34,7 +34,7 @@ AutoCloseWindow true
 Name "EmacsPortable.App"
 BrandingText "EmacsPortable.App"
 
-OutFile "..\..\..\EmacsInstall.exe"
+OutFile "..\..\..\EmacsInstall-Net.exe"
 #+END_SRC
 ** Modern User Interface Options
 #+BEGIN_SRC nsis
@@ -86,7 +86,16 @@ SectionEnd ; sec_use_git_instead_of_zip
 Section "EmacsPortable.App Net Installer" sec_emacsportable_app_net_installer 
   ; Description:
   ; Install EmacsPortable.App from the Internet
-  RmDir /r $INSTDIR
+  StrLen $R0 EmacsPortable.App
+  IntOp $R0 0 - $R0
+  StrCpy $R0 $INSTDIR "" $R0
+  StrCmp $R0 EmacsPortable.App +2 0
+  StrCpy $INSTDIR $INSTDIR\EmacsPortable.App
+  IfFileExists "$INSTDIR\App" 0 +2
+  RmDir /r "$INSTDIR\App"
+  IfFileExists "$INSTDIR\Other" 0 +2
+  RmDir /r "$INSTDIR\Other"
+  SetOutPath "$INSTDIR" 
   SectionGetFlags ${sec_use_git_instead_of_zip} $0
   IntOp $0 $0 & ${SF_SELECTED}
   StrCmp "0" $0 0 +2
@@ -102,15 +111,15 @@ Section "EmacsPortable.App Net Installer" sec_emacsportable_app_net_installer
   git:
     ExecWait "$PG clone https://github.com/mlf176f2/EmacsPortable.App.git $INSTDIR"
   exe:
-    Exec "$INSTDIR\EmacsDownload.exe"
+    ClearErrors
 SectionEnd ; sec_emacsportable_app_net_installer
 #+END_SRC
 ** Emacs Versions Sections
- This should be based on the mirror ini file and generated from emacs
- lisp and ported to a NSI install script.  It generates the chekbox
- toggle depending on what is installed.
- 
- [[./EmacsDownload-vers.el]]
+This should be based on the mirror ini file and generated from emacs
+lisp and ported to a NSI install script.  It generates the chekbox
+toggle depending on what is installed.
+
+[[./EmacsDownload-vers.el]]
 
 #+BEGIN_SRC nsis
   !include "EmacsDownload-vers.nsi"
@@ -118,6 +127,8 @@ SectionEnd ; sec_emacsportable_app_net_installer
 
 ** Emacs Compile Tools
 #+BEGIN_SRC nsis
+!insertmacro InsertAddEZW
+!include "emacsdownload-ezwin-push.nsi"
 !include "emacsCompileTools.nsi"
 #+END_SRC
 ** Build EmacsPortable.App
@@ -145,18 +156,30 @@ Function GetDriveVars
   git:
     IfFileExists "$9cygwin\bin\git.exe" 0 +2
     StrCpy $PG "$9cygwin\bin\git.exe"
+
     IfFileExists "$9msysgit\msysgit\cmd\git.cmd" 0 +2
     StrCpy $PG "$9msysgit\msysgit\cmd\git.cmd"
+
     IfFileExists "$9msysgit\cmd\git.cmd" 0 +2
     StrCpy $PG "$9msysgit\cmd\git.cmd"
+
     IfFileExists "$9PortableGit\cmd\git.cmd" 0 +2
     StrCpy $PG "$9PortableGit\cmd\git.cmd"
+
     IfFileExists "$9PortableApps\PortableGit\cmd\git.cmd" 0 +2
     StrCpy $PG "$9PortableApps\PortableGit\cmd\git.cmd"
+
+    IfFileExists "$9Apps\PortableGit\cmd\git.cmd" 0 +2
+    StrCpy $PG   "$9Apps\PortableGit\cmd\git.cmd"
+
     IfFileExists "$9GitPortable\cmd\git.cmd" 0 +2
     StrCpy $PG "$9GitPortable\cmd\git.cmd"
+
     IfFileExists "$9PortableApps\GitPortable\cmd\git.cmd" 0 +2
     StrCpy $PG "$9PortableApps\GitPortable\cmd\git.cmd"
+
+    IfFileExists "$9Apps\GitPortable\cmd\git.cmd" 0 +2
+    StrCpy $PG   "$9Apps\GitPortable\cmd\git.cmd"
   spa:
     Push $0
     
@@ -165,9 +188,19 @@ FunctionEnd
 ** Fix Emacs Portable
 #+BEGIN_SRC nsis
 Function FixEp
-  IfFileExists "$INSTDIR" 0 +2
-  RmDir /r "$INSTDIR"
-  CopyFiles "$R9" "$INSTDIR"
+  IfFileExists "$INSTDIR\App" 0 +2
+  RmDir /r "$INSTDIR\App"
+
+  IfFileExists "$INSTDIR\Other" 0 +2
+  RmDir /r "$INSTDIR\Other"
+
+  IfFileExists "$INSTDIR\Contents" 0 +2
+  RmDir /r "$INSTDIR\Contents"
+  CopyFiles "$R9\App" "$INSTDIR"
+  CopyFiles "$R9\Other" "$INSTDIR"
+  CopyFiles "$R9\Contents" "$INSTDIR"
+  CopyFiles "$R9\.gitignore" $INSTDIR
+  CopyFiles "$R9\README.org" $INSTDIR
   RmDir /r "$R9"
   Push $0
 FunctionEnd
@@ -195,9 +228,7 @@ FunctionEnd
       Goto end
     end:
       #
-  FunctionEnd
-    
-  
+  FunctionEnd  
 #+END_SRC
 
 ** On Selection Change

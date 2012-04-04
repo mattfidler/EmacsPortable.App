@@ -1,4 +1,0 @@
-(:name ido-ubiquitous
-       :description "Use ido (nearly) everywhere"
-       :type git
-       :url "https://github.com/technomancy/ido-ubiquitous.git")

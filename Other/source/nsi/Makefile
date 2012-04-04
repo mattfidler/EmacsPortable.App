@@ -1,7 +1,7 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi
 EMACS=emacs
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	makensis SetProxy.nsi
@@ -18,7 +18,7 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 ../../../EmacsOptions.exe: EmacsPortableOptions.nsi
 	makensis EmacsPortableOptions.nsi
 
-../../../EmacsInstall.exe: install-net.nsi
+../../../EmacsInstall-Net.exe: install-net.nsi EmacsDownload-pae.nsi
 	makensis install-net.nsi
 
 ../../../EmacsDos.exe: EmacsDos.nsi
@@ -90,7 +90,7 @@ clean:
 	rm ../../../EmacsDos.exe
 	rm ../../../EmacsDebug.exe
 	rm ../../../Emacs-Q.exe
-	rm ../../../EmacsInstall.exe
+	rm ../../../EmacsInstall-Net.exe
 	rm ./install-net.nsi
 	rm ./SetProxy.nsi
 	rm ../../../App/eps/set-proxy.exe

@@ -1,3 +1,0 @@
-(:name magit
-:type elpa
-:description "Control Git from Emacs.")

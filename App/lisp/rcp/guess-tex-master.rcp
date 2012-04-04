@@ -1,4 +1,0 @@
-(:name guess-tex-master
-       :description "Guesses TeX-master from open buffers or files"
-       :type git
-       :url "https://github.com/mlf176f2/guess-tex-master.el")

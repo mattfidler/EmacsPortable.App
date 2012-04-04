@@ -46,8 +46,8 @@ Readme.org_archive
 # Actual Emacs Files #
 ######################
 /App/emacs-*
-/App/lisp/elpa/*/
-/App/lisp/src/*/
+/Data/lisp/elpa/*/
+/Data/lisp/src/*/
 /Data/saves/*/
 /Data/saves/#*#
 /Data/saves/custom*
@@ -71,13 +71,13 @@ Readme.org_archive
 #*#
 #*.*#
 /App/portable-starter-kit/
-/App/lisp/src/autopair.el
+/Data/lisp/src/autopair.el
 /Data/start/shared/Environment.ini
 /Data/start/shared/bang_6.wav
 /App/site-lisp/start.el
 /App/site-lisp/start.el.gz
 /App/site-lisp/start.elc
-/App/lisp/el-get/*
+/Data/lisp/el-get/*
 /Data/Home/.subversion/README.txt
 /Data/Home/.subversion/config
 /Data/Home/.subversion/servers
@@ -155,5 +155,10 @@ Readme.org_archive
 /App/site-lisp/start.el.gz
 /Other/source/nsi/esn-x-symbol.el.gz
 /App/eps/*.exe
-/App/lisp/kicker/*
+/Data/lisp/kicker/*
 /Contents/MacOS/._flip.osx
+/EmacsInstall-Net.exe
+/Data/lisp/src/package.el
+/Data/lisp/src/plantuml-mode.el
+/Data/lisp/src/w32shell.el
+/Other/source/nsi/emacsdownload-ezwin-push.nsi

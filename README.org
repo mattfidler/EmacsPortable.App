@@ -72,15 +72,15 @@ with an actual directory.
 | ~ahk/       | Other/source/ahk        | AHK Sources Directory               |
 | ~app/       | App/                    | EmacsPortable.App Application Files |
 | ~doc/       | USB Drive:/Documents    | Documents Directory                 |
-| ~el-get     | App/lisp/el-get         | El Git package Repository           |
-| ~elpa/      | App/lisp/elpa           | Elpa Package Repository             |
+| ~el-get     | Data/lisp/el-get        | El Git package Repository           |
+| ~elpa/      | Data/lisp/elpa          | Elpa Package Repository             |
 | ~ep/        | .                       | EmacsPortable.App Directory         |
 | ~h/         | System Home Directory   | System Home Directory               |
 | ~ini/       | Data/ini                | EmacsPortable.App ini files         |
-| ~kick/      | App/lisp/kicker         | Kicker Directory                    |
+| ~kick/      | Data/lisp/kicker        | Kicker Directory                    |
 | ~nsi/       | Other/source/nsi        | NSIS Sources Directory              |
 | ~pa/        | USB Drive:/PortableApps | Portable Apps                       |
-| ~rcp/       | App/lisp/rcp            | extra el-get recipies Directory     |
+| ~rcp/       | Data/lisp/rcp           | extra el-get recipies Directory     |
 | ~saves/     | Data/saves              | EmacsPortable.App Saves             |
 | ~shared/    | Data/start/shared       | Shared Customizations               |
 | ~site-lisp/ | App/site-lisp           | Site Lisp Directory                 |

@@ -1,5 +1,0 @@
-(:name ergoemacs-keybindings
-       :description "A emacs keybinding set based on ergonomics."
-       :type http-zip
-       :url "http://ergoemacs.googlecode.com/files/ergoemacs-keybindings-5.3.7.zip"
-       :features "ergoemacs-mode")

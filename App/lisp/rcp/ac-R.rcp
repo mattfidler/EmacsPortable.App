@@ -1,4 +1,0 @@
-(:name ac-R
-       :description "Auto-completion sources for R."
-       :type git
-       :url "https://github.com/mlf176f2/ac-R")

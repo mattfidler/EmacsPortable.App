@@ -1,4 +1,0 @@
-(:name header2
-       :type emacswiki
-       :description "Support for creation and update of file headers."
-       :load-path ".")

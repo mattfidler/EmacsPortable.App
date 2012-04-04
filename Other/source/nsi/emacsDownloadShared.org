@@ -64,7 +64,7 @@ This marks a section as installed and makes it read-only
     Goto +2
     StrCmp "" "$0" 0 ${JMP}
   !macroend
-  
+
   !define setInstallIfExists `!insertmacro setInstallIfExists`
   !macro setInstallIfExists FILE SEC
     ClearErrors
@@ -133,8 +133,6 @@ it alone when OTHER_SEC is read-only.
   !macroend
   
 #+END_SRC
-
-
 ** Portable App Macro
 #+BEGIN_SRC nsis
   !macro installPortableApp WHAT

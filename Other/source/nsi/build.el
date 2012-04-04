@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Feb  3 15:19:34 2012 (-0600)
+;; Last-Updated: Wed Apr  4 12:43:22 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 69
+;;     Update #: 70
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -94,7 +94,7 @@
             (setq org-files (list (expand-file-name org-files
                                                     build-dir))))
         (setq org-files (directory-files build-dir nil ".org"))))
-    (setq org-dir (nth 0 (directory-files (concat build-dir "../../../App/lisp/src") t "\\<org")))
+    (setq org-dir (nth 0 (directory-files (concat build-dir "../../../Data/lisp/src") t "\\<org")))
     (load (concat org-dir "/lisp/org-install"))
     (setq load-path (cons (concat org-dir "/lisp") load-path))
     (setq load-path (cons (concat org-dir "/lisp/contrib") load-path))

@@ -73,7 +73,7 @@ This
   (setq autoload-file (expand-file-name
                        (concat usb-site-lisp-dir "../Data/saves/loaddefs.el")))
   (setq package-user-dir (expand-file-name
-                          (concat usb-app-dir "/lisp/elpa")))
+                          (concat usb-app-dir "../Data/lisp/elpa")))
   (setq custom-file (expand-file-name
                      (concat usb-site-lisp-dir "../Data/saves/custom.el")))
 #+END_SRC
@@ -128,10 +128,10 @@ EmacsPortableApp.exe launcher.
               (replace-match (concat usb-app-dir "../Data/themes/")
                              t t ret)))
       (when (string-match "^~elpa[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "lisp/elpa/") t t ret)))
+        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/elpa/") t t ret)))
       
       (when (string-match "^~el-get[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "lisp/el-get/") t t ret)))
+        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/el-get/") t t ret)))
       
       (when (string-match "^~site-lisp[/\\\\]" ret)
         (setq ret (replace-match (concat usb-app-dir "site-lisp/") t t ret)))
@@ -139,10 +139,10 @@ EmacsPortableApp.exe launcher.
         (setq ret (replace-match usb-app-dir t t ret)))
       
       (when (string-match "^~kick\\(:er?\\)?[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "lisp/kicker/")
+        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/kicker/")
                                  t t ret)))
       (when (string-match "^~rcp[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "lisp/rcp/")
+        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/rcp/")
                                  t t ret)))
       (when (string-match "^~data[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
@@ -240,10 +240,10 @@ EmacsPortableApp.exe launcher.
                                            (expand-file-name (concat usb-app-dir "site-lisp/")))
                                   . "~site-lisp/")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "lisp/elpa/")))
+                                           (expand-file-name (concat usb-app-dir "../Data/lisp/elpa/")))
                                   . "~elpa/")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "lisp/el-get/")))
+                                           (expand-file-name (concat usb-app-dir "../Data/lisp/el-get/")))
                                   . "~el-get/")
                                  (,(concat "\\`"
                                            (expand-file-name (concat usb-app-dir "site-lisp/")))
@@ -295,10 +295,10 @@ EmacsPortableApp.exe launcher.
                                             (concat usb-app-dir "../Data/src/")))
                                   . "~src/")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "lisp/kicker/")))
+                                           (expand-file-name (concat usb-app-dir "../Data/lisp/kicker/")))
                                   . "~kick/")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "lisp/rcp/")))
+                                           (expand-file-name (concat usb-app-dir "../Data/lisp/rcp/")))
                                   . "~rcp/")
                                  (,(concat "\\`"
                                            (expand-file-name (concat usb-app-dir "/")))
@@ -972,13 +972,13 @@ available.
 El-get is a very nice package management system that allows you to
 keep current with bleeding edge software.  
 #+BEGIN_SRC emacs-lisp
-  (setq el-get-dir (expand-file-name (concat usb-app-dir "lisp/el-get/")))
+  (setq el-get-dir (expand-file-name (concat usb-app-dir "../Data/lisp/el-get/")))
   (add-to-list 'load-path (concat el-get-dir "el-get/"))
 #+END_SRC
 * Start the kicker, if present
 Start the EmacsPortable.App kicker.
 #+BEGIN_SRC emacs-lisp
-  (let ((kicker (concat usb-app-dir "/lisp/kicker/init.el")))
+  (let ((kicker (concat usb-app-dir "../Data/lisp/kicker/init.el")))
     (when (file-readable-p kicker)
       (load-file kicker)))
 #+END_SRC

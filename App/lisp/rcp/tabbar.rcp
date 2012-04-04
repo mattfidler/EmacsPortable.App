@@ -1,4 +1,0 @@
-(:name tabbar
-       :type git
-       :url "https://github.com/dholm/tabbar.git"
-       :description "Aquaemacs tabbar")

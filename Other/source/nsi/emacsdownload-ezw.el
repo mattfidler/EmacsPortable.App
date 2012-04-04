@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 26 16:33:22 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Feb  3 14:16:36 2012 (-0600)
+;; Last-Updated: Wed Apr  4 16:10:35 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 14
+;;     Update #: 15
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -162,6 +162,8 @@ LangString DESC_sec_ezwine_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests 
       (setq ret (concat ret "\n" ret2))))
   (with-temp-file "./emacsdownload-ezwin.nsi"
     (insert ret)
+    (insert "\n!include \"emacsdownload-ezwin-push.nsi\"\n"))
+  (with-temp-file "./emacsdownload-ezwin-push.nsi"
     (insert fn))
   (with-temp-file "./emacsdownload-rezwin.nsi"
     (insert ret)
