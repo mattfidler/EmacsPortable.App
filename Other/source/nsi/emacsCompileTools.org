@@ -302,12 +302,12 @@ This will allow a compile of EmacsPortable.App, assuming:
       StrCmp $called_emacs "1" +2 0
       Call AddEmacsPath
       StrCmp $found_emacs "" end 0
-      SetOutPath "$INSTDIR\App\eps"
-      
-      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make clean"
-      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make"
-      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make clean"
-      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make" 
+      SetOutPath "$INSTDIR\App\eps"      
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make clean$\""
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\ahk & make$\""
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS", "$found_emacs\emacs.exe").r0'
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make clean$\""
+      ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make -e$\""
       end:
         ClearErrors
     FunctionEnd
