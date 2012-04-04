@@ -20,7 +20,6 @@ This provides an interface to the Emacs Startup options
   
   !include "FileFunc.nsh"
   !include ReadINIStrWithDefault.nsh
-  !include blowfish.nsh
   !include "emacsproxy.nsh"
   #+END_SRC
 ** Name,Branding and Output file
@@ -232,19 +231,27 @@ This provides an interface to the Emacs Startup options
       
       IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
       ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
       
       ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
       
       ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
       
       ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
       end_proxy_init:
         ;; Put in some selected options
@@ -434,16 +441,24 @@ This provides an interface to the Emacs Startup options
        
        ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
        StrCmp $R0 "" skip_proxy
-       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       blowfish::encrypt $R0 "$PROXY_ID"
+       Pop $R0
+       Pop $R0
        WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
        ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
-       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       blowfish::encrypt $R0 "$PROXY_ID"
+       Pop $R0
+       Pop $R0
        WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
        ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
-       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       blowfish::encrypt $R0 "$PROXY_ID"
+       Pop $R0
+       Pop $R0
        WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
        ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
-       ${BlowFish_Encrypt} $R0 $R0 "$PROXY_ID"
+       blowfish::encrypt $R0 "$PROXY_ID"
+       Pop $R0
+       Pop $R0
        WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
        skip_proxy:
          

@@ -44,75 +44,114 @@
 #+BEGIN_SRC nsis
   Function IPAddressesCallback
     Pop $5
-    StrCmp "$PROXY_IDE" "" 0 end
-    ExecDos::exec "cmd /c $\"nslookup $5 > $\"$\"$TEMP\ep-dns.txt$\"$\"$\""
-    Push 1
-    Push "$TEMP\ep-dns.txt"
-    Call ReadFileLine
-    Pop $R0
-    StrCpy $R0 $R0 "" 9
-    StrCpy $R0 $R0 -2
-    StrCpy $PROXY_IDE "$R0"
-    StrCpy $PROXY_ID "$PROXY_ID$R0"
-    Delete "$TEMP\ep-dns.txt"
+    StrCpy $6 $5 "" -1
+    StrCmp "$6" "." +3
+    StrCpy $5 $5 -1
+    Goto -3
+    StrCpy $5 $5 -1
+    StrCpy $PROXY_IDE "$PROXY_IDE$5"
+    StrCpy $PROXY_ID "$PROXY_ID$5"
     end:
       ClearErrors
   FunctionEnd
   
-  Function EnabledAdaptersCallback
-    Pop $3
-    #DetailPrint "Get Mac Address"
-    #IpConfig::GetNetworkAdapterMACAddress $3
-    #Pop $0
-    #Pop $1
-    #StrCpy $PROXY_ID "$PROXY_ID$1"
-    GetFunctionAddress $4 IPAddressesCallback
-    IpConfig::GetNetworkAdapterIPAddressesCB $3 $4
-  FunctionEnd
   
   Function SetupProxy
     Pop $9
     StrCpy $PROXY_IDE ""
     StrCpy $PROXY_ID ""
-    GetFunctionAddress $2 EnabledAdaptersCallback
-    IpConfig::GetEnabledNetworkAdaptersIDsCB $2
-    StrCpy $PROXY_NAME $PROXY_ID
-    IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
-    ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    StrCpy "$PROXY_SERVER" "$R0"
-    StrCmp "$R0" "" end
-    StrCpy "$R1" "$R0"
-    ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    StrCpy "$PROXY_PORT" "$R0"  
-    StrCmp "$R0" "" +2 0
-    StrCpy "$R1" "$R1:$R0"
-    ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    StrCpy $PROXY_USER "$R0"
+    StrCpy $R0 "grep"
+    IfFileExists "$EXEDIR\App\gw32\bin\grep.exe" 0 +3
+    StrCpy $R0 "$EXEDIR\App\gw32\bin\grep.exe" 
+    Goto +3
+    IfFileExists "$EXEDIR\App\ezwin\bin\grep.exe" 0 +2
+    StrCpy $R0 "$EXEDIR\App\ezwin\bin\grep.exe"
+    ExecDos::exec "cmd /c $\"ipconfig | $R0 $\"IP A$\" > $TEMP\ep-ip.txt$\""
+    IfFileExists "$TEMP\ep-ip.txt" 0 proxy_setup
     
-    StrCmp "$R0" "" +2 0
-    StrCpy "$R2" "$R0"
-    ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    StrCpy $PROXY_PASS $R0
-    StrCmp "$R0" "" +3 0
-    StrCmp "$R2" "" +2 0
-    StrCpy "$R2" "$R2:$R0"
-    StrCmp "$R2" "" +2 0
-    StrCpy "$R1" "$R2@$R1"
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTP_PROXY","http://$R1").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTPS_PROXY","http://$R1").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
+    IfFileExists "$EXEDIR\App\gw32\bin\sed.exe" 0 +3
+    StrCpy $R0 "$EXEDIR\App\gw32\bin\sed.exe" 
+    Goto +3
+    IfFileExists "$EXEDIR\App\ezwin\bin\sed.exe" 0 +2
+    StrCpy $R0 "$EXEDIR\App\ezwin\bin\sed.exe"
+    FileOpen $4 "$TEMP\ep-sed-ip.bat" w
+    IfErrors proxy_setup
+    FileWrite $4 "@$R0 -r $\"s/[^0-9]*([0-9]*[0-9.]+).*/\1/$\" $TEMP\ep-ip.txt > $TEMP\ep-ip2.txt$\r$\n"
+    FileClose $4 
+    ExecDos::exec "cmd /c $\"$TEMP\ep-sed-ip.bat$\""
+    Delete "$TEMP\ep-sed-ip.bat"
+    Delete "$TEMP\ep-ip.txt"
+  
+    read_ips:
+      FileOpen $4 "$TEMP\ep-ip2.txt" r
+      IfErrors 0 +3
+      FileClose $4
+      Goto proxy_setup
+  
+      FileRead $4 $1
+  
+      StrCpy $1 $1  -1
+  
+      IfErrors 0 +3
+      FileClose $4
+      goto proxy_setup
+  
+      execDos::exec  "cmd /c $\"nslookup $1 > $TEMP\ep-dns.txt$\""
+      
+      FileOpen $5 "$TEMP\ep-dns.txt" r
+      FileRead $5 $R0
+      IfErrors 0 +2
+      ClearErrors
+      FileClose $5
+      StrCpy $R0 $R0 "" 9
+      StrCpy $R0 $R0 -2
+      StrCpy $PROXY_IDE "$R0"
+      StrCpy $PROXY_ID "$PROXY_ID$R0"
+      Delete "$TEMP\ep-dns.txt"
+
+    proxy_setup:
+      ClearErrors
+      StrCmp "$PROXY_ID" "" 0 +2
+      MessageBox MB_OK "Proxy ID: $PROXY_ID"
+      StrCpy $PROXY_ID "Unknown"
+      StrCpy $PROXY_NAME $PROXY_ID
+      StrCpy $PROXY_ID "$PROXY_ID mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+      IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
+      ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
+      StrCpy "$PROXY_SERVER" "$R0"
+      StrCmp "$R0" "" end
+      StrCpy "$R1" "$R0"
+      ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
+      StrCpy "$PROXY_PORT" "$R0"  
+      StrCmp "$R0" "" +2 0
+      StrCpy "$R1" "$R1:$R0"
+      ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
+      StrCpy $PROXY_USER "$R0"
+      
+      StrCmp "$R0" "" +2 0
+      StrCpy "$R2" "$R0"
+      ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
+      StrCpy $PROXY_PASS $R0
+      StrCmp "$R0" "" +3 0
+      StrCmp "$R2" "" +2 0
+      StrCpy "$R2" "$R2:$R0"
+      StrCmp "$R2" "" +2 0
+      StrCpy "$R1" "$R2@$R1"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTP_PROXY","http://$R1").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTPS_PROXY","http://$R1").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
     end:
       ClearErrors
   FunctionEnd

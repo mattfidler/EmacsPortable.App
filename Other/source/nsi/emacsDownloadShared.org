@@ -169,19 +169,27 @@ it alone when OTHER_SEC is read-only.
     read_proxy:
       IfFileExists "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 wget
       ReadIniStr $R0 "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Server"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       StrCmp "$R0" "" end
       StrCpy "$R1" "$R0"
       ReadIniStr "$R0" "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Port"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       StrCmp "$R0" "" +2 0
       StrCpy "$R1" "$R1:$R0"
       ReadIniStr "$R0" "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "User"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       StrCmp "$R0" "" +2 0
       StrCpy "$R2" "$R0"
       ReadIniStr "$R0" "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" "Proxy" "Password"
-      ${BlowFish_Decrypt} $R0 $R0 "$PROXY_ID"
+      blowfish::decrypt $R0 "$PROXY_ID"
+      Pop $R0
+      Pop $R0
       StrCmp "$R0" "" +3 0
       StrCmp "$R2" "" +2 0
       StrCpy "$R2" "$R2:$R0"
