@@ -158,9 +158,9 @@ EmacsPortableApp.exe launcher.
         (setq ret (replace-match (expand-file-name
                                   (concat usb-app-dir "../Other/")) t t ret)))
       
-      (when (string-match "^~init[/\\\\]" ret)
+      (when (string-match "^~start[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/init/")) t t ret)))
+                                  (concat usb-app-dir "../Data/start/")) t t ret)))
       (when (string-match "^~ini[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
                                   (concat usb-app-dir "../Data/ini/")) t t ret)))
@@ -174,13 +174,13 @@ EmacsPortableApp.exe launcher.
       (when (string-match "^~use?rs?[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
                                   (concat usb-app-dir
-                                          "../Data/init/user/")) t t ret)))
+                                          "../Data/start/user/")) t t ret)))
       (when (string-match "^~shared?[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/init/shared/")) t t ret)))
+                                  (concat usb-app-dir "../Data/start/shared/")) t t ret)))
       (when (string-match "^~system[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/init/system/")) t t ret)))
+                                  (concat usb-app-dir "../Data/start/system/")) t t ret)))
       (when (and (eq system-type 'windows-nt)
                  (getenv "TEMP")
                  (file-readable-p (getenv "TEMP"))
@@ -264,11 +264,11 @@ EmacsPortableApp.exe launcher.
                                  
                                  (,(concat "\\`"
                                            (expand-file-name
-                                            (concat usb-app-dir "../Data/init/user/")))
+                                            (concat usb-app-dir "../Data/start/user/")))
                                   . "~user/")
                                  (,(concat "\\`"
                                            (expand-file-name
-                                            (concat usb-app-dir "../Data/init/shared/")))
+                                            (concat usb-app-dir "../Data/start/shared/")))
                                   . "~shared/")
                                  (,(concat "\\`"
                                            (expand-file-name
@@ -280,12 +280,12 @@ EmacsPortableApp.exe launcher.
                                   . "~snips/")
                                  (,(concat "\\`"
                                            (expand-file-name
-                                            (concat usb-app-dir "../Data/init/system/")))
+                                            (concat usb-app-dir "../Data/start/system/")))
                                   . "~system/")
                                  (,(concat "\\`"
                                            (expand-file-name
-                                            (concat usb-app-dir "../Data/init/")))
-                                  . "~init/")
+                                            (concat usb-app-dir "../Data/start/")))
+                                  . "~start/")
                                  (,(concat "\\`"
                                            (expand-file-name
                                             (concat usb-app-dir "../Data/ini/")))
@@ -340,7 +340,7 @@ EmacsPortableApp.exe launcher.
                 "~data/"
                 "~ep/"
                 "~ini/"
-                "~init/"
+                "~start/"
                 "~nsi/"
                 "~sk/"
                 "~snip/"
@@ -1037,7 +1037,7 @@ Start the EmacsPortable.App kicker.
      "Loads a system configuration"
      (ep-load-user-or-system name))
    (defun ep-load-init-dir (&optional dir-name)
-     (let ((name (or dir-name (concat usb-app-dir "../Data/init/shared"))))
+     (let ((name (or dir-name (concat usb-app-dir "../Data/start/shared"))))
        (ep-load-user-or-system nil nil name)))    
    
    (defun ep-load-user-or-system (name &optional is-user is-dir)
@@ -1049,7 +1049,7 @@ Start the EmacsPortable.App kicker.
      (flet ((in-dir (file &optional ext)
                     (expand-file-name (concat file ext)
                                       (or is-dir
-                                          (concat usb-app-dir "../Data/init/"
+                                          (concat usb-app-dir "../Data/start/"
                                                   (if is-user
                                                       "user"
                                                     "system")))))

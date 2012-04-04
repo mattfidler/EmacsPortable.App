@@ -77,20 +77,20 @@ with an actual directory.
 | ~ep/        | .                       | EmacsPortable.App Directory         |
 | ~h/         | System Home Directory   | System Home Directory               |
 | ~ini/       | Data/ini                | EmacsPortable.App ini files         |
-| ~init/      | Data/init               | EmacsPortable.App Customizations    |
 | ~kick/      | App/lisp/kicker         | Kicker Directory                    |
 | ~nsi/       | Other/source/nsi        | NSIS Sources Directory              |
 | ~pa/        | USB Drive:/PortableApps | Portable Apps                       |
 | ~rcp/       | App/lisp/rcp            | extra el-get recipies Directory     |
 | ~saves/     | Data/saves              | EmacsPortable.App Saves             |
-| ~shared/    | Data/init/shared        | Shared Customizations               |
+| ~shared/    | Data/start/shared       | Shared Customizations               |
 | ~site-lisp/ | App/site-lisp           | Site Lisp Directory                 |
 | ~snips/     | Data/snippets           | YaSnippets                          |
 | ~src/       | Data/src                | EmacsPortable.App lisp source files |
-| ~system/    | Data/init/system        | System-based Customizations         |
+| ~start/     | Data/start              | EmacsPortable.App Customizations    |
+| ~system/    | Data/start/system       | System-based Customizations         |
 | ~themes/    | Data/themes             | Emacs 24 Theme Directory            |
 | ~usb/       | USB Drive               | USB Drive                           |
-| ~user/      | Data/init/user          | User-based Customizations           |
+| ~user/      | Data/start/user         | User-based Customizations           |
 |-------------+-------------------------+-------------------------------------|
 
 ** Font installation, if needed

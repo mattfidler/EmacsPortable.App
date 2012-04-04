@@ -85,7 +85,7 @@ if [ "$OPTYPE" == "USB" ]; then
 fi
 
 #HOME=$EPUSB/Documents
-    
+
 echo HOME: $HOME $OPHOME $OPTYPE
 echo EPUSB: $EPUSB
 echo EPOTHER: $EPOTHER
@@ -114,15 +114,15 @@ if [ -e $DATPATH/ini/Environment.ini ]; then
     source /tmp/ep-environment.sh
 fi
 
-if [ -e $DATPATH/init/shared/Environment.ini ]; then
+if [ -e $DATPATH/start/shared/Environment.ini ]; then
     rm /tmp/ep-environment.sh
-    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/init/shared/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
+    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/start/shared/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
     echo "" >> /tmp/ep-environment.sh
     ./flip.osx -u /tmp/ep-environment.sh
     source /tmp/ep-environment.sh
 fi
 
- 
+
 echo ERGOEMACS_KEYBOARD_LAYOUT: $ERGOEMACS_KEYBOARD_LAYOUT
 
 export OHOME
@@ -142,7 +142,7 @@ REALVER=`$EMACSDIR/Emacs --version 2>&1 | head -n1 | sed 's/[^0-9]*\([0-9].*\)/\
 echo REALVER: $REALVER
 ##
 if ! [ -e $EMACSDATA/DOC-$REALVER ]; then
-  cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
+    cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
 fi 
 echo  $OPT
 $EMACSDIR/Emacs --debug-init $OPT

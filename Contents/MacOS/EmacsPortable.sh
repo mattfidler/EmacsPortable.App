@@ -114,15 +114,15 @@ if [ -e $DATPATH/ini/Environment.ini ]; then
     source /tmp/ep-environment.sh
 fi
 
-if [ -e $DATPATH/init/shared/Environment.ini ]; then
+if [ -e $DATPATH/start/shared/Environment.ini ]; then
     rm /tmp/ep-environment.sh
-    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/init/shared/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
+    sed 's/\[[Ee]nvironment\]/#!\/bin\/bash/' $DATPATH/start/shared/Environment.ini | sed 's/\(.*\)=\(.*\)/\1="\2"; export \1/' > /tmp/ep-environment.sh
     echo "" >> /tmp/ep-environment.sh
     ##./flip.osx -u /tmp/ep-environment.sh
     source /tmp/ep-environment.sh
 fi
 
- 
+
 echo ERGOEMACS_KEYBOARD_LAYOUT: $ERGOEMACS_KEYBOARD_LAYOUT
 
 export OHOME
