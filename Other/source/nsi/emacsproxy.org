@@ -112,7 +112,6 @@
     proxy_setup:
       ClearErrors
       StrCmp "$PROXY_ID" "" 0 +2
-      MessageBox MB_OK "Proxy ID: $PROXY_ID"
       StrCpy $PROXY_ID "Unknown"
       StrCpy $PROXY_NAME $PROXY_ID
       StrCpy $PROXY_ID "$PROXY_ID mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
