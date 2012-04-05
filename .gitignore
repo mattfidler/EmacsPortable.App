@@ -18,49 +18,12 @@ Thumbs.db
 /App/etc/*
 /App/portable-starter-kit/*
 /EmacsPortableApp-*.exe
-/Data/start/*.org
-/Data/start/*.el
-/Data/start/*.el.gz
-/Data/start/*.elc
-/Data/start/user/*.org
-/Data/start/user/*.el
-/Data/start/user/*.el.gz
-/Data/start/user/*.elc
-/Data/start/system/.org
-/Data/start/system/.el
-/Data/start/system/.el.gz
-/Data/start/system/.elc
-/Data/start/shared/*.org
-/Data/start/shared/*.el
-/Data/start/shared/*.el.gz
-/Data/start/shared/*.elc
-/Data/ini/*.ini
-/Data/src/*.org
-/Data/src/*.el
-/Data/src/*.el.gz
-/Data/src/*.elc
-/Data/src/*/
-/Data/Home/*
+/Data/*
 Readme.org_archive
 
 # Actual Emacs Files #
 ######################
 /App/emacs-*
-/Data/lisp/elpa/*/
-/Data/lisp/src/*/
-/Data/saves/*/
-/Data/saves/#*#
-/Data/saves/custom*
-/Data/saves/*.bmk
-/Data/saves/ido*
-/Data/saves/places*
-/Data/saves/recent-files*
-/Data/snippets/*/
-/Data/snippets/.yas*
-/Data/start/user/*/
-/Data/themes/*.el
-/Data/themes/*.el.gz
-/Data/themes/*.elc
 
 # Add Emacs Temp Files #
 ########################
@@ -71,16 +34,9 @@ Readme.org_archive
 #*#
 #*.*#
 /App/portable-starter-kit/
-/Data/lisp/src/autopair.el
-/Data/start/shared/Environment.ini
-/Data/start/shared/bang_6.wav
 /App/site-lisp/start.el
 /App/site-lisp/start.el.gz
 /App/site-lisp/start.elc
-/Data/lisp/el-get/*
-/Data/Home/.subversion/README.txt
-/Data/Home/.subversion/config
-/Data/Home/.subversion/servers
 /EmacsInstall.exe
 /Other/source/nsi/EmacsDownload-vers.nsi
 /Other/source/nsi/emacsdownload-old.nsi
@@ -147,7 +103,6 @@ Readme.org_archive
 /Other/source/nsi/emacsdownload-rgw32.nsi
 /README.html
 /App/ini/gw32.ini
-/Data/Home/.history
 /etmp.exe
 /App/ini/ezwin.ini
 /Other/source/nsi/emacsdownload-ezwin.nsi
@@ -163,3 +118,4 @@ Readme.org_archive
 /Data/lisp/src/w32shell.el
 /Other/source/nsi/emacsdownload-ezwin-push.nsi
 /Other/source/nsi/setupEmacsData.nsh
+/help.html

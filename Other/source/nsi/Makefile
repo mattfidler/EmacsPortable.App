@@ -1,7 +1,7 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi
 EMACS=emacs
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	makensis SetProxy.nsi
@@ -29,6 +29,9 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 
 ../../../Emacs-Q.exe: Emacs-Q.nsi
 	makensis Emacs-Q.nsi
+
+../../../help.html: ../../../README.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-help)"
 
 EmacsDos.nsi: EmacsShortcuts.el
 	$(EMACS) -Q --batch -l ./EmacsShortcuts.el 
@@ -90,6 +93,7 @@ clean:
 	rm EmacsDos.nsi
 	rm EmacsDebug.nsi
 	rm Emacs-Q.nsi
+	rm ../../../help.html
 	rm ../../../EmacsDos.exe
 	rm ../../../EmacsDebug.exe
 	rm ../../../Emacs-Q.exe

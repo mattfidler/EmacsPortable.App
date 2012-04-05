@@ -93,6 +93,11 @@ with an actual directory.
 | ~user/      | Data/start/user         | User-based Customizations           |
 |-------------+-------------------------+-------------------------------------|
 
+Other aliases are added ~el-get/package/elpa is changed to ~elpa, as
+if it were a symbolic link.  Since symbolic links are not supported in
+windows, this is handled by emacs only.
+
+
 ** Font installation, if needed
 Will install specific fonts, if needed.
 *** STARTED Allow Mac to install specific fonts.
@@ -172,13 +177,13 @@ ERGOEMACS_KEYBOARD_LAYOUT=colemak
 echo $USER
 #+end_src
 
-     If your configuration starts to feel cramped in a single file
-     (although with the nested headlines of an Org-mode file, that
-     could take a while) and you want to stretch your config's legs,
-     you can also create a directory named after your system user
-     name, like =Data/init/user/$USER=.  If a such a directory exists,
-     it will be added to the load-path, and any elisp or org-mode
-     w/embedded elisp files in it will be loaded.
+If your configuration starts to feel cramped in a single file
+(although with the nested headlines of an Org-mode file, that
+could take a while) and you want to stretch your config's legs,
+you can also create a directory named after your system user
+name, like =Data/init/user/$USER=.  If a such a directory exists,
+it will be added to the load-path, and any elisp or org-mode
+w/embedded elisp files in it will be loaded.
 
 - System specific config :: Finally, you may want to configure
      different settings for different machines.  The Starter Kit will
@@ -189,22 +194,22 @@ echo $USER
 #+begin_src sh
 hostname
 #+end_src
-     In windows, the hostname is found by right-clicking on
-     my-computer and clicking on =Properties=.  After that, click on
-     the =Computer Name= tab.  This should have two properties:
+In windows, the hostname is found by right-clicking on
+my-computer and clicking on =Properties=.  After that, click on
+the =Computer Name= tab.  This should have two properties:
 
-     *Full computer name:* bob.gnu.org
+*Full computer name:* bob.gnu.org
 
-     *Domain:* gnu.org
+*Domain:* gnu.org
 
-     When the domain is removed from the Full computer name, the
-     hostname is found.  In this case, the host-name is bob.
+When the domain is removed from the Full computer name, the
+hostname is found.  In this case, the host-name is bob.
 
-     If a specific setup for a host gets too cramped, you can also
-     create a directory named after your system user name, like
-     =Data/init/user/$USER=.  If a such a directory exists, it will be
-     added to the load-path, and any elisp or org-mode w/embedded
-     elisp files in it will be loaded.
+If a specific setup for a host gets too cramped, you can also
+create a directory named after your system user name, like
+=Data/init/user/$USER=.  If a such a directory exists, it will be
+added to the load-path, and any elisp or org-mode w/embedded
+elisp files in it will be loaded.
 - Overall config :: If you wish to add literate/non-literate startup
                     files, you may also put them in
                     =Data/init/shared/=.  This should be loaded
@@ -611,49 +616,22 @@ CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
 *** TODO List Emacs Binaries Contents
 *** TODO Figure out a way to remove specific components of the Emacs binaries
 
-** TODO Zip windows binaries and then extract to temporary directory
-** DONE Add Info from ezwin and gw32 and elsewhere to the infopath
-CLOSED: [2012-01-29 Sun 23:44]
-- State "DONE"       from "TODO"       [2012-01-29 Sun 23:44]
-** DONE Add to the manpath
-CLOSED: [2012-01-29 Sun 23:44]
-- State "DONE"       from "TODO"       [2012-01-29 Sun 23:44]
 ** TODO Compress Info Files
-** TODO Ezwin remove facility
 ** TODO More Hunspell Dictionaries, and/or use Firefox dictionaries.
 ** TODO Add EmacsPortable.App Extensions to eXpresso?
 ** TODO Add command prompt, MSYS, and cygwin here commands
 ** TODO Fix shell issues
 ** TODO Try to find Putty Local, and other local applications via the registry.
 ** TODO Stop Pageant on registry cleanup if launched by Emacs.
-** DONE Allow user to select home directory in EmacsOptions.exe
-CLOSED: [2012-01-29 Sun 15:37]
-- State "DONE"       from "STARTED"    [2012-01-29 Sun 15:37]
-:LOGBOOK:
-CLOCK: [2012-01-29 Sun 14:05]--[2012-01-29 Sun 15:37] =>  1:32
-:END:
 ** HOLD Remove PuTTY Portable startup screen when launching Pageant Portable.
 - State "DONE"       from "STARTED"    [2012-01-29 Sun 23:45]
-** CANCELLED Make sure that portable starter kit from a zip file works.
-CLOSED: [2012-02-20 Mon 11:27]
-- State "CANCELLED"  from "TODO"       [2012-02-20 Mon 11:27] \\
-  No longer use portable starter kit.
-** DONE Update Emacs to 23.3 and 24.0.94
-CLOSED: [2012-01-30 Mon 21:35]
-- State "DONE"       from "TODO"       [2012-01-30 Mon 21:35]
 ** TODO Make the proxy settings a little less finicky.
-** DONE Change PuTTY Proxy settings when proxy settings are detected.
-CLOSED: [2012-01-30 Mon 21:34]
-- State "DONE"       from "TODO"       [2012-01-30 Mon 21:34]
-
 ** TODO  Make launching of PuTTY optional.
 ** TODO EmacsPortable.App will launch whatever emacs is running.
-** DONE Figure out why mac loadup isn't working correctly.
-CLOSED: [2012-02-20 Mon 11:28]
-- State "DONE"       from "TODO"       [2012-02-20 Mon 11:28]
 ** TODO Fix EmacsPortable.App startup so that the USB drive is considered to be the drive that EmacsPortable.App is on if it has a PortableApps directory.
 :LOGBOOK:
 CLOCK: [2012-02-23 Thu 09:44]--[2012-02-23 Thu 09:45] =>  0:01
 :END:
 [2012-02-23 Thu 09:44]
-[[file:~/org/pde4-nasal.org::*C92-011][C92-011]]
+[[file:~/org/pde4-nasal.org::*C92-011][C92-011]
+]

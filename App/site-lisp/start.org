@@ -21,6 +21,12 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
         (insert txt)))
     (setq EmacsPortable-last-time (float-time)))
 #+END_SRC
+* Increase defaults
+Increase default =max-lisp-eval-depth=
+#+BEGIN_SRC emacs-lisp
+(setq max-lisp-eval-depth 10000)
+#+END_SRC
+
 * Get the major and minor versions of emacs
 To start the pseudo-server appropriately, we need the major and minor
 emacs-version strings.
@@ -153,7 +159,7 @@ EmacsPortableApp.exe launcher.
                                   (concat usb-app-dir "../Other/source/nsi/")) t t ret)))
       (when (string-match "^~ahk[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
-                                   (concat usb-app-dir "../Other/source/ahk/")) t t ret)))
+                                  (concat usb-app-dir "../Other/source/ahk/")) t t ret)))
       (when (string-match "^~other[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
                                   (concat usb-app-dir "../Other/")) t t ret)))
@@ -189,6 +195,9 @@ EmacsPortableApp.exe launcher.
       (when (and (getenv "MYDOC")
                  (string-match "^~mydoc[/\\\\]" ret))
         (setq ret (replace-match (concat (expand-file-name (getenv "MYDOC")) "/") t t ret)))
+      ;; Fake link of el-get/package/elpa to ~elpa
+      (when (string-match "/el-get/package/elpa/" ret)
+        (setq ret (replace-match "/elpa/" t t ret)))
       (cond
        ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
              (getenv "MYDOC")
@@ -365,6 +374,7 @@ EmacsPortableApp.exe launcher.
                 "~h/"
                 "~rcp/"
                 "~kick/"
+                
                 ))
          (reg (concat "^"
                       (regexp-opt (append lst
@@ -374,6 +384,10 @@ EmacsPortableApp.exe launcher.
     (or (assoc reg file-name-handler-alist)
         (setq file-name-handler-alist
               (cons `(,reg . ep-usb-file-name-handler)
+                    file-name-handler-alist)))
+    (or (assoc "[~/\\\\]el-get[/\\\\]package[/\\\\]elpa[/\\\\]" file-name-handler-alist)
+        (setq file-name-handler-alist
+              (cons `("[~/\\\\]el-get[/\\\\]package[/\\\\]elpa[/\\\\]" . ep-usb-file-name-handler)
                     file-name-handler-alist)))
     (when t
       (mapc (lambda(test)
@@ -737,7 +751,7 @@ ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
 :PROPERTIES:
 :ID: 35b325b3-dcd1-42cf-921f-ff98f8bb22d0
 :END:
-   This starts the pseudo-daemon.  If you are running Windows it:
+This starts the pseudo-daemon.  If you are running Windows it:
 1. Waits for the server to start
 2. Changes the name of the current frame to
    =___EmacsPortableDaemon_%version%___=
@@ -912,7 +926,7 @@ the implementation
     (setq tramp-default-method "plink"))
 #+END_SRC
 * Fix mac/windows communication issues on mac.
-  #+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp
     (when (eq system-type 'darwin)
       (setq tramp-file-name-regexp-unified "\\`/\\([^[/:]\\{2,\\}\\|[^/]\\{2,\\}]\\):")
       (require 'tramp)
@@ -922,7 +936,7 @@ the implementation
           (add-to-list 'file-name-handler-alist
                        `("\\`/\\([^[/:]\\{2,\\}\\|[^/]\\{2,\\}]\\):" . tramp-file-name-handler)))))
     
-  #+END_SRC
+#+END_SRC
 
 * Fix Proxy settings for various programs
 ** git
@@ -954,8 +968,9 @@ available.
         (setq shell-file-name bash)
         (setenv "SHELL" bash)
         (setenv "PATH" (concat (getenv "PATH") ";"
-                               (file-name-sans-extension bash)))
-        (push (file-name-sans-extension bash) exec-path)
+                               (replace-regexp-in-string
+                                "/" "\\" (file-name-directory bash) t t)))
+        (push (file-name-directory bash) exec-path)
         (setq explicit-shell-file-name bash)
         (setq ediff-shell bash)
         (setq explicit-shell-args '("--login" "-i"))
@@ -966,7 +981,7 @@ available.
 #+END_SRC
 
 #+results:
-| --login | -i |
+
 
 * Add el-get support
 El-get is a very nice package management system that allows you to

@@ -34,13 +34,13 @@ This sets up Emacs Data Directory according to PAF specifications.
   
     IfFileExists "$EXEDIR\Data\start" +2
     CreateDirectory "$EXEDIR\Data\start"
-
+  
     IfFileExists "$EXEDIR\Data\start\user" +2
     CreateDirectory "$EXEDIR\Data\start\user"
-
+  
     IfFileExists "$EXEDIR\Data\start\system" +2
     CreateDirectory "$EXEDIR\Data\start\system"
-
+  
     IfFileExists "$EXEDIR\Data\start\shared" +2
     CreateDirectory "$EXEDIR\Data\start\shared"
   
@@ -61,6 +61,7 @@ This sets up Emacs Data Directory according to PAF specifications.
     
     IfFileExists "$EXEDIR\Data\lisp\src" +2
     CreateDirectory "$EXEDIR\Data\lisp\src"
+  
   !macroend
   !define setupData '!insertmacro "_setupData"'
   

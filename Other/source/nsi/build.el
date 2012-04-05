@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Apr  4 12:43:22 2012 (-0500)
+;; Last-Updated: Thu Apr  5 14:40:55 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 70
+;;     Update #: 77
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -112,6 +112,20 @@
          (org-babel-tangle)
          (kill-buffer)))
      org-files)))
+
+(require 'cl)
+
+(unless (fboundp 'remove-from-list)
+  (defalias 'remove-from-list 'remove))
+
+(defun build-help ()
+  "Builds the help.html from README.org"
+  (interactive)
+  (let (str)
+    (find-file (concat build-dir "../../../README.org"))
+    (setq str (org-export-as-html 3 nil nil 'string nil (expand-file-name (concat build-dir "../../../"))))
+    (with-temp-file (concat build-dir "../../../help.html")
+      (insert str))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; build.el ends here
