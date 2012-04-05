@@ -39,10 +39,13 @@ Emacs-Q.nsi: EmacsShortcuts.el
 EmacsDebug.nsi: EmacsShortcuts.el
 	$(EMACS) -Q --batch -l ./EmacsShortcuts.el
 
-EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh
+EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh setupEmacsData.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableOptions.org)"
 
-EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh
+setupEmacsData.nsh: setupEmacsData.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'setupEmacsData.org)"
+
+EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableApp.org)"
 
 emacsPathIfExists.nsh: emacsPathIfExists.org

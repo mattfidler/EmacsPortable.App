@@ -21,6 +21,7 @@ This provides an interface to the Emacs Startup options
   !include "FileFunc.nsh"
   !include ReadINIStrWithDefault.nsh
   !include "emacsproxy.nsh"
+  !include "setupEmacsData.nsh"
   #+END_SRC
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
@@ -204,6 +205,7 @@ This provides an interface to the Emacs Startup options
 *** Initialization Function
   #+BEGIN_SRC nsis
     Function .onInit
+      ${setupData}
       ${GetDrives} "FDD+HDD" "GetDriveVars"
       var /GLOBAL versions
       var /GLOBAL nemacs

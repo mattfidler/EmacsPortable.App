@@ -38,6 +38,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   !include "WinMessages.nsh"
   !include "emacsproxy.nsh"
   !include "emacspathifexists.nsh"
+  !include "setupEmacsData.nsh"
 #+END_SRC
 
 ** Variables
@@ -1436,6 +1437,7 @@ Function .onInit
   Exec "$EXEDIR\EmacsPortableApp.exe"
   Abort
   ${GetCmdOptions}
+  ${setupData}
 FunctionEnd
 #+END_SRC
 

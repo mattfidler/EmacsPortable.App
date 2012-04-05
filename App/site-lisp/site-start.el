@@ -2,7 +2,7 @@
 (require 'cl)
 ;; from www.emacswiki.org/emacs/LoadPath
 (let ((default-directory
-        (expand-file-name "../lisp/src/"
+        (expand-file-name "../Data/lisp/src/"
                           (file-name-directory (or load-file-name (buffer-file-name))))))
   (setq load-path
         (append

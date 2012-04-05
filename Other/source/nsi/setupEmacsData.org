@@ -1,0 +1,67 @@
+#+TITLE: Setup Emacs Data Directory
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle setupEmacsData.nsh
+* Introduction
+This sets up Emacs Data Directory according to PAF specifications.
+
+* Data Structure
+#+BEGIN_SRC nsis
+  !macro _setupData
+    # Setup Data
+    IfFileExists "$EXEDIR\Data\AllUsers" +2
+    CreateDirectory "$EXEDIR\Data\AllUsers"
+  
+    IfFileExists "$EXEDIR\Data\AppData" +2
+    CreateDirectory "$EXEDIR\Data\AppData"
+    
+    IfFileExists "$EXEDIR\Data\AllUsers\Application Data" +2
+    CreateDirectory "$EXEDIR\Data\AllUsers\Application Data"
+    
+    IfFileExists "$EXEDIR\Data\Home" +2
+    CreateDirectory "$EXEDIR\Data\Home"
+    
+    IfFileExists "$EXEDIR\Data\ini" +2
+    CreateDirectory "$EXEDIR\Data\ini"
+    
+    IfFileExists "$EXEDIR\Data\saves" +2
+    CreateDirectory "$EXEDIR\Data\saves"
+  
+    IfFileExists "$EXEDIR\Data\snippets" +2
+    CreateDirectory "$EXEDIR\Data\snippets"
+    
+    IfFileExists "$EXEDIR\Data\src" +2
+    CreateDirectory "$EXEDIR\Data\src"
+  
+    IfFileExists "$EXEDIR\Data\start" +2
+    CreateDirectory "$EXEDIR\Data\start"
+
+    IfFileExists "$EXEDIR\Data\start\user" +2
+    CreateDirectory "$EXEDIR\Data\start\user"
+
+    IfFileExists "$EXEDIR\Data\start\system" +2
+    CreateDirectory "$EXEDIR\Data\start\system"
+
+    IfFileExists "$EXEDIR\Data\start\shared" +2
+    CreateDirectory "$EXEDIR\Data\start\shared"
+  
+    IfFileExists "$EXEDIR\Data\themes" +2
+    CreateDirectory "$EXEDIR\Data\themes"
+  
+    IfFileExists "$EXEDIR\Data\UserProfile" +2
+    CreateDirectory "$EXEDIR\Data\UserProfile"
+    
+    IfFileExists "$EXEDIR\Data\lisp" +2
+    CreateDirectory "$EXEDIR\Data\lisp"
+    
+    IfFileExists "$EXEDIR\Data\lisp\el-get" +2
+    CreateDirectory "$EXEDIR\Data\lisp\el-get"
+    
+    IfFileExists "$EXEDIR\Data\lisp\elpa" +2
+    CreateDirectory "$EXEDIR\Data\lisp\elpa"
+    
+    IfFileExists "$EXEDIR\Data\lisp\src" +2
+    CreateDirectory "$EXEDIR\Data\lisp\src"
+  !macroend
+  !define setupData '!insertmacro "_setupData"'
+  
+#+END_SRC
