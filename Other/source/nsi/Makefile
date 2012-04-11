@@ -9,7 +9,7 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 ../../../App/eps/RemoveReg.exe: EmacsRemoveRegistry.nsi
 	makensis EmacsRemoveRegistry.nsi
 
-../../../EmacsPortableApp.exe: EmacsPortableApp.nsi
+../../../EmacsPortableApp.exe: EmacsPortableApp.nsi EmacsCall.nsh
 	makensis EmacsPortableApp.nsi
 
 ../../../EmacsDownload.exe: EmacsDownload.nsi

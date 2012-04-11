@@ -1177,6 +1177,23 @@ FunctionEnd
   
 #+END_SRC
 
+** Setup Emacs Contents Directory for Mac OS X
+#+BEGIN_SRC nsis
+  !include "emacsCall.nsh"
+  Function SetupContents
+    IfFileExists "$EXEDIR\Contents\Info.plist" end 0
+    StrCpy "$INSTDIR" "$EXEDIR"
+    Call AddEmacsPath
+    StrCmp $found_emacs "" end 0
+    StrCpy $R0 "$EXEDIR\App\MacOS\build-plist.el"
+    ${StrSlash} "$R0" "/"
+    ExecDos::exec "$found_emacs\emacs.exe -Q --batch -l $R0 --eval $\"(build-app-info)$\""
+    end:
+      ClearErrors
+  FunctionEnd
+  
+#+END_SRC
+
 * Setup Putty
 1) Get the putty key from the saved options
 2) Launches paegent
@@ -1370,6 +1387,8 @@ Now Finalize Putty Proxy settings
 ** Setup things necessary to call Emacs
 #+BEGIN_SRC nsis
   !macro emacs_setup
+    DetailPrint "Setup Mac Contents Folder and AppInfo"
+    Call SetupContents
     DetailPrint "Setup Home path"
     Call GetHomePath
     DetailPrint "Zip Binaries"
@@ -1431,14 +1450,14 @@ Now Finalize Putty Proxy settings
 * Callback Functions
 ** Initialization
 #+BEGIN_SRC nsis
-Function .onInit
-  StrLen $R2 $EXEFILE
-  IntCmp 12 $R2 0 +3
-  Exec "$EXEDIR\EmacsPortableApp.exe"
-  Abort
-  ${GetCmdOptions}
-  ${setupData}
-FunctionEnd
+  Function .onInit
+    StrLen $R2 $EXEFILE
+    IntCmp 12 $R2 0 +3
+    Exec "$EXEDIR\EmacsPortableApp.exe"
+    Abort
+    ${GetCmdOptions}
+    ${setupData}
+  FunctionEnd
 #+END_SRC
 
 * Main Script
