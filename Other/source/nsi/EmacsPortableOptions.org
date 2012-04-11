@@ -22,7 +22,8 @@ This provides an interface to the Emacs Startup options
   !include ReadINIStrWithDefault.nsh
   !include "emacsproxy.nsh"
   !include "setupEmacsData.nsh"
-  #+END_SRC
+  !include "emacsCall.nsh"
+#+END_SRC
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
   Name "EmacsPortable.App Options"
@@ -30,7 +31,7 @@ This provides an interface to the Emacs Startup options
   BrandingText "PortableEmacs.App"
   
   InstallDir "$EXEDIR"
-  #+END_SRC
+#+END_SRC
 ** Modern User Interface Options
 #+BEGIN_SRC nsis
   !define MUI_ICON "..\img\ico\preferences_system.ico"
@@ -50,7 +51,7 @@ This provides an interface to the Emacs Startup options
   
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !define MUI_HEADERIMAGE_RIGHT
-  #+END_SRC
+#+END_SRC
 ** Definitions and Variables
 #+BEGIN_SRC nsis
   Var usb
@@ -82,8 +83,8 @@ This provides an interface to the Emacs Startup options
   !define ep_proxy_password "Field 40"
   !define ep_putty_key "Field 12"
   
-  #+END_SRC
-  
+#+END_SRC
+
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
@@ -91,7 +92,7 @@ This provides an interface to the Emacs Startup options
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
-  #+END_SRC
+#+END_SRC
 * Macros
 ** Read/Write Macros
 #+BEGIN_SRC nsis
@@ -203,13 +204,14 @@ This provides an interface to the Emacs Startup options
 
 ** Callback Functions
 *** Initialization Function
-  #+BEGIN_SRC nsis
+#+BEGIN_SRC nsis
     Function .onInit
       ${setupData}
       ${GetDrives} "FDD+HDD" "GetDriveVars"
       var /GLOBAL versions
       var /GLOBAL nemacs
       var /GLOBAL lastversion
+      SetOutPath "$EXEDIR\Data\ini"
       IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
       CopyFiles /SILENT "$EXEDIR\App\ini\ep.ini" "$EXEDIR\Data\ini\ep.ini"
       StrCpy $versions ""
@@ -318,9 +320,9 @@ This provides an interface to the Emacs Startup options
   FunctionEnd
   
 #+END_SRC
-  
+
 ** Figure out what Emacs versions are present with SetValues function
-    #+BEGIN_SRC nsis
+#+BEGIN_SRC nsis
   Function SetValues
     IntOp $nemacs $nemacs + 1
     StrCmp $lastversion "" +2
@@ -335,8 +337,8 @@ This provides an interface to the Emacs Startup options
      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "ListItems" "$R0"
      Push $0
   FunctionEnd
-  #+END_SRC
-  
+#+END_SRC
+
 ** Display the InstallOptions dialog
 #+BEGIN_SRC nsis
   Function SetCustom
@@ -352,11 +354,11 @@ This provides an interface to the Emacs Startup options
     
   FunctionEnd
 #+END_SRC
-  
+
 ** Write the startup options to EmacsPortable.ini
 #+BEGIN_SRC nsis
-    
-    Function ValidateCustom
+  ;;    
+  Function ValidateCustom
     ;
     ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 2" "State"
     ;  StrCmp ${TEMP1} 1 done
@@ -370,111 +372,122 @@ This provides an interface to the Emacs Startup options
     ;    Abort
     
     ;  done:
-       Delete $EXEDIR\Data\ini\EmacsPortableApp.ini
+    ReadIniStr $7 "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State"
   
-       ;; Home Directory
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State"
-       
-       ;; Now replace $EXEDIR with EXEDIR:
-       StrLen $R1 $EXEDIR
-       StrCpy $R2 $R0 $R1
-       StrCmp $EXEDIR $R2 0 +3
-       StrCpy $R0 $R0 "" $R1
-       StrCpy $R0 "EXEDIR:$R0"
-       
-       ;; Now replace $USBS
-       
-       StrLen $R1 $usbs
-       StrCpy $R2 $R0 $R1
-       StrCmp $usbs $R2 0 +3
-       StrCpy $R0 $R0 "" $R1
-       StrCpy $R0 "USB:$R0"
-       
-       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" "$R0"
-       ;; Putty Key
-       
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State"
-       
-       ;; Now replace $EXEDIR with EXEDIR:
-       StrLen $R1 $EXEDIR
-       StrCpy $R2 $R0 $R1
-       StrCmp $EXEDIR $R2 0 +3
-       StrCpy $R0 $R0 "" $R1
-       StrCpy $R0 "EXEDIR:$R0"
-       
-       ;; Now replace $USBS
-       
-       StrLen $R1 $usbs
-       StrCpy $R2 $R0 $R1
-       StrCmp $usbs $R2 0 +3
-       StrCpy $R0 $R0 "" $R1
-       StrCpy $R0 "USB:$R0"
-       
-       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" "$R0"
-       
-       ; Geometry
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
-       StrCpy $R1 "$R0"
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g2}" "State"
-       StrCpy $R1 "$R1x$R0"
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g3}" "State"
-       StrCpy $R1 "$R1+$R0"
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g4}" "State"
-       StrCpy $R1 "$R1+$R0"
-       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" "$R1"
+    ;; Home Directory
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State"
+    
+    ;; Now replace $EXEDIR with EXEDIR:
+    StrLen $R1 $EXEDIR
+    StrCpy $R2 $R0 $R1
+    StrCmp $EXEDIR $R2 0 +3
+    StrCpy $R0 $R0 "" $R1
+    StrCpy $R0 "EXEDIR:$R0"
+    
+    ;; Now replace $USBS
+    
+    StrLen $R1 $usbs
+    StrCpy $R2 $R0 $R1
+    StrCmp $usbs $R2 0 +3
+    StrCpy $R0 $R0 "" $R1
+    StrCpy $R0 "USB:$R0"
+    
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" "$R0"
+    ;; Putty Key
+    
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State"
+    
+    ;; Now replace $EXEDIR with EXEDIR:
+    StrLen $R1 $EXEDIR
+    StrCpy $R2 $R0 $R1
+    StrCmp $EXEDIR $R2 0 +3
+    StrCpy $R0 $R0 "" $R1
+    StrCpy $R0 "EXEDIR:$R0"
+    
+    ;; Now replace $USBS
+    
+    StrLen $R1 $usbs
+    StrCpy $R2 $R0 $R1
+    StrCmp $usbs $R2 0 +3
+    StrCpy $R0 $R0 "" $R1
+    StrCpy $R0 "USB:$R0"
+    
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" "$R0"
+    
+    ; Geometry
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
+    StrCpy $R1 "$R0"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g2}" "State"
+    StrCpy $R1 "$R1x$R0"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g3}" "State"
+    StrCpy $R1 "$R1+$R0"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g4}" "State"
+    StrCpy $R1 "$R1+$R0"
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" "$R1"
     
     
-       ${WR} "Version" "${ep_version}"
-       ${WR} "OrgProtocol" "${ep_org}"
-       ${WR} "RightEdit" "${ep_right}"
-       ${WR} "IEmailto" "${ep_iemail}"
-       ${WR} "IEsource" "${ep_iesrc}"
-       ${WR} "IEnews" "${ep_ienews}"
-       ${WR} "Font" "${ep_font}"
-       ${WR} "FontSize" "${ep_font_size}"
-       ${WR} "Foreground" "${ep_fg}"
-       ${WR} "Background" "${ep_bg}"
-       ${WR} "Maximized" "${ep_mm}"
-       ${WR} "Fullwidth" "${ep_fw}"
-       ${WR} "Fullheight" "${ep_fh}"
-       ${WR} "Debug" "${ep_debug}"
-       ${WR} "Daemon" "${ep_daemon}"
-       
-       
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
-       StrCmp $R0 "" skip_proxy
-       blowfish::encrypt $R0 "$PROXY_ID"
-       Pop $R0
-       Pop $R0
-       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
-       blowfish::encrypt $R0 "$PROXY_ID"
-       Pop $R0
-       Pop $R0
-       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
-       blowfish::encrypt $R0 "$PROXY_ID"
-       Pop $R0
-       Pop $R0
-       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
-       ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
-       blowfish::encrypt $R0 "$PROXY_ID"
-       Pop $R0
-       Pop $R0
-       WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
-       skip_proxy:
-         
-    FunctionEnd
+    ${WR} "Version" "${ep_version}"
+    ${WR} "OrgProtocol" "${ep_org}"
+    ${WR} "RightEdit" "${ep_right}"
+    ${WR} "IEmailto" "${ep_iemail}"
+    ${WR} "IEsource" "${ep_iesrc}"
+    ${WR} "IEnews" "${ep_ienews}"
+    ${WR} "Font" "${ep_font}"
+    ${WR} "FontSize" "${ep_font_size}"
+    ${WR} "Foreground" "${ep_fg}"
+    ${WR} "Background" "${ep_bg}"
+    ${WR} "Maximized" "${ep_mm}"
+    ${WR} "Fullwidth" "${ep_fw}"
+    ${WR} "Fullheight" "${ep_fh}"
+    ${WR} "Debug" "${ep_debug}"
+    ${WR} "Daemon" "${ep_daemon}"
     
+    
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
+    StrCmp $R0 "" skip_proxy
+    blowfish::encrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
+    blowfish::encrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
+    blowfish::encrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
+    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
+    blowfish::encrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
+    skip_proxy:
+    
+      ClearErrors
+  FunctionEnd
   
-  #+END_SRC
   
+  
+#+END_SRC
+
 * Obligatory Section
 #+BEGIN_SRC nsis
   Section "Components" 
     ;Get Install Options dialog user input
-    
-    
+    StrCmp $called_emacs "1" +2 0
+    Call AddEmacsPath
+    StrCmp $found_emacs "" end 0
+    StrCpy $R0 "$EXEDIR\App\MacOS\build-plist.el"
+    Push $R0
+    Push "/"
+    Call StrSlash
+    Pop $R0
+    ExecDos::exec "$found_emacs\emacs.exe -Q --batch -l $R0 --eval $\"(build-app-info)$\""
+    end:
+      ClearErrors
   SectionEnd
 #+END_SRC  
 

@@ -119,3 +119,7 @@ Readme.org_archive
 /Other/source/nsi/emacsdownload-ezwin-push.nsi
 /Other/source/nsi/setupEmacsData.nsh
 /help.html
+/Contents/*
+/App/AppInfo/*
+/Other/source/nsi/callEmacs.nsh
+/Other/source/nsi/emacsCall.nsh

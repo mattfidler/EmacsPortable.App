@@ -1,4 +1,4 @@
-download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi
+download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
 EMACS=emacs
 
 all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html
@@ -15,7 +15,7 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 ../../../EmacsDownload.exe: EmacsDownload.nsi
 	makensis EmacsDownload.nsi
 
-../../../EmacsOptions.exe: EmacsPortableOptions.nsi
+../../../EmacsOptions.exe: EmacsPortableOptions.nsi EmacsCall.nsh
 	makensis EmacsPortableOptions.nsi
 
 ../../../EmacsInstall-Net.exe: install-net.nsi EmacsDownload-pae.nsi
@@ -27,7 +27,7 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 ../../../EmacsDebug.exe: EmacsDebug.nsi
 	makensis EmacsDebug.nsi
 
-../../../Emacs-Q.exe: Emacs-Q.nsi
+../../../Emacs-Q.exe: Emacs-Q.nsi 
 	makensis Emacs-Q.nsi
 
 ../../../help.html: ../../../README.org
@@ -53,6 +53,9 @@ EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh 
 
 emacsPathIfExists.nsh: emacsPathIfExists.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsPathIfExists.org)"
+
+EmacsCall.nsh: EmacsCall.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsCall.org)"
 
 EmacsDownload.nsi: EmacsDownload.org ${download_extras}
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownload.org)"
@@ -93,21 +96,24 @@ clean:
 	rm EmacsDos.nsi
 	rm EmacsDebug.nsi
 	rm Emacs-Q.nsi
-	rm ../../../help.html
-	rm ../../../EmacsDos.exe
-	rm ../../../EmacsDebug.exe
-	rm ../../../Emacs-Q.exe
-	rm ../../../EmacsInstall-Net.exe
 	rm ./install-net.nsi
 	rm ./SetProxy.nsi
-	rm ../../../App/eps/set-proxy.exe
-	rm ../../../App/eps/RemoveReg.exe
 	rm ./EmacsRemoveRegistry.nsi
 	rm ./EmacsDownload*.nsi
 	rm ./EmacsPortableApp.nsi
+	rm ./EmacsPortableOptions.nsi
+	rm ../../../help.html
+	rm ../../../App/eps/EmacsDos.exe
+	rm ../../../App/eps/EmacsDebug.exe
+	rm ../../../App/eps/Emacs-Q.exe
+	rm ../../../EmacsInstall-Net.exe
 	rm ../../../EmacsDownload.exe
 	rm ../../../EmacsPortableApp*.exe
 	rm ../../../EmacsOptions.exe
-	rm ./EmacsPortableOptions.nsi
+	rm ../../../App/eps/set-proxy.exe
+	rm ../../../App/eps/RemoveReg.exe
+
+
+
 
 

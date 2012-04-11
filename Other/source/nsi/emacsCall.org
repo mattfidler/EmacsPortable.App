@@ -1,0 +1,49 @@
+#+TITLE: Call Emacs for Batch Processing
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsCall.nsh
+* Introduction
+Allows NSIS to call emacs for batch processing.
+* Adding to Path
+#+BEGIN_SRC nsis
+
+  !ifndef pifex
+    !macro __pifex ARG1
+      DetailPrint "Checking for ${ARG1}"
+      StrCpy $9 ""
+      IfFileExists "${ARG1}" 0 +4
+      System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'StrCpy $9 "1"
+    !macroend
+    !define pifex '!insertmacro "__pifex"'
+  !endif
+  
+#+END_SRC
+
+* Finding Emacs
+#+BEGIN_SRC nsis
+    Var found_emacs
+    Var called_emacs
+    Function AddEmacsPath
+      StrCpy "$called_emacs" "1"
+      ${pifex} "$INSTDIR\App\gw32\bin"
+      ${pifex} "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler"
+      ${pifex} "$PA\NSISPortableANSI\App\NSIS"
+
+      StrCpy $R1 ""
+      ${Locate} "$INSTDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
+      StrCpy $found_emacs $R1
+      StrCmp $found_emacs "" 0 +3
+      MessageBox MB_OK "Could not Locate Emacs."
+      Goto end
+      ${pifex} "$R1"
+      end:
+        ClearErrors
+    FunctionEnd
+    Function SetEmacs
+      IfFileExists "$R9\bin" 0 end
+      StrCpy $R1 "$R9\bin"
+      end:
+        StrCpy $0 1
+        Push $0
+    FunctionEnd    
+#+END_SRC

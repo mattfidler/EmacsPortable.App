@@ -1,21 +1,21 @@
-;;; EmacsShortcuts.el --- Code to make basic NSIS shortcuts
+;;; make-installer.el --- Make a EmacsPortable.App Installer
 ;; 
-;; Filename: EmacsShortcuts.el
-;; Description: 
+;; Filename: make-installer.el
+;; Description: Makes a EmacsPortable.App Installer
 ;; Author: Matthew L. Fidler
-;; Maintainer: 
-;; Created: Fri Jan 20 08:11:13 2012 (-0600)
-;; Version: 
-;; Last-Updated: Wed Apr 11 13:33:08 2012 (-0500)
+;; Maintainer: Matthew L. Fidler
+;; Created: Wed Apr  4 09:14:07 2012 (-0500)
+;; Version: 0.1
+;; Last-Updated: Wed Apr  4 10:10:29 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 6
+;;     Update #: 3
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
 ;; 
 ;; Features that might be required by this library:
 ;;
-;;   Cannot open load file: EmacsShortcuts.
+;;   Cannot open load file: lib-requires/lib-requires.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 
@@ -49,29 +49,14 @@
 ;; 
 ;;; Code:
 
-(defun ep-shortcut (output icon switch)
-  "Creates an EmacsPortable.App shortcut"
-  (with-temp-file (concat "./" output ".nsi")
-    (insert (format "SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Icon \"..\\img\\ico\\%s.ico\"
-OutFile \"..\\..\\..\\%s.exe\"
+(defun ep-installer (version)
+  "Make an installer for Emacs Version X.XX"
+  (interactive (list (completing-read "Emacs Version:"
+                                      (mapcar (lambda(x)
+                                                (substring x 6))
+                                              (directory-files "~app/" nil "emacs-")))))
+  
+  )
 
-CRCCheck On
-WindowIcon Off
-SilentInstall Silent
-AutoCloseWindow True
-RequestExecutionLevel user
-
-Section 
-  Exec '\"$EXEDIR\\EmacsPortableApp.exe\" %s'
-SectionEnd" icon output switch)))
-  (concat "./" output ".nsi"))
-
-(ep-shortcut "EmacsDos" "Gnome-terminal-non-nuvola" "/DOS")
-(ep-shortcut "Emacs-Q" "kbugbuster" "/Q")
-(ep-shortcut "EmacsDebug" "kbugbuster" "/DEBUG")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; EmacsShortcuts.el ends here
+;;; make-installer.el ends here
