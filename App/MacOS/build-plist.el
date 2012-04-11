@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Tue Apr 10 15:25:37 2012 (-0500)
 ;; Version: 
-;; Last-Updated: Wed Apr 11 14:14:58 2012 (-0500)
+;; Last-Updated: Wed Apr 11 14:38:09 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 38
+;;     Update #: 39
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -160,6 +160,7 @@
           lst ""))
         (save-excursion
           (when (re-search-backward "\\[Control\\]" nil t)
+            (end-of-line)
             (insert (format"\nIcons=%s" nicons)))))
       (insert "[Associations]\n")
       (insert "SendTo=true\n")
