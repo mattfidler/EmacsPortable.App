@@ -87,7 +87,7 @@ install-net.nsi: install-net.org ${download_extras}
 EmacsDownloadShared.nsh: EmacsDownloadShared.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownloadShared.org)"
 
-EmacsCompileTools.nsh: emacsCompileTools.org
+EmacsCompileTools.nsh: emacsCompileTools.org emacsCall.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsCompileTools.org)"
 
 clean:

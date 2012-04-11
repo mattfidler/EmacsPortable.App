@@ -280,7 +280,7 @@ This will allow a compile of EmacsPortable.App, assuming:
    =$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler=
  - NSIS Portable Compiler is in =$PA\NSISPortableANSI\App\NSIS=
 #+BEGIN_SRC nsis
-    !include "callEmacs.nsh"
+    !include "emacsCall.nsh"
     Function compileEmacsPortableApp
       StrCmp $called_emacs "1" +2 0
       Call AddEmacsPath
