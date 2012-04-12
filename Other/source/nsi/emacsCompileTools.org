@@ -291,6 +291,7 @@ This will allow a compile of EmacsPortable.App, assuming:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS", "$found_emacs\emacs.exe").r0'
       #ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make clean$\""
       ExecWait "cmd /c $\"cd $INSTDIR\Other\source\nsi & make -e$\""
+      Call CleanEmacsZip
       end:
         ClearErrors
     FunctionEnd

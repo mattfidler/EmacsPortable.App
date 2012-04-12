@@ -486,6 +486,7 @@ This provides an interface to the Emacs Startup options
     Call StrSlash
     Pop $R0
     ExecDos::exec "$found_emacs\emacs.exe -Q --batch -l $R0 --eval $\"(build-app-info)$\""
+    Call CleanEmacsZip
     end:
       ClearErrors
   SectionEnd

@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Sat Feb 18 16:44:52 2012 (-0600)
-;;           By: us041375
-;;     Update #: 80
+;; Last-Updated: Wed Apr 11 17:00:01 2012 (-0500)
+;;           By: Matthew L. Fidler
+;;     Update #: 81
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -50,30 +50,30 @@
 ;;; Code:
 
 (let ((gw32-emacs-suggested
-      '(
-        ("Arc" "used by archive-mode to edit .arc files.")
-        ("Bzip2" "used by Emacs to automatically decompress .bz2 files.")
-        ("BsdTar" "used by tar-mode to edit tar files.")
-        ("CompFace" "used by gnus to display XFace headers in messages.")
-        ("CoreUtils" "GNU file, shell and text utilities (also in MSYS)")
-        ("DiffUtils" "for ediff and producing patches")
-        ;;("FindUtils" "for grep-find and other file searches.")
-        ("GifLib" "library to support GIF images.")
-        ;;("Grep" "for searching through files with grep.")
-        ("Gzip" "used by Emacs to automatically decompress .gz files.")
-        ("Jpeg" "library to support JPEG images (also in GTK).")
-        ("Lha" "used by archive-mode to edit .lzh files.")
-        ("LibPng" "library to support PNG images (also in GTK).")
-        ("Tiff" "library to support TIFF images (also in GTK).")
-        ("Make" "used by compile for building projects (also in MinGW)")
-        ("OpenSSL" "used by gnus to talk to servers over SSL.")
-        ("Patch" "used by ediff-patch-file and others to apply patches.")
-        ("TexInfo" "used to build Emacs' manuals.")
+       '(
+         ("Arc" "used by archive-mode to edit .arc files.")
+         ("Bzip2" "used by Emacs to automatically decompress .bz2 files.")
+         ("BsdTar" "used by tar-mode to edit tar files.")
+         ("CompFace" "used by gnus to display XFace headers in messages.")
+         ("CoreUtils" "GNU file, shell and text utilities (also in MSYS)")
+         ("DiffUtils" "for ediff and producing patches")
+         ;;("FindUtils" "for grep-find and other file searches.")
+         ("GifLib" "library to support GIF images.")
+         ;;("Grep" "for searching through files with grep.")
+         ("Gzip" "used by Emacs to automatically decompress .gz files.")
+         ("Jpeg" "library to support JPEG images (also in GTK).")
+         ("Lha" "used by archive-mode to edit .lzh files.")
+         ("LibPng" "library to support PNG images (also in GTK).")
+         ("Tiff" "library to support TIFF images (also in GTK).")
+         ("Make" "used by compile for building projects (also in MinGW)")
+         ("OpenSSL" "used by gnus to talk to servers over SSL.")
+         ("Patch" "used by ediff-patch-file and others to apply patches.")
+         ("TexInfo" "used to build Emacs' manuals.")
 	 ("Sed" "Used to build magit")
 	 ("Unzip" "used by archive-mode for extracting zip files.")
-        ("Xpm" "library to support XPM images (bundled with Emacs binaries)")
-        ("Zip" "used by archive-mode for editing zip files.")
-        ("Zlib" "required by LibPng (also in GTK). ")))
+         ("Xpm" "library to support XPM images (bundled with Emacs binaries)")
+         ("Zip" "used by archive-mode for editing zip files.")
+         ("Zlib" "required by LibPng (also in GTK). ")))
       (ini "")
       (ini2 "")
       (ret "")

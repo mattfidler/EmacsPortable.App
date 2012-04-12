@@ -952,10 +952,9 @@ the implementation
 ** cvs
 ** svn
 * Set default shell to bash 
-El-get uses many Unix recipes.  Therefore, bash should be used when
-available.
+El-get uses many Unix recipes.  They may not work without bash.
 #+BEGIN_SRC emacs-lisp
-  (when (eq system-type 'windows-nt)
+  (when (and nil (eq system-type 'windows-nt))
     (let (bash)
       (cond
        ((file-exists-p "~usb/PortableApps/CommonFiles/MinGW/msys/1.0/bin/bash.exe")
