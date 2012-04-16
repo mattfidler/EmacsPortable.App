@@ -80,7 +80,7 @@ with an actual directory.
 | ~kick/      | Data/lisp/kicker        | Kicker Directory                    |
 | ~nsi/       | Other/source/nsi        | NSIS Sources Directory              |
 | ~pa/        | USB Drive:/PortableApps | Portable Apps                       |
-| ~rcp/       | Data/lisp/rcp           | extra el-get recipies Directory     |
+| ~rcp/       | Data/lisp/kicker/rcp    | extra el-get recipies Directory     |
 | ~saves/     | Data/saves              | EmacsPortable.App Saves             |
 | ~shared/    | Data/start/shared       | Shared Customizations               |
 | ~site-lisp/ | App/site-lisp           | Site Lisp Directory                 |

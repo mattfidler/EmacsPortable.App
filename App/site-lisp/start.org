@@ -148,7 +148,7 @@ EmacsPortableApp.exe launcher.
         (setq ret (replace-match (concat usb-app-dir "../Data/lisp/kicker/")
                                  t t ret)))
       (when (string-match "^~rcp[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/rcp/")
+        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/kicker/rcp/")
                                  t t ret)))
       (when (string-match "^~data[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
@@ -307,7 +307,7 @@ EmacsPortableApp.exe launcher.
                                            (expand-file-name (concat usb-app-dir "../Data/lisp/kicker/")))
                                   . "~kick/")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "../Data/lisp/rcp/")))
+                                           (expand-file-name (concat usb-app-dir "../Data/lisp/kicker/rcp/")))
                                   . "~rcp/")
                                  (,(concat "\\`"
                                            (expand-file-name (concat usb-app-dir "/")))
@@ -999,10 +999,10 @@ Start the EmacsPortable.App kicker.
 
 * Load System, User, and Shared Initialization files
 ** Load source function
- Load either an encrypted org-file, an org-file, a lisp file, or a
- compiled lisp file.  Delete intermediary files
+Load either an encrypted org-file, an org-file, a lisp file, or a
+compiled lisp file.  Delete intermediary files
 
- #+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp
    (defun ep-load-org (file)
      "Loads Emacs Lisp source code blocks like `org-babel-load-file'.  However, byte-compiles the files as well as tangles them..."
      (flet ((age (file)
@@ -1128,7 +1128,7 @@ Start the EmacsPortable.App kicker.
    (ep-load-system system-name)
    (ep-load-user user-login-name) 
    
- #+END_SRC
+#+END_SRC
 * Add eXpresso Support, if available
 I would like EmacsPortable.App to use the associations that eXpresso
 uses.  This is only on a windows machine, when =sex-mode= from nXhtml

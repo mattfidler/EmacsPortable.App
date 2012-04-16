@@ -24,7 +24,7 @@ Icon "..\img\ico\appicon.ico"
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis 
+#+BEGIN_SRC nsis :tangle no
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -1105,7 +1105,7 @@ FunctionEnd
       ## Now zip
       SetOutPath "$EXEDIR\App"
       DetailPrint "Zipping binary files"
-      ExecDos::exec "$R0 a emacs-$option_version\bin.zip emacs-$option_version\bin\* emacs-$option_version\etc\DOC-X"
+      ExecDos::exec "$R0 a emacs-$option_version\bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe"
       ## Should remove but after we test 
     end:
       ClearErrors

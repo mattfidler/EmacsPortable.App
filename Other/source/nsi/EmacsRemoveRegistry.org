@@ -172,6 +172,7 @@ FunctionEnd
       StrCmp 0 $nver none_left look_for_running_emacs
     none_left:
       ClearErrors
+      RmDir /r "$TEMP\ep"
       IfFileExists "$TEMP\ep-rmfont.exe" 0 skip_font_rm
       ReadIniStr $R0 "$TEMP\ep-reg.ini" "font.rm" "fontdir"
       IfErrors 0 +3
