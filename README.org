@@ -539,7 +539,7 @@ PuttyPortable application.
 [[./Other/img/PuTTYKeyGenerator1.png]]
 
 2. Save the public key
- 
+   
    This is under File->Save Private Key
 
 3. Export the key to an open ssh key.
@@ -569,7 +569,7 @@ rm ~/key
 #+END_SRC
 
 6. Let EmacsPortable.App know about the key
-  
+   
    Use EmacsOptions.exe to select the PuTTy key.  If you want it to be
    portable keep the key on the USB drive *OR* in the executable
    directory.
@@ -607,8 +607,8 @@ Icons came from various places:
 [2011-12-15 Thu 13:15]
 ** TODO When Cygwin is found drop GnuWin32 Support, or make it secondary.
 *** TODO Email [[outlook:00000000D828B23AB54D3743ADC344CEEFD9F057842F2000][M&S draft objective 2012 (Sarangapani, Ramesh)]] 
-  
- [2012-02-27 Mon 08:16]
+
+[2012-02-27 Mon 08:16]
 ** STARTED Remove Emacs Binaries
 :LOGBOOK:
 CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33

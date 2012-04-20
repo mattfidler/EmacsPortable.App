@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 26 16:33:22 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Apr 11 16:58:47 2012 (-0500)
+;; Last-Updated: Fri Apr 20 08:17:58 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 16
+;;     Update #: 17
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -55,6 +55,7 @@
          ("Grep" "for searching through files with grep.")
          ;;("TexInfo" "used to build Emacs' manuals.")
          ("GnuTLS" "Adds network transport support for Emacs")
+         ("libxml2" "Adds XML support for Emacs 24.1+")
          ))
       (fn "")
       (ini "")

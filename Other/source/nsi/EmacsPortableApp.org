@@ -24,7 +24,7 @@ Icon "..\img\ico\appicon.ico"
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis :tangle no
+#+BEGIN_SRC nsis
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -1069,9 +1069,9 @@ FunctionEnd
 #+END_SRC
 ** Create Zip-file of emacs
 #+BEGIN_SRC nsis
-  Function CreateZip
+  var exe_7z
+  Function Find7z
     Push $R0
-    IfFileExists "$EXEDIR\App\emacs-$option_version\bin.zip" end
     IfFileExists "$EXEDIR\..\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
     StrCpy $R0 "$EXEDIR\..\7-ZipPortable\App\7-Zip\7z.exe"
     Goto found_7z
@@ -1100,12 +1100,30 @@ FunctionEnd
     StrCpy $R0 "$usbs\Apps\7-ZipPortable\App\7-Zip\7z.exe"
     Goto found_7z
     
-    Goto end
+    Goto not_found
+    found_7z:
+      StrCpy $exe_7z $R0
+    already_found: 
+      Pop $R0
+      Push $exe_7z
+      Goto end
+    not_found:
+      Pop $R0
+      Push ""
+    end:
+      ClearErrors
+  FunctionEnd
+  Function CreateZip
+    Push $R0
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bin.zip" end
+    Call Find7z
+    Pop $R0
+    StrCmp $R0 "" end found_7z
     found_7z:
       ## Now zip
       SetOutPath "$EXEDIR\App"
       DetailPrint "Zipping binary files"
-      ExecDos::exec "$R0 a emacs-$option_version\bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe"
+      ExecDos::exec "$R0 a -mx9 -tzip emacs-$option_version\bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe"
       ## Should remove but after we test 
     end:
       ClearErrors
