@@ -1,5 +1,5 @@
 epenv = %TEMP%\ep-env.ini
-  If (FileExist(epenv)){
+If (FileExist(epenv)){
   N=
   IniRead N, %TEMP%\ep-env.ini,path,n
   If (N == "ERROR"){
@@ -14,12 +14,14 @@ epenv = %TEMP%\ep-env.ini
       } else {
         EnvGet P2, PATH
         If (P2 == "ERROR"){
-          MsgBox Could not read path %I%
+          ;MsgBox Could not read path %I%
         } Else {
         P := P . ";" . P2
         }
         EnvSet PATH, %P%
+        ;MsgBox path is set to %P%
       }
+      
     I := I + 1
       
     }  
@@ -35,7 +37,7 @@ epenv = %TEMP%\ep-env.ini
       P=
       IniRead P, %TEMP%\ep-env.ini,info,%I%
       If (P == "ERROR") {
-        MsgBox Could not read info %I%
+        ;MsgBox Could not read info %I%
       } Else {
         EnvGet P2, INFOPATH
         If (P2 == "ERROR"){
@@ -63,7 +65,7 @@ epenv = %TEMP%\ep-env.ini
       } Else {
         EnvGet P2, MANPATH
         If (P2 == "ERROR"){
-          MsgBox Could not read man %I%
+          ;MsgBox Could not read man %I%
         } Else {
         P := P . ";" . P2
         }

@@ -66,24 +66,24 @@
     Goto +3
     IfFileExists "$EXEDIR\App\ezwin\bin\grep.exe" 0 +2
     StrCpy $R0 "$EXEDIR\App\ezwin\bin\grep.exe"
-    ExecDos::exec "cmd /c $\"ipconfig | $R0 $\"IP A$\" > $TEMP\ep-ip.txt$\""
-    IfFileExists "$TEMP\ep-ip.txt" 0 proxy_setup
+    ExecDos::exec "cmd /c $\"ipconfig | $R0 $\"IP A$\" > $TEMP\ep\ep-ip.txt$\""
+    IfFileExists "$TEMP\ep\ep-ip.txt" 0 proxy_setup
     
     IfFileExists "$EXEDIR\App\gw32\bin\sed.exe" 0 +3
     StrCpy $R0 "$EXEDIR\App\gw32\bin\sed.exe" 
     Goto +3
     IfFileExists "$EXEDIR\App\ezwin\bin\sed.exe" 0 +2
     StrCpy $R0 "$EXEDIR\App\ezwin\bin\sed.exe"
-    FileOpen $4 "$TEMP\ep-sed-ip.bat" w
+    FileOpen $4 "$TEMP\ep\ep-sed-ip.bat" w
     IfErrors proxy_setup
-    FileWrite $4 "@$R0 -r $\"s/[^0-9]*([0-9]*[0-9.]+).*/\1/$\" $TEMP\ep-ip.txt > $TEMP\ep-ip2.txt$\r$\n"
+    FileWrite $4 "@$R0 -r $\"s/[^0-9]*([0-9]*[0-9.]+).*/\1/$\" $TEMP\ep\ep-ip.txt > $TEMP\ep\ep-ip2.txt$\r$\n"
     FileClose $4 
-    ExecDos::exec "cmd /c $\"$TEMP\ep-sed-ip.bat$\""
-    Delete "$TEMP\ep-sed-ip.bat"
-    Delete "$TEMP\ep-ip.txt"
+    ExecDos::exec "cmd /c $\"$TEMP\ep\ep-sed-ip.bat$\""
+    Delete "$TEMP\ep\ep-sed-ip.bat"
+    Delete "$TEMP\ep\ep-ip.txt"
   
     read_ips:
-      FileOpen $4 "$TEMP\ep-ip2.txt" r
+      FileOpen $4 "$TEMP\ep\ep-ip2.txt" r
       IfErrors 0 +3
       FileClose $4
       Goto proxy_setup
@@ -96,9 +96,9 @@
       FileClose $4
       goto proxy_setup
   
-      execDos::exec  "cmd /c $\"nslookup $1 > $TEMP\ep-dns.txt$\""
+      execDos::exec  "cmd /c $\"nslookup $1 > $TEMP\ep\ep-dns.txt$\""
       
-      FileOpen $5 "$TEMP\ep-dns.txt" r
+      FileOpen $5 "$TEMP\ep\ep-dns.txt" r
       FileRead $5 $R0
       IfErrors 0 +2
       ClearErrors
@@ -107,7 +107,7 @@
       StrCpy $R0 $R0 -2
       StrCpy $PROXY_IDE "$R0"
       StrCpy $PROXY_ID "$PROXY_ID$R0"
-      Delete "$TEMP\ep-dns.txt"
+      Delete "$TEMP\ep\ep-dns.txt"
 
     proxy_setup:
       ClearErrors

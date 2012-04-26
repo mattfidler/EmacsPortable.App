@@ -1,7 +1,7 @@
 DetectHiddenWindows, On
 Loop  %1%\*.*tf {
   PID=
-  IniRead PID, %TEMP%\ep-reg.ini,fonts, %A_LoopFileLongPath%
+  IniRead PID, %TEMP%\ep\ep-reg.ini,fonts, %A_LoopFileLongPath%
   If (PID == "ERROR"){
     
   } else {
@@ -10,7 +10,7 @@ Loop  %1%\*.*tf {
     Process, Exist, %PID%  
     if ErrorLevel {
     } else {
-      IniDelete, %TEMP%\ep-reg.ini, fonts, %A_LoopFileLongPath%
+      IniDelete, %TEMP%\ep\ep-reg.ini, fonts, %A_LoopFileLongPath%
     }
   }
 }

@@ -551,10 +551,10 @@ FunctionEnd
       
       StrCmp "" $option_dos setupwin setupdos
     setupdos:
-      StrCpy $server_file "$TEMP\epd-$option_version\server"
+      StrCpy $server_file "$TEMP\ep\epd-$option_version\server"
       Goto end
     setupwin:
-      StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
+      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"
     end:
       DetailPrint "Removed stale server files"
       ClearErrors
@@ -867,9 +867,9 @@ FunctionEnd
         ${PathIfExist} $usbs\Apps\R-Portable\$Rpath\bin\i386 0
       skipr:
         ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
-        WriteINIStr "$TEMP\ep-env.ini" "path" "n" "$npath"
-        WriteINIStr "$TEMP\ep-env.ini" "info" "n" "$ninfo"
-        WriteINIStr "$TEMP\ep-env.ini" "man" "n" "$nman"
+        WriteINIStr "$TEMP\ep\ep-env.ini" "path" "n" "$npath"
+        WriteINIStr "$TEMP\ep\ep-env.ini" "info" "n" "$ninfo"
+        WriteINIStr "$TEMP\ep\ep-env.ini" "man" "n" "$nman"
         #ok
       FunctionEnd
   
@@ -1030,9 +1030,9 @@ FunctionEnd
 ** Remove the Registry Settings on restart
 #+BEGIN_SRC nsis
   Function RemRegSetup
-    IfFileExists '$TEMP\EP-RemoveReg.exe' +2
-    CopyFiles /SILENT /FILESONLY '$EXEDIR\App\eps\RemoveReg.exe' '$TEMP\EP-RemoveReg.exe'
-    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\EP-RemoveReg.exe"
+    IfFileExists '$TEMP\ep\EP-RemoveReg.exe' +2
+    CopyFiles /SILENT /FILESONLY '$EXEDIR\App\eps\RemoveReg.exe' '$TEMP\ep\EP-RemoveReg.exe'
+    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
   FunctionEnd
   
   !define RemRegSetup "Call RemRegSetup"
@@ -1175,7 +1175,7 @@ FunctionEnd
       CopyFiles /SILENT "$EXEDIR\App\fonts\$R1" "$FONTS\$R1"
       IfFileExists "$FONTS\$R1" 0 no_install
       WriteRegStr HKLM "$FONT_REG" "$R2" "$FONTS\$R1"
-      WriteINIStr "$TEMP\ep-reg.ini" "font.tmp" "$R1" "$R2"
+      WriteINIStr "$TEMP\ep\ep-reg.ini" "font.tmp" "$R1" "$R2"
       StrCpy $INSTALL_FONT "1"
     no_install:
       IntOp $R0 $R0 - 1
@@ -1184,9 +1184,9 @@ FunctionEnd
       IfFileExists "$EXEDIR\App\fonts" 0 end
       IfFileExists "$EXEDIR\App\eps\addfont.exe" 0 end
       Exec "$\"$EXEDIR\App\eps\addfont.exe$\" $\"$EXEDIR\App\fonts$\""
-      WriteINIStr "$TEMP\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
-      IfFileExists "$TEMP\ep-rmfont.exe" +2 0
-      CopyFiles /SILENT "$EXEDIR\App\eps\rmfont.exe" "$TEMP\ep-rmfont.exe"
+      WriteINIStr "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
+      IfFileExists "$TEMP\ep\ep-rmfont.exe" +2 0
+      CopyFiles /SILENT "$EXEDIR\App\eps\rmfont.exe" "$TEMP\ep\ep-rmfont.exe"
       DetailPrint "Copied font cleanup files."
     end:
       # End Install
@@ -1293,16 +1293,16 @@ Now Finalize Putty Proxy settings
     StrCmp "" $option_dos setupdos setupwin
     ## Now Setup server
     setupwin:
-      IfFileExists "$TEMP\EmacsPortable.App-Server-$option_version"  0 +2
-      RmDir /r "$TEMP\EmacsPortable.App-Server-$option_version"
-      CreateDirectory "$TEMP\EmacsPortable.App-Server-$option_version"
-      StrCpy $server_file "$TEMP\EmacsPortable.App-Server-$option_version\server"
+      IfFileExists "$TEMP\ep\EmacsPortable.App-Server-$option_version"  0 +2
+      RmDir /r "$TEMP\ep\EmacsPortable.App-Server-$option_version"
+      CreateDirectory "$TEMP\ep\EmacsPortable.App-Server-$option_version"
+      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"
       Goto end
     setupdos:
-      IfFileExists "$TEMP\epd-$option_version"  0 +2
-      RmDir /r "$TEMP\epd-$option_version"
-      CreateDirectory "$TEMP\epd-$option_version"
-      StrCpy $server_file "$TEMP\epd-$option_version\server"
+      IfFileExists "$TEMP\ep\epd-$option_version"  0 +2
+      RmDir /r "$TEMP\ep\epd-$option_version"
+      CreateDirectory "$TEMP\ep\epd-$option_version"
+      StrCpy $server_file "$TEMP\ep\epd-$option_version\server"
     end:
       ClearErrors
   FunctionEnd
@@ -1451,15 +1451,15 @@ Now Finalize Putty Proxy settings
   StrCmp "" $option_dos setupwin_client setupdos_client
   setupdos_client:
     StrCmp $cmdLineParams "" +3
-    StrCpy $emacs `"$emacs\$option_emacsclient" -d 0 --server-file "$TEMP\epd-$option_version\server" $cmdLineParams`
+    StrCpy $emacs `"$emacs\$option_emacsclient" -d 0 --server-file "$TEMP\ep\epd-$option_version\server" $cmdLineParams`
     Goto +2
-    StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\epd-$option_version\server"`
+    StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"`
     goto end_client
   setupwin_client:
     StrCmp $cmdLineParams "" +3
-    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
+    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
     Goto +2
-    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\EmacsPortable.App-Server-$option_version\server" -e "(new-emacs)"`
+    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" -e "(new-emacs)"`
   end_client:
 !macroend
 !define emacsclient_setup "!insertmacro emacsclient_setup"
@@ -1488,25 +1488,31 @@ Now Finalize Putty Proxy settings
      StrCmp $R0 "1" start_emacsclient start_emacs
      start_emacs:
        ${emacs_setup}
-       WriteIniStr "$TEMP\ep-reg.ini" "run" "$option_version" "1"
+       WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version" "1"
        StrCmp "" $option_dos 0 start_emacs_dos
        StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
        
      start_emacs_gdb:
+
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
        ${FinalizePutty}
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
-       Exec "$EXEDIR\App\eps\run.exe $TEMP\EP-RemoveReg.exe"
+       Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
        Goto loop
      start_emacs_regular:
+
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run.exe $emacs"
        ${FinalizePutty}
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
-       Exec "$EXEDIR\App\eps\run.exe $TEMP\EP-RemoveReg.exe"
+       Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
        Goto loop
      start_emacs_dos:
+
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
        ${FinalizePutty}
        Goto end

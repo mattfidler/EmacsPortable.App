@@ -10,7 +10,8 @@ This removes registry, fonts and other settings
 CRCCheck On
 WindowIcon Off
 SilentInstall Silent
-AutoCloseWindow True
+SilentUninstall Silent 
+AutoCloseWindow true
 RequestExecutionLevel user
 
 ; Best Compression
@@ -140,7 +141,8 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Section "Main" sec_main ; Checked
     ; Description:
-    ; Main  
+    ; Main
+    writeUninstaller $TEMP\ep\uninstaller.exe  
     System::Call 'kernel32::CreateMutexA(i 0, i 0, t "EP-RemoveReg.exe") i .r1 ?e'
     Pop $R0
     StrCmp $R0 0 0 done
@@ -152,7 +154,7 @@ FunctionEnd
       Goto wait_for_emacsportable_launcher_stop
     look_for_running_emacs:
       StrCpy $nver 0
-      EnumINI::Section "$TEMP\ep-reg.ini" "run"
+      EnumINI::Section "$TEMP\ep\ep-reg.ini" "run"
       Pop $R2
       StrCmp "$R2" "error" done
     loop_run:
@@ -172,14 +174,13 @@ FunctionEnd
       StrCmp 0 $nver none_left look_for_running_emacs
     none_left:
       ClearErrors
-      RmDir /r "$TEMP\ep"
-      IfFileExists "$TEMP\ep-rmfont.exe" 0 skip_font_rm
-      ReadIniStr $R0 "$TEMP\ep-reg.ini" "font.rm" "fontdir"
+      IfFileExists "$TEMP\ep\ep-rmfont.exe" 0 skip_font_rm
+      ReadIniStr $R0 "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir"
       IfErrors 0 +3
-      Delete "$TEMP\ep-rmfont.exe"
+      Delete "$TEMP\ep\ep-rmfont.exe"
       Goto skip_font_rm
-      ExecWait "$\"$TEMP\ep-rmfont$\" $\"$R0$\""
-      Delete "$TEMP\ep-rmfont.exe"
+      ExecWait "$\"$TEMP\ep\ep-rmfont$\" $\"$R0$\""
+      Delete "$TEMP\ep\ep-rmfont.exe"
     skip_font_rm:
       ClearErrors
       ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
@@ -194,13 +195,13 @@ FunctionEnd
       
     main-go:
       ClearErrors
-      EnumINI::Section "$TEMP\ep-reg.ini" "font.tmp"
+      EnumINI::Section "$TEMP\ep\ep-reg.ini" "font.tmp"
       Pop $R0
       StrCmp $R0 "error" skip_font
     loop_font:
       IntCmp "0" "$R0" skip_font skip_font 0
       Pop $R1
-      ReadIniStr $R2 "$TEMP\ep-reg.ini" "font.rm" "$R1"
+      ReadIniStr $R2 "$TEMP\ep\ep-reg.ini" "font.rm" "$R1"
       System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
       DeleteRegValue HKLM "$FONT_REG" "$R2"
       Delete /REBOOTOK "$FONTS\$R2"
@@ -226,7 +227,7 @@ FunctionEnd
       IfFileExists "$R0\org-store-link.js" 0 +2
       Delete "$R0\org-store-link.js"
     delete_open_with:
-      ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\EP-RemoveReg.exe"
+      ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
       DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
       DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"
       DeleteRegKey HKEY_CLASSES_ROOT "org-protocol"
@@ -246,13 +247,30 @@ FunctionEnd
       WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$0"
       DeleteRegKey HKCR "htmlfile\shell\edit\command\-backup"
       Goto done
-      IfFileExists "$TEMP\ep-reg.ini" 0 done
-      Delete "$TEMP\ep-reg.ini"
-      Delete "$TEMP\ep-RemoveReg.exe"
+      IfFileExists "$TEMP\ep\ep-reg.ini" 0 done
+      Delete "$TEMP\ep\ep-reg.ini"
+      Delete "$TEMP\ep\ep-RemoveReg.exe"
     done:
       ClearErrors
       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+      Exec "$TEMP\ep\uninstaller.exe"
   SectionEnd ; sec_main
   
 #+END_SRC
 
+
+* Uninstall Section
+#+BEGIN_SRC nsis
+# create a section to define what the uninstaller does.
+# the section will always be named "Uninstall"
+section "Uninstall"
+SetAutoClose true  
+# Always delete uninstaller first
+delete $TEMP\ep\uninstaller.exe
+ 
+# now delete installed file
+delete $TEMP\ep\EP-RemoveReg.exe
+RmDir /r "$TEMP\ep"
+ 
+sectionEnd
+#+END_SRC

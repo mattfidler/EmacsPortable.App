@@ -5,7 +5,7 @@ Loop %1%\*.*tf {
     
   } else{
     PID=
-      IniRead PID, %TEMP%\ep-reg.ini,fonts, %A_LoopFileLongPath%
+      IniRead PID, %TEMP%\ep\ep-reg.ini,fonts, %A_LoopFileLongPath%
       If (PID == "ERROR"){
       OutputVarPID=
         Title=
@@ -14,7 +14,7 @@ Loop %1%\*.*tf {
         WinGetTitle Title, ahk_pid %OutputVarPID%
         IniWrite %Title%, %1%\fonts.ini, fonts, %A_LoopFileName%
         WinHide, ahk_pid %OutputVarPID%
-        IniWrite %OutputVarPID%, %TEMP%\ep-reg.ini, fonts, %A_LoopFileLongPath%
+        IniWrite %OutputVarPID%, %TEMP%\ep\ep-reg.ini, fonts, %A_LoopFileLongPath%
         } else {
       Process, Exist, %PID%
         if ErrorLevel {
@@ -25,7 +25,7 @@ Loop %1%\*.*tf {
             WinGetTitle Title, ahk_pid %OutputVarPID%
             IniWrite %Title%, %1%\fonts.ini, fonts, %A_LoopFileName%
             WinHide, ahk_pid %OutputVarPID%
-            IniWrite %OutputVarPID%, %TEMP%\ep-reg.ini, fonts, %A_LoopFileLongPath%
+            IniWrite %OutputVarPID%, %TEMP%\ep\ep-reg.ini, fonts, %A_LoopFileLongPath%
             }
     }
     
