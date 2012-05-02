@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 13 17:00:56 2011 (-0600)
 ;; Version: 
-;; Last-Updated: Thu Jan 19 14:32:40 2012 (-0600)
+;; Last-Updated: Tue May  1 23:34:44 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 13
+;;     Update #: 15
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -131,7 +131,7 @@ HideDaemon = 1
   If FileExist("../../EmacsPortableApp.exe /VERSION %1%")
   Run "../../EmacsPortableApp.exe /VERSION %1%"
   Else
-  Run %EPEXE% 
+  Run %EPEXE%
   Return
   
   showdaemonexit:

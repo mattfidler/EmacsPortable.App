@@ -7,9 +7,6 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/Re
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	$(MAKENSIS) SetProxy.nsi
 
-../../../App/eps/RemoveReg.exe: EmacsRemoveRegistry.nsi
-	$(MAKENSIS) EmacsRemoveRegistry.nsi
-
 ../../../EmacsPortableApp.exe: EmacsPortableApp.nsi EmacsCall.nsh
 	$(MAKENSIS) EmacsPortableApp.nsi
 
@@ -76,9 +73,6 @@ EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
 emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/mirrors.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-gw32.el
 
-EmacsRemoveRegistry.nsi: EmacsRemoveRegistry.org emacsproxy.nsh
-	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsRemoveRegistry.org)"
-
 SetProxy.nsi: SetProxy.org emacsproxy.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'SetProxy.org)"
 
@@ -99,7 +93,6 @@ clean:
 	rm Emacs-Q.nsi
 	rm ./install-net.nsi
 	rm ./SetProxy.nsi
-	rm ./EmacsRemoveRegistry.nsi
 	rm ./EmacsDownload*.nsi
 	rm ./EmacsPortableApp.nsi
 	rm ./EmacsPortableOptions.nsi
@@ -112,7 +105,6 @@ clean:
 	rm ../../../EmacsPortableApp*.exe
 	rm ../../../EmacsOptions.exe
 	rm ../../../App/eps/set-proxy.exe
-	rm ../../../App/eps/RemoveReg.exe
 
 
 

@@ -432,7 +432,7 @@ FunctionEnd
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
     
-    StrCpy $option_emacsclient "emacsclientw.exe"
+    StrCpy $option_emacsclient "emacsclient.exe"
     
     ; Parse Parameters
     Push $R0
@@ -975,14 +975,14 @@ Function RegIE
   StrCpy $0 ""
   ClearErrors
   WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup" "$0"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$\"$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe$\" -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$\"$\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
   
   ReadRegStr $0 HKCR "htmlfile\shell\edit\command" ""
   IfErrors 0 +2
   StrCpy $0 ""
   ClearErrors
   WriteRegStr HKCR "htmlfile\shell\edit\command" "-backup" "$0"
-  WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$\"$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe$\" -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+  WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
 FunctionEnd
 !define RegIE "Call RegIE"
 #+END_SRC
@@ -1016,7 +1016,7 @@ Function RegOrgProtocol
     WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
     WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell" "" ""
     WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open" "" ""
-    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open\command" "" "$\"$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe$\" -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open\command" "" "$\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
     
     ## Add Right Click org-protocol actions.
     WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink" "" "Org Store &Link (org-protocol+wscript)"
@@ -1033,20 +1033,9 @@ Function RegEditWith
   ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "RightEdit"
   StrCmp $R0 "1" 0 +3
   WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs" "" "Edit with &EmacsPortable.App $option_version"
-  WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs\command" "" "$EXEDIR\App\emacs-$option_version\bin\emacsclientw.exe -n -f $\"$server_file$\" -a $\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
+  WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs\command" "" "$\"$EXEDIR\EmacsPortableApp.exe$\" $\"%1$\""
 FunctionEnd
 !define RegEditWith "Call RegEditWith"
-#+END_SRC
-** Remove the Registry Settings on restart
-#+BEGIN_SRC nsis
-  Function RemRegSetup
-    IfFileExists '$TEMP\ep\EP-RemoveReg.exe' +2
-    CopyFiles /SILENT /FILESONLY '$EXEDIR\App\eps\RemoveReg.exe' '$TEMP\ep\EP-RemoveReg.exe'
-    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
-  FunctionEnd
-  
-  !define RemRegSetup "Call RemRegSetup"
-  
 #+END_SRC
 
 * Setup Files
@@ -1147,9 +1136,10 @@ FunctionEnd
       IfFileExists "$EXEDIR\App\eps\addfont.exe" 0 end
       Exec "$\"$EXEDIR\App\eps\addfont.exe$\" $\"$EXEDIR\App\fonts$\""
       WriteINIStr "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
-      IfFileExists "$TEMP\ep\ep-rmfont.exe" +2 0
-      CopyFiles /SILENT "$EXEDIR\App\eps\rmfont.exe" "$TEMP\ep\ep-rmfont.exe"
-      DetailPrint "Copied font cleanup files."
+      SetOutPath "$TEMP\ep"
+      IfFileExists "$TEMP\ep\rmfont.exe" +2 0
+      File "..\..\..\App\eps\rmfont.exe"
+      DetailPrint "Extracted font cleanup files."
     end:
       # End Install
   FunctionEnd
@@ -1205,7 +1195,7 @@ FunctionEnd
     IfFileExists $R1 launch_putty end
     
     launch_putty:
-      Exec "$EXEDIR\App\eps\run.exe $R1\PageantPortable.exe $R0"
+      Exec "$TEMP\ep\run.exe $R1\PageantPortable.exe $R0"
       StrCpy $LaunchPutty "1"
       
     found_pageant:
@@ -1315,7 +1305,6 @@ Now Finalize Putty Proxy settings
       Goto setup_options
     setup_options:      
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPRMREG","$EXEDIR\App\eps\RemoveReg.exe").r0'
       ClearErrors
       IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
       ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
@@ -1366,6 +1355,12 @@ Now Finalize Putty Proxy settings
 ** Setup things necessary to call Emacs
 #+BEGIN_SRC nsis
   !macro emacs_setup
+    DetailPrint "Extracting run/2.exe"
+    SetOutPath "$TEMP\ep"
+    IfFileExists $TEMP\ep\run.exe" +4
+    File "..\..\..\App\eps\run.exe"
+    File "..\..\..\App\eps\run2.exe"
+    File "..\..\..\App\eps\EmacsPortableServer.exe"
     DetailPrint "Setup Mac Contents Folder and AppInfo"
     Call SetupContents
     DetailPrint "Setup Home path"
@@ -1396,8 +1391,6 @@ Now Finalize Putty Proxy settings
     ${RegEditWith}
     DetailPrint "Add IE registry entries"
     ${RegIE}
-    DetailPrint "Add Registry Cleanup"
-    ${RemRegSetup}
     DetailPrint "Setup where emacs should run from"
     ${SetupDirs}
     DetailPrint "Setup emacs options"
@@ -1460,47 +1453,174 @@ Now Finalize Putty Proxy settings
      start_emacs_gdb:
        Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$EXEDIR\App\eps\run2.exe $emacs"
+       Exec "$TEMP\ep\run2.exe $emacs"
        ${FinalizePutty}
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
        Pop $R0
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-       Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
+       IfFileExists "$TEMP\ep\ep-rm.exe" +3 0
+       writeUninstaller "$TEMP\ep\ep-rm.exe"
+       Exec "$TEMP\ep\run.exe $TEMP\ep\ep-rm.exe"
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_regular:
        Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$EXEDIR\App\eps\run.exe $emacs"
+       Exec "$TEMP\ep\run.exe $emacs"
        ${FinalizePutty}
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
        Pop $R0
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-       #Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
+       IfFileExists "$TEMP\ep\ep-rm.exe" +3 0
+       writeUninstaller "$TEMP\ep\ep-rm.exe"
+       Exec "$TEMP\ep\run.exe $TEMP\ep\ep-rm.exe"
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_dos:
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$EXEDIR\App\eps\run2.exe $emacs"
+       Exec "$TEMP\ep\run2.exe $emacs"
        ${FinalizePutty}
        Goto end
      loop:
        StrCmp "1" $option_daemon 0 end
        StrCmp "" $option_q 0 end
        StrCpy $cnt 300
-       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +3 0
-       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer.exe" 0 end
-       CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
-           "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe"
-       Exec "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe $option_version"
+       IfFileExists "$TEMP\ep\EmacsPortableServer-$option_version.exe" +3 0
+       IfFileExists "$TEMP\ep\EmacsPortableServer.exe" 0 end
+       CopyFiles /SILENT "$TEMP\ep\EmacsPortableServer.exe" \
+           "$TEMP\ep\EmacsPortableServer-$option_version.exe"
+       Exec "$TEMP\ep\EmacsPortableServer-$option_version.exe $option_version"
        Goto end
      start_emacsclient:
        ${emacsclient_setup}
-       Exec "$emacs"
+       Exec "$TEMP\ep\run.exe $emacs"
      end:
        #
    SectionEnd
    
  #+END_SRC
+* Uninstall section
+This removes registry settings, fonts and other settings.
+#+BEGIN_SRC nsis
+  Var nver
+  Var lastver
+  Section "Uninstall" sec_uninstall ; Checked
+    ; Description:
+    ; Uninstall
+    HideWindow
+    SetAutoClose true
+    ;; Wait for EmacsPortableApp.exe to stop
+    wait_for_emacsportable_launcher_stop:
+      FindProcDLL::FindProc "EmacsPortableApp.exe"
+      StrCmp "$R0" "1" 0 look_for_running_emacs
+      Sleep 1000
+      Goto wait_for_emacsportable_launcher_stop
+    look_for_running_emacs:
+      Sleep 7000 # Wait 7 seconds for emacs process to start.
+      StrCpy $nver 0
+      EnumINI::Section "$TEMP\ep\ep-reg.ini" "run"
+      Pop $R2
+      StrCmp "$R2" "error" done
+    loop_run:
+      IntCmp $R2 0 loop_end loop_end 0
+      Pop $R1
+      FindProcDLL::FindProc "emacs-$R1.exe"
+      StrCmp "$R0" "1" wait_for_close skip_cnt
+    wait_for_close:
+      Sleep 1000
+      StrCpy $nver "1"
+      FindProcDLL::FindProc "emacs-$R1.exe"
+      StrCmp "$R0" "1" wait_for_close skip_cnt
+    skip_cnt:
+      IntOp $R2 $R2 - 1
+      Goto loop_run
+    loop_end:
+      StrCmp 0 $nver none_left look_for_running_emacs
+    none_left:
+      ClearErrors
+      Delete "$TEMP\ep\ep-rm.exe"
+      IfFileExists "$TEMP\ep\rmfont.exe" 0 skip_font_rm
+      ReadIniStr $R0 "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir"
+      IfErrors 0 +3
+      Delete "$TEMP\ep\rmfont.exe"
+      Goto skip_font_rm
+      ExecWait "$\"$TEMP\ep\rmfont$\" $\"$R0$\""
+      Delete "$TEMP\ep\rmfont.exe"
+    skip_font_rm:
+      ClearErrors
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
+      IfErrors uninstall-9x uninstall-NT 
+    uninstall-NT:
+      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+      goto uninstall-go
+      
+    uninstall-9x:
+      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
+      goto uninstall-go
+      
+    uninstall-go:
+      ClearErrors
+      EnumINI::Section "$TEMP\ep\ep-reg.ini" "font.tmp"
+      Pop $R0
+      StrCmp $R0 "error" skip_font
+    loop_font:
+      IntCmp "0" "$R0" skip_font skip_font 0
+      Pop $R1
+      ReadIniStr $R2 "$TEMP\ep\ep-reg.ini" "font.rm" "$R1"
+      System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
+      DeleteRegValue HKLM "$FONT_REG" "$R2"
+      Delete /REBOOTOK "$FONTS\$R2"
+      IntOp $R0 $R0 - 1
+      goto loop_font
+    skip_font:
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+      IfErrors look_for_acrobat 0
+      IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+      StrCpy $R0 "$R0\Javascripts"
+      Goto delete_org_protocol_js
+      
+    look_for_acrobat:
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+      IfErrors delete_open_with 0
+      IfFileExists "$R0\Javascripts" 0 delete_open_with
+      StrCpy $R0 "$R0\Javascripts"
+    delete_org_protocol_js:
+      IfFileExists "$R0\org-capture.js" 0 +2
+      Delete "$R0\org-capture.js"
+      IfFileExists "$R0\org-remember.js" 0 +2
+      Delete "$R0\org-remember.js"
+      IfFileExists "$R0\org-store-link.js" 0 +2
+      Delete "$R0\org-store-link.js"
+    delete_open_with:
+      ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
+      DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
+      DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"
+      DeleteRegKey HKEY_CLASSES_ROOT "org-protocol"
+      
+      ; Restore registry keys
+    viewsource_ie:
+      ClearErrors
+      ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup"
+      IfErrors viewsource 0
+      WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$0"
+      DeleteRegKey HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor\Editor Name-backup"
+      Goto viewsource
+    viewsource:
+      ClearErrors
+      ReadRegStr $0 HKCR "htmlfile\shell\edit\command" "-backup"
+      IfErrors done 0
+      WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$0"
+      DeleteRegKey HKCR "htmlfile\shell\edit\command\-backup"
+      Goto done
+      IfFileExists "$TEMP\ep\ep-reg.ini" 0 done
+      Delete "$TEMP\ep\ep-reg.ini"
+      Delete "$TEMP\ep\ep-RemoveReg.exe"
+    done:
+      ClearErrors
+      SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+      RmDir /R "$TEMP\ep"
+  SectionEnd ; sec_uninstall
+  
+#+END_SRC
