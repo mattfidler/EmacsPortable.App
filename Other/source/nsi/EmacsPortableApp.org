@@ -24,7 +24,7 @@ Icon "..\img\ico\appicon.ico"
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis
+#+BEGIN_SRC nsis 
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -725,23 +725,33 @@ FunctionEnd
         
         ${enumPathIni} "portable"
         GetFullPathName $R6 "$EXEDIR\.."
-        ${PathIfExist} "$R6PortableApps\$R2" found_p_dd
-        ${PathIfExist} "$R6Apps\$R2" found_p_dd2
         ${PathIfExist} "$R6$R2" path_portable
-        ${PathIfExist} "$usbs\PortableApps\$R2" found_pa
-        ${PathIfExist} "$usbs\$R2" found_usb
-        Goto no_portable
-      found_p_dd:
-        StrCpy "$R6" "$R6\PortableApps"
-        Goto path_portable
-      found_p_dd2:
-        StrCpy "$R6" "$R6\Apps"
-        Goto path_portable
-      found_pa:
-        StrCpy "$R6" "$usbs\PortableApps"
-        Goto path_portable
-      found_usb:
-        StrCpy "$R6" "$usbs"
+        EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.dirs"
+        Pop $R8
+        StrCmp $R8 "error" no_portable
+      loop_1_portable:
+        IntCmp $R8 "0" no_portable no_portable 0 
+        Pop $R9
+        ${PathIfExist} "$R6$R9\$R2" found_p_r6
+        ${PathIfExist} "$usbs\$R9\$R2" found_p_usb
+        IntOp $R8 $R8 - 1
+        Goto loop_1_portable
+     found_p_r6:
+        IntOp $R8 $R8 - 1
+        StrCpy "$R6" "$R6$R9"
+        Goto loop_2_portable
+     found_p_usb:
+        IntOp $R8 $R8 - 1
+        StrCpy "$R6" "$usbs\$R9"
+        Goto loop_2_portable
+     loop_2_portable:
+        IntCmp $R8 "0" path_portable path_portable 0 
+        Push $R8
+        Exch 
+        Pop $R8
+        Pop $R8
+        IntOp $R8 $R8 - 1
+        Goto loop_2_portable
         ${enumPathEnd} "portable"
         
         ${enumPathIni} "local"
@@ -1044,12 +1054,16 @@ FunctionEnd
 #+BEGIN_SRC nsis
   !define dllcp `!insertmacro _dllcp`
   !macro _dllcp FILENAME FILETO
-    IfFileExists "$emacs\${FILETO}" +3
-    IfFileExists "$EXEDIR\App\${FILENAME}" 0 +2
+    IfFileExists "$emacs\${FILETO}" +4
+    IfFileExists "$EXEDIR\App\${FILENAME}" 0 +3
     CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs\${FILETO}"
+    ExecDos::exec /DETAILED "cmd /c $\"$R5 & cd $TEMP\ep & $R4 a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip emacs-$option_version\bin\${FILETO}$\""
   !macroend
   
-  Function CpDll       
+  Function CpDll
+    Call Find7z
+    Pop $R4
+    StrCpy $R5 $TEMP 2
     IfFileExists "$EXEDIR\App\ini\copy.ini" 0 end_copy
     EnumINI::Section "$EXEDIR\App\ini\copy.ini" "copy"
     Pop $R0
@@ -1057,6 +1071,7 @@ FunctionEnd
     loop:
       IntCmp "$R0" "0" end_copy
       Pop $R1
+	  DetailPrint "Trying to copy $R1 ($R0)"
       ReadIniStr $R2 "$EXEDIR\App\ini\copy.ini" "copy" "$R1"
       ${dllcp} $R1 $R2
       IntOp $R0 $R0 - 1
@@ -1069,77 +1084,24 @@ FunctionEnd
 #+END_SRC
 ** Create Zip-file of emacs
 #+BEGIN_SRC nsis
-  var exe_7z
-  Function Find7z
-    Push $R0
-    IfFileExists "$EXEDIR\..\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$EXEDIR\..\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-    
-    IfFileExists "$EXEDIR\..\..\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$EXEDIR\..\..\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-  
-    IfFileExists "$EXEDIR\..\PortableApps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$EXEDIR\..\PortableApps\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-  
-    IfFileExists "$EXEDIR\..\Apps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$EXEDIR\..\Apps\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-    
-    IfFileExists "$usbs\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$usbs\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-    
-    IfFileExists "$usbs\PortableApps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$usbs\PortableApps\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-  
-    IfFileExists "$usbs\Apps\7-ZipPortable\App\7-Zip\7z.exe" 0 +3
-    StrCpy $R0 "$usbs\Apps\7-ZipPortable\App\7-Zip\7z.exe"
-    Goto found_7z
-    
-    Goto not_found
-    found_7z:
-      StrCpy $exe_7z $R0
-    already_found: 
-      Pop $R0
-      Push $exe_7z
-      Goto end
-    not_found:
-      Pop $R0
-      Push ""
-    end:
-      ClearErrors
-  FunctionEnd
   Function CreateZip
     Push $R0
-    IfFileExists "$EXEDIR\App\emacs-$option_version\bin.zip" end
+    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" end
     Call Find7z
     Pop $R0
+    DetailPrint "Using 7z at `$R0'"
     StrCmp $R0 "" end found_7z
     found_7z:
       ## Now zip
       SetOutPath "$EXEDIR\App"
       DetailPrint "Zipping binary files"
-      ExecDos::exec "$R0 a -mx9 -tzip emacs-$option_version\bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe"
+      ExecWait  "cmd /c $\"cd $EXEDIR\app & $R0 a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X$\""
+      ExecWait  "cmd /c $\"cd $EXEDIR\app & $R0 a -mx9 -tzip emacs-$option_version\ext-bin.zip emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe$\""
       ## Should remove but after we test 
+      RmDir /R "$EXEDIR\App\emacs-$option_version\bin"
     end:
       ClearErrors
       Pop $R0
-  FunctionEnd
-  
-#+END_SRC
-** Extract Zip-file of emacs
-#+BEGIN_SRC nsis
-  Function ExtractZip
-    IfFileExists "$TEMP\ep\emacs-$option_version\bin" end
-    IfFileExists "$EXEDIR\App\emacs-$option_version\bin.zip" 0 end
-    SetOutPath "$TEMP\ep"
-    ZipDLL::extractall "$EXEDIR\App\emacs-$option_version\bin.zip" "$TEMP\ep"
-    end:
-      ClearErrors
   FunctionEnd
   
 #+END_SRC
@@ -1200,7 +1162,6 @@ FunctionEnd
   !include "emacsCall.nsh"
   Function SetupContents
     IfFileExists "$EXEDIR\Contents\Info.plist" end 0
-    StrCpy "$INSTDIR" "$EXEDIR"
     Call AddEmacsPath
     StrCmp $found_emacs "" end 0
     StrCpy $R0 "$EXEDIR\App\MacOS\build-plist.el"
@@ -1413,6 +1374,8 @@ Now Finalize Putty Proxy settings
     Call CreateZip
     DetailPrint "Extract Binaries"
     Call ExtractZip
+    IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
+    StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
     DetailPrint "Setup PuTTy if available"
     ${SetupPutty}
     DetailPrint "Remove Stale Emacs Server, if it exists"
@@ -1469,12 +1432,14 @@ Now Finalize Putty Proxy settings
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
+    StrCpy "$INSTDIR" "$EXEDIR"
     StrLen $R2 $EXEFILE
     IntCmp 12 $R2 0 +3
     Exec "$EXEDIR\EmacsPortableApp.exe"
     Abort
     ${GetCmdOptions}
     ${setupData}
+    SetOutPath "$TEMP\ep"
   FunctionEnd
 #+END_SRC
 
@@ -1493,25 +1458,30 @@ Now Finalize Putty Proxy settings
        StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
        
      start_emacs_gdb:
-
+       Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
        ${FinalizePutty}
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+       Pop $R0
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
        Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_regular:
-
+       Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run.exe $emacs"
        ${FinalizePutty}
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
-       Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
+       Pop $R0
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
+       #Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\EP-RemoveReg.exe"
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_dos:
-
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
        ${FinalizePutty}

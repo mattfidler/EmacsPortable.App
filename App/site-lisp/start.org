@@ -121,11 +121,7 @@ EmacsPortableApp.exe launcher.
       
       (when (string-match "^~[h~][/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
-                                  (concat (getenv "OHOME")
-                                          (if (string-match "[/\\]"
-                                                            (substring (getenv "OHOME") -1))
-                                              ""
-                                            "/"))) t t ret)))
+                                    (getenv "OHOME")) t t ret)))
       (when (string-match "^~ep[/\\\\]" ret)
         (setq ret (replace-match (expand-file-name
                                   (concat usb-app-dir "../")) t t ret)))
@@ -240,10 +236,8 @@ EmacsPortableApp.exe launcher.
                                            (expand-file-name (getenv "HOME")))
                                   . "~")
                                  (,(concat "\\`"
-                                           (expand-file-name (concat (getenv "OHOME")
-                                                                     (if (string-match "[/\\]" (substring (getenv "OHOME") -1))
-                                                                         ""
-                                                                       "/"))))
+                                           (expand-file-name (getenv "OHOME")
+                                                                     ))
                                   . "~h/")
                                  (,(concat "\\`"
                                            (expand-file-name (concat usb-app-dir "site-lisp/")))

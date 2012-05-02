@@ -1,34 +1,35 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
 EMACS=emacs
+MAKENSIS=makensis
 
 all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
-	makensis SetProxy.nsi
+	$(MAKENSIS) SetProxy.nsi
 
 ../../../App/eps/RemoveReg.exe: EmacsRemoveRegistry.nsi
-	makensis EmacsRemoveRegistry.nsi
+	$(MAKENSIS) EmacsRemoveRegistry.nsi
 
 ../../../EmacsPortableApp.exe: EmacsPortableApp.nsi EmacsCall.nsh
-	makensis EmacsPortableApp.nsi
+	$(MAKENSIS) EmacsPortableApp.nsi
 
 ../../../EmacsDownload.exe: EmacsDownload.nsi
-	makensis EmacsDownload.nsi
+	$(MAKENSIS) EmacsDownload.nsi
 
 ../../../EmacsOptions.exe: EmacsPortableOptions.nsi EmacsCall.nsh
-	makensis EmacsPortableOptions.nsi
+	$(MAKENSIS) EmacsPortableOptions.nsi
 
 ../../../EmacsInstall-Net.exe: install-net.nsi EmacsDownload-pae.nsi
-	makensis install-net.nsi
+	$(MAKENSIS) install-net.nsi
 
 ../../../EmacsDos.exe: EmacsDos.nsi
-	makensis EmacsDos.nsi
+	$(MAKENSIS) EmacsDos.nsi
 
 ../../../EmacsDebug.exe: EmacsDebug.nsi
-	makensis EmacsDebug.nsi
+	$(MAKENSIS) EmacsDebug.nsi
 
 ../../../Emacs-Q.exe: Emacs-Q.nsi 
-	makensis Emacs-Q.nsi
+	$(MAKENSIS) Emacs-Q.nsi
 
 ../../../help.html: ../../../README.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-help)"

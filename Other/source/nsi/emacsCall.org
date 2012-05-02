@@ -18,6 +18,97 @@ Allows NSIS to call emacs for batch processing.
   !endif
   
 #+END_SRC
+* Find 7zip
+#+BEGIN_SRC nsis
+  var exe_7z
+  Function Find7z
+    Push $R0
+    Push $R6
+    Push $R8
+    Push $R9
+    StrCpy "$R6" "$EXEDIR"
+
+    DetailPrint "Looking For 7z at $R6\..\7-ZipPortable\App\7-zip\7z.exe"
+    IfFileExists "$R6\..\7-ZipPortable\App\7-zip\7z.exe" 0 +3
+    StrCpy $R0  "$R6\..\7-ZipPortable\App\7-zip\7z.exe"
+    Goto found_7z
+
+    DetailPrint "Looking For 7z at $R6\..\..\7-ZipPortable\App\7-zip\7z.exe"
+    IfFileExists "$R6\..\..\7-ZipPortable\App\7-zip\7z.exe" 0 +3
+    StrCpy $R0  "$R6\..\..\7-ZipPortable\App\7-zip\7z.exe"
+    Goto found_7z
+
+    EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.dirs"
+    Pop $R8
+    DetailPrint "Looking For 7z portable.dirs, $EXEDIR, $R8"
+    StrCmp $R8 "error" not_found
+    loop_7z:
+        IntCmp $R8 "0" not_found not_found 0 
+        Pop $R9
+        DetailPrint "Looking For 7z at $usbs\$R9\7-ZipPortable\App\7-zip\7z.exe"
+        IfFileExists "$usbs\$R9\7-ZipPortable\App\7-zip\7z.exe" 0 +3
+        StrCpy $R0  "$usbs\$R9\7-ZipPortable\App\7-zip\7z.exe"
+        Goto finalize
+        DetailPrint "Looking For 7z at $usbs\$R9\7Zip\App\7-Zip\x86\7z.exe"
+        IfFileExists "$usbs\$R9\7Zip\App\7-Zip\x86\7z.exe" 0 +3
+        StrCpy $R0  "$usbs\$R9\7Zip\App\7-Zip\x86\7z.exe"
+        Goto finalize
+        IntOp $R8 $R8 - 1
+        Goto loop_7z
+    finalize:
+        IntOp $R8 $R8 - 1
+    finalize_loop:
+        IntCmp $R8 "0" found_7z found_7z 0 
+        Pop $R9
+        IntOp $R8 $R8 - 1
+        Goto finalize_loop
+    found_7z:
+      StrCpy $exe_7z $R0
+    already_found:
+      Pop $R9
+      Pop $R8
+      Pop $R6
+      Pop $R0
+      Push $exe_7z
+      Goto end
+    not_found:
+      Pop $R9
+      Pop $R8
+      Pop $R6
+      Pop $R0
+      Push ""
+    end:
+      ClearErrors
+  FunctionEnd
+#+END_SRC
+* Extract Zip-file of emacs
+#+BEGIN_SRC nsis
+  Var extract_emacs_handle
+  Var extract_emacs_async
+  Function ExtractZip
+    Push $R0
+    IfFileExists "$TEMP\ep\emacs-$option_version\bin" end
+    IfFileExists "$INSTDIR\App\emacs-$option_version\bare-bin.zip" 0 end
+    IfFileExists "$INSTDIR\App\emacs-$option_version\ext-bin.zip" 0 end
+    Goto no_7z
+    Call Find7z
+    Pop $R0
+    StrCmp $R0 "" no_7z found_7z
+    found_7z:
+      StrCpy "$extract_emacs_async" "1"
+      ZipDLL::extractall "$INSTDIR\App\emacs-$option_version\bare-bin.zip" "$TEMP\ep"
+      ExecDos::exec /ASYNC /DETAILED "$R0 x $\"$INSTDIR\App\emacs-$option_version\ext-bin.zip$\" -o$TEMP\ep"
+      Pop $extract_emacs_handle 
+    no_7z:
+      SetOutPath "$TEMP\ep"
+      ZipDLL::extractall "$INSTDIR\App\emacs-$option_version\bare-bin.zip" "$TEMP\ep"
+      ZipDLL::extractall "$INSTDIR\App\emacs-$option_version\ext-bin.zip" "$TEMP\ep"
+    end:
+      ClearErrors
+      Push $R0
+  FunctionEnd
+  
+#+END_SRC
 
 * Finding Emacs
 #+BEGIN_SRC nsis
@@ -44,14 +135,21 @@ Allows NSIS to call emacs for batch processing.
       StrCpy $R3 $R1 "" $R3
       StrCpy $R3 $R3 -8
       IfFileExists "$TEMP\ep\emacs-$R3\bin\emacs.exe" unzipped
+      Call ExtractZip
+      IfFileExists "$TEMP\ep\emacs-$R3\etc\DOC-X" +3 0
+      Sleep 500
+      Goto -2
+      IfFileExists "$TEMP\ep\emacs-$R3\bin\emacs.exe" +3 0
+      Sleep 500
+      Goto -2
       SetOutPath "$TEMP\ep"
       ZipDLL::extractall "$R1" "$TEMP\ep"
       StrCpy $extracted_emacs "1"
     unzipped:
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\App\emacs-$R3\etc").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\App\emacs-$R3\etc").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\App\emacs-$R3\lisp").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\App\emacs-$R3\info").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$INSTDIR\App\emacs-$R3\etc").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$INSTDIR\App\emacs-$R3\etc").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$INSTDIR\App\emacs-$R3\lisp").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$INSTDIR\App\emacs-$R3\info").r0'
       StrCpy  $found_emacs "$TEMP\ep\emacs-$R3\bin"
       Goto use_bin
     use_bin:
