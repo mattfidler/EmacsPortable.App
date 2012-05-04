@@ -2,7 +2,7 @@ download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe ../../../App/eps/RemoveReg.exe ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	$(MAKENSIS) SetProxy.nsi

@@ -1084,8 +1084,8 @@ FunctionEnd
       ## Now zip
       SetOutPath "$EXEDIR\App"
       DetailPrint "Zipping binary files"
-      ExecWait  "cmd /c $\"cd $EXEDIR\app & $R0 a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X$\""
-      ExecWait  "cmd /c $\"cd $EXEDIR\app & $R0 a -mx9 -tzip emacs-$option_version\ext-bin.zip emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe$\""
+      ExecDos::exec  "cmd /c $\"cd $EXEDIR\app & $R0 a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X$\""
+      ExecDos::exec  "cmd /c $\"cd $EXEDIR\app & $R0 a -mx9 -tzip emacs-$option_version\ext-bin.zip emacs-$option_version\bin\emacsclient.exe emacs-$option_version\bin\cmd*.exe emacs-$option_version\bin\hex*.exe emacs-$option_version\bin\ebr*.exe emacs-$option_version\bin\move*.exe emacs-$option_version\bin\*tags*.exe emacs-$option_version\bin\dd*.exe emacs-$option_version\bin\dd*.exe$\""
       ## Should remove but after we test 
       RmDir /R "$EXEDIR\App\emacs-$option_version\bin"
     end:
@@ -1458,11 +1458,6 @@ Now Finalize Putty Proxy settings
        StrCmp $INSTALL_FONT "1" 0 +2
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
        Pop $R0
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-       IfFileExists "$TEMP\ep\ep-rm.exe" +3 0
-       writeUninstaller "$TEMP\ep\ep-rm.exe"
-       Exec "$TEMP\ep\run.exe $TEMP\ep\ep-rm.exe"
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_regular:
        Push $TEMP
@@ -1473,9 +1468,6 @@ Now Finalize Putty Proxy settings
        SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
        Pop $R0
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-       IfFileExists "$TEMP\ep\ep-rm.exe" +3 0
-       writeUninstaller "$TEMP\ep\ep-rm.exe"
-       Exec "$TEMP\ep\run.exe $TEMP\ep\ep-rm.exe"
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_dos:
@@ -1492,6 +1484,19 @@ Now Finalize Putty Proxy settings
        CopyFiles /SILENT "$TEMP\ep\EmacsPortableServer.exe" \
            "$TEMP\ep\EmacsPortableServer-$option_version.exe"
        Exec "$TEMP\ep\EmacsPortableServer-$option_version.exe $option_version"
+     look_for_running_emacs:
+       FindProcDLL::FindProc "emacs-$option_version.exe"
+       StrCmp "$R0" "1" found_running_emacs
+       FindProcDLL::FindProc "emacs-$option_version-dos.exe"
+       StrCmp "$R0" "1" found_running_emacs 
+       Sleep 1000 # Wait 1 seconds for emacs process to start.
+       Goto look_for_running_emacs
+     found_running_emacs:
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
+       IfFileExists "$TEMP\ep\ep-rm.exe" end 0
+       writeUninstaller "$TEMP\ep\ep-rm.exe"
+       Exec "$TEMP\ep\run.exe $TEMP\ep\ep-rm.exe"
+       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto end
      start_emacsclient:
        ${emacsclient_setup}
@@ -1518,7 +1523,6 @@ This removes registry settings, fonts and other settings.
       Sleep 1000
       Goto wait_for_emacsportable_launcher_stop
     look_for_running_emacs:
-      Sleep 7000 # Wait 7 seconds for emacs process to start.
       StrCpy $nver 0
       EnumINI::Section "$TEMP\ep\ep-reg.ini" "run"
       Pop $R2
