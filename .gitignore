@@ -123,3 +123,4 @@ Readme.org_archive
 /App/AppInfo/*
 /Other/source/nsi/callEmacs.nsh
 /Other/source/nsi/emacsCall.nsh
+/Other/source/nsi/EmacsRegistry.nsi

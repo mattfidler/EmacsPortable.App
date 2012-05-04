@@ -1,0 +1,197 @@
+#+TITLE: Emacs Registry Settings
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsRegistry.nsi
+* Introduction
+These are the registry settings that EmacsPortable.App manages.
+Depending on how EmacsPortable.App is launched the registry settings
+may be handled by other means.  Also depending if this is locally
+installed or portablly installed, these may not need to be registered
+each time. 
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+OutFile "..\..\..\App\eps\ep-reg.exe"
+Icon "..\img\ico\appicon.ico"
+var EPEXE 
+#+END_SRC
+
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+* Setup Registry
+** Register Internet Explorer
+#+BEGIN_SRC nsis
+Function RegIE
+  ## Key: HKCR\mailto\shell\open\command\(Default) 
+  ## Value: emacsclientw -e "(message-mail (substring \"%1\" 7))"
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto" "" "URL:Org Protocol"
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto" "URL Protocol" ""
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell" "" ""
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell\open" "" ""
+  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell\open\command"
+  
+  ## News 
+  ## Key: HKCR\news\shell\open\command\(Default)
+  ## Value: emacsclientw -e "(gnus-fetch-group (substring \"%1\" 5)"
+  
+  ## View Source 
+  ## Key: HKCR\htmlfile\shell\edit\command\(Default)
+  ## Value: emacsclientw "%1"
+  
+  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name"
+  IfErrors 0 +2
+  StrCpy $0 ""
+  ClearErrors
+  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup" "$0"
+  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$\"$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
+  
+  ReadRegStr $0 HKCR "htmlfile\shell\edit\command" ""
+  IfErrors 0 +2
+  StrCpy $0 ""
+  ClearErrors
+  WriteRegStr HKCR "htmlfile\shell\edit\command" "-backup" "$0"
+  WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
+FunctionEnd
+!define RegIE "Call RegIE"
+#+END_SRC
+
+** Register Org-Protocol
+#+BEGIN_SRC nsis
+Function RegOrgProtocol
+  ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
+  StrCmp $R0 "1" 0 end
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+    IfErrors look_for_acrobat 0
+    IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+    StrCpy $R0 "$R0\Javascripts"
+    Goto install_org_protocol_js
+    
+  look_for_acrobat:
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+    IfErrors register_protocol 0
+    IfFileExists "$R0\Javascripts" 0 register_protocol
+    StrCpy $R0 "$R0\Javascripts"
+    
+  install_org_protocol_js:
+    IfFileExists "$EPEXE\App\js\org-capture.js" 0 +2
+    CopyFiles /SILENT "$EPEXE\App\js\org-capture.js" "$R0\org-capture.js"
+    IfFileExists "$EPEXE\App\js\org-remember.js" 0 +2
+    CopyFiles /SILENT "$EPEXE\App\js\org-remember.js" "$R0\org-remember.js"
+    IfFileExists "$EPEXE\App\js\org-store-link.js" 0 +2
+    CopyFiles /SILENT "$EPEXE\App\js\org-store-link.js" "$R0\org-store-link.js"
+  register_protocol:
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "" "URL:Org Protocol"
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell" "" ""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open" "" ""
+    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open\command" "" "$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
+    
+    ## Add Right Click org-protocol actions.
+    WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink" "" "Org Store &Link (org-protocol+wscript)"
+    WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink\command" "" "wscript.exe $\"$EPEXE\App\vbs\org-link.vbs$\" $\"%1$\""
+  end:
+    # End
+FunctionEnd
+!define RegOrgProtocol "Call RegOrgProtocol"
+#+END_SRC
+
+** Register Edit With
+#+BEGIN_SRC nsis
+Function RegEditWith
+  ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "RightEdit"
+  StrCmp $R0 "1" 0 +3
+  WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs" "" "Edit with &EmacsPortable.App"
+  WriteRegStr HKEY_CLASSES_ROOT "*\shell\openwemacs\command" "" "$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
+FunctionEnd
+!define RegEditWith "Call RegEditWith"
+#+END_SRC
+
+* Un-install Registry
+* Main
+#+BEGIN_SRC nsis
+Section "Main" sec_main
+    HideWindow
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    DetailPrint "Add Org-protocol"
+    ${RegOrgProtocol}
+    DetailPrint "Add Edit With..."
+    ${RegEditWith}
+    DetailPrint "Add IE registry entries"
+    ${RegIE}
+    DetailPrint "Write Uninstaller information"
+    writeUninstaller "$TEMP\ep\ep-rm-reg.exe"
+SectionEnd
+#+END_SRC
+* Uninstaller
+#+BEGIN_SRC nsis
+  Section "Uninstall" sec_uninstall
+    SetAutoClose true
+    IfFileExists "$TEMP\ep\ep-reg.exe" 0 +2
+    Delete "$TEMP\ep\ep-reg.exe"
+    IfFileExists "$TEMP\ep-reg.exe" 0 +2
+    Delete "$TEMP\ep\ep-reg.exe"
+    IfFileExists "$TEMP\ep\ep-rm-reg.exe" 0 +2
+    Delete "$TEMP\ep\ep-rm-reg.exe"
+    IfFileExists "$TEMP\ep-rm-reg.exe" 0 +2
+    Delete "$TEMP\ep-rm-reg.exe"
+    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+    IfErrors look_for_acrobat 0
+    IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+    StrCpy $R0 "$R0\Javascripts"
+    Goto delete_org_protocol_js
+    
+    look_for_acrobat:
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+      IfErrors delete_open_with 0
+      IfFileExists "$R0\Javascripts" 0 delete_open_with
+      StrCpy $R0 "$R0\Javascripts"
+    delete_org_protocol_js:
+      IfFileExists "$R0\org-capture.js" 0 +2
+      Delete "$R0\org-capture.js"
+      IfFileExists "$R0\org-remember.js" 0 +2
+      Delete "$R0\org-remember.js"
+      IfFileExists "$R0\org-store-link.js" 0 +2
+      Delete "$R0\org-store-link.js"
+    delete_open_with:
+      ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
+      DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
+      DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"
+      DeleteRegKey HKEY_CLASSES_ROOT "org-protocol"
+      ; Restore registry keys
+    viewsource_ie:
+      ClearErrors
+      ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup"
+      IfErrors viewsource 0
+      WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$0"
+      DeleteRegKey HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor\Editor Name-backup"
+      Goto viewsource
+    viewsource:
+      ClearErrors
+      ReadRegStr $0 HKCR "htmlfile\shell\edit\command" "-backup"
+      IfErrors done 0
+      WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$0"
+      DeleteRegKey HKCR "htmlfile\shell\edit\command\-backup"
+      Goto done
+    done: 
+      ClearErrors
+  SectionEnd
+#+END_SRC
+
+

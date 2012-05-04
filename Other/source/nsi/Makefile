@@ -1,8 +1,15 @@
 download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
+emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe
+
+../../../App/eps/ep-reg.exe: EmacsRegistry.nsi
+	$(MAKENSIS) EmacsRegistry.nsi
+
+EmacsRegistry.nsi: EmacsRegistry.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsRegistry.org)"
 
 ../../../App/eps/set-proxy.exe: SetProxy.nsi
 	$(MAKENSIS) SetProxy.nsi
@@ -46,7 +53,7 @@ EmacsPortableOptions.nsi: EmacsPortableOptions.org emacsproxy.nsh setupEmacsData
 setupEmacsData.nsh: setupEmacsData.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'setupEmacsData.org)"
 
-EmacsPortableApp.nsi: EmacsPortableApp.org emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh
+EmacsPortableApp.nsi: EmacsPortableApp.org $(emacs_extras)
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsPortableApp.org)"
 
 emacsPathIfExists.nsh: emacsPathIfExists.org

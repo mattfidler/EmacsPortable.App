@@ -467,10 +467,7 @@ This provides an interface to the Emacs Startup options
     skip_proxy:
     
       ClearErrors
-  FunctionEnd
-  
-  
-  
+  FunctionEnd  
 #+END_SRC
 
 * Obligatory Section
