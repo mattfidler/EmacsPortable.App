@@ -6,15 +6,13 @@
 I want:
  - user level execution
  - CRC check
- - Good compression
+ - Fastest compression (zlib)  See http://forums.winamp.com/showthread.php?t=186355
 #+BEGIN_SRC nsis
 CRCCheck On
 RequestExecutionLevel user
 ; Best Compression
 SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
+SetCompressor zlib
 Caption "Loading EmacsPortable.App"
 Subcaption 3 " "
 XPStyle on
@@ -556,6 +554,12 @@ FunctionEnd
     setupwin:
       StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"
     end:
+      ## Change protocol spaces to %20
+      StrCpy $0 $cmdLineParams 15
+      StrCmp $0 "$\"org-protocol:/" 0 final
+      ${StrReplace} $cmdLineParams " " "%20"
+      StrCpy $cmdLineParams $0
+    final:
       DetailPrint "Removed stale server files"
       ClearErrors
   FunctionEnd
