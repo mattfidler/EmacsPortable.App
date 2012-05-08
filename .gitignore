@@ -124,3 +124,6 @@ Readme.org_archive
 /Other/source/nsi/callEmacs.nsh
 /Other/source/nsi/emacsCall.nsh
 /Other/source/nsi/EmacsRegistry.nsi
+/Other/source/nsi/EmacsFonts.nsi
+/Other/source/nsi/emacsAssoc.nsi
+/Other/source/nsi/emacsportablever.nsi

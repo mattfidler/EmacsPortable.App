@@ -12,11 +12,17 @@ PATH there.
 Var npath
 !macro _PathIfExist ARG1 GOTO
   DetailPrint "Checking ${ARG1}"
-  IfFileExists "${ARG1}" 0 +5
+  Push $0
+  GetFullPathName /SHORT $0 "${ARG1}" 
+  IfFileExists "$0" +3
+  Pop $0
+  Goto +6
   IntOp $npath $npath + 1
-  WriteINIStr "$TEMP\ep\ep-env.ini" "path" "$npath" "${ARG1}"
-  DetailPrint "Add ${ARG1} to Path"
+  WriteINIStr "$TEMP\ep\ep-env.ini" "path" "$npath" "$0"
+  DetailPrint "Add $0 to Path"
+  Pop $0
   Goto ${GOTO}
+
 !macroend
 
 !define PathIfExist '!insertmacro "_PathIfExist"'
@@ -27,11 +33,15 @@ Adding info paths
 #+BEGIN_SRC nsis
   Var ninfo
   !macro _InfoIfExist ARG1 GOTO
-    SetOutPath "$TEMP\ep"
-    IfFileExists "${ARG1}" 0 +5
+    Push $0
+    GetFullPathName /SHORT $0 "${ARG1}" 
+    IfFileExists "$0" +3
+    Pop $0
+    Goto +6
     IntOp $ninfo $ninfo + 1
-    WriteINIStr "$TEMP\ep\ep-env.ini" "info" "$ninfo" "${ARG1}"
-    DetailPrint "Add ${ARG1} to to INFOPATH"
+    WriteINIStr "$TEMP\ep\ep-env.ini" "info" "$ninfo" "$0"
+    DetailPrint "Add $0 to to INFOPATH"
+    Pop $0
     Goto ${GOTO}
   !macroend
   
@@ -46,10 +56,15 @@ Adding man paths
   Var nman
   !macro _ManIfExist ARG1 GOTO
     SetOutPath "$TEMP\ep"
-    IfFileExists "${ARG1}" 0 +5
+    Push $0
+    GetFullPathName /SHORT $0 "${ARG1}"     
+    IfFileExists "$0" +3
+    Pop $0
+    Goto +6
     IntOp $nman $nman + 1
-    WriteINIStr "$TEMP\ep\ep-env.ini" "man" "$nman" "${ARG1}"
+    WriteINIStr "$TEMP\ep\ep-env.ini" "man" "$nman" "$0"
     DetailPrint "Add ${ARG1} to to MANPATH"
+    Pop $0
     Goto ${GOTO}
   !macroend
   

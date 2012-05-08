@@ -3,7 +3,25 @@ emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh se
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe
+
+../../../App/eps/ep-assoc.exe: emacsAssoc.nsi
+	$(MAKENSIS) emacsAssoc.nsi
+
+emacsAssoc.nsi: emacsAssoc.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsAssoc.org)"
+
+../../../App/eps/ver-shortcut.exe: emacsportablever.nsi
+	$(MAKENSIS) emacsportablever.nsi
+
+emacsportablever.nsi: emacsportablever.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsportablever.org)"
+
+../../../App/eps/ep-font.exe: EmacsFonts.nsi
+	$(MAKENSIS) EmacsFonts.nsi
+
+EmacsFonts.nsi: EmacsFonts.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsFonts.org)"
 
 ../../../App/eps/ep-reg.exe: EmacsRegistry.nsi
 	$(MAKENSIS) EmacsRegistry.nsi

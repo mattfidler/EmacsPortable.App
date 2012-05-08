@@ -108,9 +108,13 @@ Under windows, debug mode starts =gdb= if found.  Additionally, if
 can download an appropriate gdbinit for emacs [[http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit][here]].
 
 * Customizing and using your own packages
-The settings in EmacsPortable.app are a fork of the literate starter
-kit by [[https://github.com/eschulte][Eric Schulte]]. The settings are described below.  This is copied
-and modified from the original starter-kit.
+The settings in EmacsPortable.app were originally fork of the literate
+starter kit by [[https://github.com/eschulte][Eric Schulte]] (some of my documentation text is probably
+reminiscent of . Now my philosophy is a little more
+liberal in providing a customized emacs that does not include too much
+startup customizations, but allow you to pull your own startup
+customizations if you wish, or test out other people's startup
+settings.  
 
 The defaults built into the EmacsPortable.App are only the beginning
 of most users customization of Emacs to suite their needs.
@@ -127,17 +131,24 @@ This selects the version of Emacs that EmacsPortable.App will be
 running.  This is useful if you run different versions of Emacs to
 possibly test lisp code, or use features not previously used.
 *** Register Org-protocol
-
+This registers Org-protocol and also associates org-protocol actions
+with adobe acrobat/adobe acrobat reader.
 *** Handle IE Mailto
-
+In theory this handles Internet explorer mail to, but I believe that
+this is broken.
 *** Handle IE Viewsource
-
+This handles Internet Explorer View Source. I'm not sure it works.
 *** Handle IE News
-
+This handles IE news.  I'm not sure it works.
 *** Startup Font, Color, Geometry
+This allows the initial font/color and gemoetry options to be
+specified so that emacs will startup with these options enabled.
+These are called from the command line and do not affect the
+registry. 
 **** TODO Add Color-theme foreground/background color sync.
 *** Proxy
-
+This allows proxy settings to be dynamically determined based on your
+location.  Your password is encrypted based on the location as well.
 *** Setting Startup Environment variables
 By creating or editing an environment ini file at
 =App/Environment.ini=, startup environmental variables may be set.
@@ -149,6 +160,12 @@ package, the following ini-file will set the
 [Environment]
 ERGOEMACS_KEYBOARD_LAYOUT=colemak
 #+END_SRC
+*** Determining if Emacs Binaries should be zipped
+Emacs binaries can be zipped to save space.  This requires that the
+emacs binaries are extracted to the temporary directory before
+running.  I have found that running emacs in this manner is faster
+than running it on the USB stick alone.  If not selected the binaries
+will run from the usb drive.  If you are running EmacsPortable.App locally
 ** General Customization
 
 - git branch :: The first step to user-specific customization is (like
@@ -214,23 +231,6 @@ elisp files in it will be loaded.
                     files, you may also put them in
                     =Data/init/shared/=.  This should be loaded
                     regardless of the user or system.
-
-[2012-01-04 Wed 13:30]
-** TODO Activating EmacsPortable Starter Kit Modules
-
-- Activating more of the starter kit :: By default, the starter kit
-only includes customizations which are likely to be useful across
-nearly any Emacs install (the only automatically loaded external
-files are those listed in [[#load-the-starter-kit-core][Load the rest of the starter kit core]]).
-You may have noticed that there are many other
-=starter-kit-*.org= files located in this directory.  A good
-first step is to browse these files and begin optionally loading
-those that look relevant to your workflow.  For example, if you
-often work with Python source code you will probably want to load
-=starter-kit-python.org= either by directly copying the sections
-that look useful into your personal config, or simply by loading
-the entire file directly with the following.
-
 ** Installing Additional Libraries
 - Installing more elisp libraries :: The easiest way to install new
 libraries is through the Emacs Lisp Package Archive (see [[#emacs-lisp-package-archive][Emacs
@@ -276,8 +276,6 @@ When using EmacsPortable.App's startup mechanism, t
    
 3) System based =.org=, =.el= or =.elc= files in =Data/init/system=.
 ** Home Directory
-
-[2011-12-13 Tue 11:35]
 
 * Using EmacsPortable.App before a release
 Using git, you can check out the latest EmacsPortable.App, as follows
@@ -336,9 +334,9 @@ This allows you to "close" out of Emacs while maintaining a running Emacs.
 The startup script also sets the environment variable
 EMACS_SERVER_FILE to the temporary directory
 
-=$TEMP\EmacsPortable.App-Server-$EMACS_VERSION\server=
+=$TEMP\ep\EmacsPortable.App-Server-$EMACS_VERSION\server=
 
-Subsequent calls to emacsclientw.exe specify this server location.
+Subsequent calls to emacsclient.exe specify this server location.
 Therefore an emacs server can be run for each distinct emacs version
 
 More information about the startup is found in [[file:./App/site-lisp/site-start.org][site-start.org]]

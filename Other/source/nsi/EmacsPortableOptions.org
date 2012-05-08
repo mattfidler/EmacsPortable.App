@@ -63,25 +63,28 @@ This provides an interface to the Emacs Startup options
   !define ep_iemail "Field 6"
   !define ep_iesrc "Field 7"
   !define ep_ienews "Field 4"
-  !define ep_daemon "Field 5"
-  !define ep_font "Field 11"
-  !define ep_font_size "Field 14"
-  !define ep_bg "Field 16"
-  !define ep_fg "Field 18"
-  !define ep_g1 "Field 21"
-  !define ep_g2 "Field 22"
-  !define ep_g3 "Field 24"
-  !define ep_g4 "Field 25"
-  !define ep_mm "Field 28"
-  !define ep_fw "Field 29"
-  !define ep_fh "Field 30"
-  !define ep_debug "Field 31"
-  !define ep_home "Field 32"
-  !define ep_proxy_server "Field 34"
-  !define ep_proxy_port "Field 36"
-  !define ep_proxy_user "Field 38"
-  !define ep_proxy_password "Field 40"
-  !define ep_putty_key "Field 12"
+  !define ep_putty_key "Field 5"
+  !define ep_daemon "Field 6"
+  !define ep_zip    "Field 7"
+  !define ep_clean    "Field 8"
+
+  !define ep_font "Field 14"
+  !define ep_font_size "Field 16"
+  !define ep_bg "Field 18"
+  !define ep_fg "Field 20"
+  !define ep_g1 "Field 23"
+  !define ep_g2 "Field 24"
+  !define ep_g3 "Field 26"
+  !define ep_g4 "Field 27"
+  !define ep_mm "Field 30"
+  !define ep_fw "Field 31"
+  !define ep_fh "Field 32"
+  !define ep_debug "Field 33"
+  !define ep_home "Field 34"
+  !define ep_proxy_server "Field 36"
+  !define ep_proxy_port "Field 38"
+  !define ep_proxy_user "Field 40"
+  !define ep_proxy_password "Field 42"
   
 #+END_SRC
 
@@ -223,7 +226,7 @@ This provides an interface to the Emacs Startup options
       ExecWait "$EXEDIR\EmacsOptions.exe"
       Abort
       StrCmp $nemacs 1 +2 0
-      CopyFiles /SILENT "$EXEDIR/EmacsPortableApp.exe" "$EXEDIR/EmacsPortableApp-$lastversion.exe"
+      CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
       WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
       ${SetupProxy}
       
@@ -307,6 +310,8 @@ This provides an interface to the Emacs Startup options
         ${RW} "Fullheight" "${ep_fh}"
         ${RW} "Debug" "${ep_debug}"
         ${RW} "Daemon" "${ep_daemon}"
+        ${RW} "Zip" "${ep_zip}"
+        ${RW} "Clean" "${ep_clean}"
       end_init:
         ClearErrors
       FunctionEnd
@@ -326,7 +331,7 @@ This provides an interface to the Emacs Startup options
   Function SetValues
     IntOp $nemacs $nemacs + 1
     StrCmp $lastversion "" +2
-    CopyFiles /SILENT "$EXEDIR/EmacsPortableApp.exe" "$EXEDIR/EmacsPortableApp-$lastversion.exe"
+    CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
      StrLen $R1 "$EXEDIR\App\emacs-"
      StrLen $R2 $R9
      IntOp $R2 $R1 - $R2
@@ -441,6 +446,9 @@ This provides an interface to the Emacs Startup options
     ${WR} "Fullheight" "${ep_fh}"
     ${WR} "Debug" "${ep_debug}"
     ${WR} "Daemon" "${ep_daemon}"
+    ${WR} "Zip" "${ep_zip}"
+    ${WR} "Clean" "${ep_clean}"
+
     
     
     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"

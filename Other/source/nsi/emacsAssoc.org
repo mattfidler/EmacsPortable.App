@@ -1,0 +1,259 @@
+#+TITLE: Emacs Association Settings
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsAssoc.nsi
+* Introduction
+These are file associations handled by EmacsPortableApp.exe
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+OutFile "..\..\..\App\eps\ep-assoc.exe"
+Icon "..\img\ico\appicon.ico"
+!include "LogicLib.nsh"
+!include "FileAssociation.nsh"
+!define SHCNE_ASSOCCHANGED 0x08000000
+!define SHCNF_IDLIST 0
+var EPEXE 
+#+END_SRC
+
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+
+** Explode
+From http://nsis.sourceforge.net/Explode
+#+BEGIN_SRC nsis
+!define Explode "!insertmacro Explode"
+ 
+!macro  Explode Length  Separator   String
+    Push    `${Separator}`
+    Push    `${String}`
+    Call    Explode
+    Pop     `${Length}`
+!macroend
+
+!define unExplode "!insertmacro unExplode"
+ 
+!macro  unExplode Length  Separator   String
+    Push    `${Separator}`
+    Push    `${String}`
+    Call    un.Explode
+    Pop     `${Length}`
+!macroend
+ 
+Function Explode
+  ; Initialize variables
+  Var /GLOBAL explString
+  Var /GLOBAL explSeparator
+  Var /GLOBAL explStrLen
+  Var /GLOBAL explSepLen
+  Var /GLOBAL explOffset
+  Var /GLOBAL explTmp
+  Var /GLOBAL explTmp2
+  Var /GLOBAL explTmp3
+  Var /GLOBAL explArrCount
+ 
+  ; Get input from user
+  Pop $explString
+  Pop $explSeparator
+ 
+  ; Calculates initial values
+  StrLen $explStrLen $explString
+  StrLen $explSepLen $explSeparator
+  StrCpy $explArrCount 1
+ 
+  ${If}   $explStrLen <= 1          ;   If we got a single character
+  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+    Push    $explString             ;   then we return initial string with no change
+    Push    1                       ;   and set array's length to 1
+    Return
+  ${EndIf}
+ 
+  ; Set offset to the last symbol of the string
+  StrCpy $explOffset $explStrLen
+  IntOp  $explOffset $explOffset - 1
+ 
+  ; Clear temp string to exclude the possibility of appearance of occasional data
+  StrCpy $explTmp   ""
+  StrCpy $explTmp2  ""
+  StrCpy $explTmp3  ""
+ 
+  ; Loop until the offset becomes negative
+  ${Do}
+    ;   If offset becomes negative, it is time to leave the function
+    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+ 
+    ;   Remove everything before and after the searched part ("TempStr")
+    StrCpy $explTmp $explString $explSepLen $explOffset
+ 
+    ${If} $explTmp == $explSeparator
+        ;   Calculating offset to start copy from
+        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+        StrCpy  $explTmp3 $explString "" $explTmp2
+ 
+        Push    $explTmp3                           ;   Throwing array item to the stack
+        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+ 
+        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+        StrLen  $explStrLen $explString
+    ${EndIf}
+ 
+    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                ;   copying the rest of the string
+        ${If} $explSeparator == ""              ;   Fix for the empty separator
+            IntOp   $explArrCount   $explArrCount - 1
+        ${Else}
+            Push    $explString
+        ${EndIf}
+    ${EndIf}
+ 
+    IntOp   $explOffset $explOffset - 1
+  ${Loop}
+ 
+  Push $explArrCount
+FunctionEnd
+Function un.Explode
+  ; Initialize variables
+  ; Get input from user
+  Pop $explString
+  Pop $explSeparator
+ 
+  ; Calculates initial values
+  StrLen $explStrLen $explString
+  StrLen $explSepLen $explSeparator
+  StrCpy $explArrCount 1
+ 
+  ${If}   $explStrLen <= 1          ;   If we got a single character
+  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+    Push    $explString             ;   then we return initial string with no change
+    Push    1                       ;   and set array's length to 1
+    Return
+  ${EndIf}
+ 
+  ; Set offset to the last symbol of the string
+  StrCpy $explOffset $explStrLen
+  IntOp  $explOffset $explOffset - 1
+ 
+  ; Clear temp string to exclude the possibility of appearance of occasional data
+  StrCpy $explTmp   ""
+  StrCpy $explTmp2  ""
+  StrCpy $explTmp3  ""
+ 
+  ; Loop until the offset becomes negative
+  ${Do}
+    ;   If offset becomes negative, it is time to leave the function
+    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+ 
+    ;   Remove everything before and after the searched part ("TempStr")
+    StrCpy $explTmp $explString $explSepLen $explOffset
+ 
+    ${If} $explTmp == $explSeparator
+        ;   Calculating offset to start copy from
+        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+        StrCpy  $explTmp3 $explString "" $explTmp2
+ 
+        Push    $explTmp3                           ;   Throwing array item to the stack
+        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+ 
+        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+        StrLen  $explStrLen $explString
+    ${EndIf}
+ 
+    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                ;   copying the rest of the string
+        ${If} $explSeparator == ""              ;   Fix for the empty separator
+            IntOp   $explArrCount   $explArrCount - 1
+        ${Else}
+            Push    $explString
+        ${EndIf}
+    ${EndIf}
+ 
+    IntOp   $explOffset $explOffset - 1
+  ${Loop}
+ 
+  Push $explArrCount
+FunctionEnd
+#+END_SRC
+
+* Main
+#+BEGIN_SRC nsis
+Section "Main" sec_main
+    HideWindow
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ## Now Get Association information
+    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    Pop $R0
+    StrCmp $R0 "error" done_assoc
+    loop_assoc:
+      IntCmp $R0 "0" done_assoc done_assoc 0
+      Pop $R1
+      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ${Explode}  $0  "," "$R2"
+      ${For} $1 1 $0
+          Pop $2
+          ${registerExtension} "$EPEXE\EmacsPortableApp.exe" ".$2" "$R1"
+      ${Next}
+      IntOp $R0 $R0 - 1
+      Goto loop_assoc
+    done_assoc:
+    System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
+    writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
+SectionEnd
+#+END_SRC
+* Uninstaller
+#+BEGIN_SRC nsis
+  Section "Uninstall" sec_uninstall
+    SetAutoClose true
+    IfFileExists "$TEMP\ep\ep-assoc.exe" 0 +2
+    Delete "$TEMP\ep\ep-assoc.exe"
+    IfFileExists "$TEMP\ep-assoc.exe" 0 +2
+    Delete "$TEMP\ep\ep-assoc.exe"
+    IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +2
+    Delete "$TEMP\ep\rm-ep-assoc.exe"
+    IfFileExists "$TEMP\rm-ep-assoc.exe" 0 +2
+    Delete "$TEMP\rm-ep-assoc.exe"
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    Pop $R0
+    StrCmp $R0 "error" done_assoc
+    loop_assoc:
+      IntCmp $R0 "0" done_assoc done_assoc 0
+      Pop $R1
+      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ${unExplode}  $0  "," "$R2"
+      ${For} $1 1 $0
+          Pop $2
+          ${unregisterExtension} ".$2" "$R1"
+      ${Next}
+      IntOp $R0 $R0 - 1
+      Goto loop_assoc
+    done_assoc:
+    done:
+      System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
+      ClearErrors
+  SectionEnd
+#+END_SRC
+
+

@@ -6,13 +6,14 @@
 I want:
  - user level execution
  - CRC check
- - Fastest compression (zlib)  See http://forums.winamp.com/showthread.php?t=186355
 #+BEGIN_SRC nsis
 CRCCheck On
 RequestExecutionLevel user
 ; Best Compression
 SetCompress Auto
-SetCompressor zlib
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
 Caption "Loading EmacsPortable.App"
 Subcaption 3 " "
 XPStyle on
@@ -41,8 +42,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
 
 ** Variables
 #+BEGIN_SRC nsis
-  Var INSTALL_FONT
-  Var FONT_REG
   Var home
   Var usb
   Var usbs
@@ -84,6 +83,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_fullheight
   
   Var nini
+  Var EPEXE
   
 #+END_SRC
 
@@ -460,7 +460,10 @@ FunctionEnd
       StrLen $R2 $R0
       IntOp $R2 $R2 - 4
       StrCpy $option_version $R0 $R2
-      IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe 0 emacs_ver_from_ini
+      IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe +4
+      IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs-$option_version.exe +3
+      IfFileExists $EXEDIR\App\emacs-$option_version\bare-bin.zip +2
+      Goto emacs_ver_from_ini
       Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$option_version'
       Abort
     emacs_ver_from_ini:
@@ -474,7 +477,7 @@ FunctionEnd
       ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
       IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
       Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
-      CopyFiles /SILENT "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe"
+      CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe"
       Goto emacs_ver_skip
     emacs_ver:
       ExecWait $EXEDIR\EmacsOptions.exe
@@ -881,6 +884,7 @@ FunctionEnd
         ${PathIfExist} $usbs\Apps\R-Portable\$Rpath\bin\i386 0
       skipr:
         ${PathIfExist} $EXEDIR\App\emacs-$option_version\bin 0
+        ${PathIfExist} $TEMP\ep\emacs-$option_version\bin 0
         WriteINIStr "$TEMP\ep\ep-env.ini" "path" "n" "$npath"
         WriteINIStr "$TEMP\ep\ep-env.ini" "info" "n" "$ninfo"
         WriteINIStr "$TEMP\ep\ep-env.ini" "man" "n" "$nman"
@@ -958,9 +962,10 @@ FunctionEnd
 #+BEGIN_SRC nsis
   !define dllcp `!insertmacro _dllcp`
   !macro _dllcp FILENAME FILETO
-    IfFileExists "$emacs\${FILETO}" +4
-    IfFileExists "$EXEDIR\App\${FILENAME}" 0 +3
+    IfFileExists "$emacs\${FILETO}" +5
+    IfFileExists "$EXEDIR\App\${FILENAME}" 0 +4
     CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs\${FILETO}"
+    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" 0 +2
     ExecDos::exec /DETAILED "cmd /c $\"$R5 & cd $TEMP\ep & $R4 a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip emacs-$option_version\bin\${FILETO}$\""
   !macroend
   
@@ -990,6 +995,17 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Function CreateZip
     Push $R0
+    ${ReadINIStrWithDefault} $R0 $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Zip" "0"
+    StrCmp "$R0" "0" extract_zip zip_binaries
+  extract_zip:
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bare-bin.zip" 0 +3
+    ZipDLL::extractall "$EXEDIR\App\emacs-$option_version\bare-bin.zip" "$EXEDIR\App"
+    Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" 0 +3
+    ZipDLL::extractall "$EXEDIR\App\emacs-$option_version\ext-bin.zip" "$EXEDIR\App"
+    Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+    Goto end
+  zip_binaries:
     IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" end
     Call Find7z
     Pop $R0
@@ -1009,59 +1025,6 @@ FunctionEnd
   FunctionEnd
   
 #+END_SRC
-
-** Setup Fonts
-#+BEGIN_SRC nsis
-  Function InstallFonts
-    StrCpy $INSTALL_FONT "0"
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
-    IfErrors main-9x main-NT 
-    main-NT:
-      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-      goto main-go
-      
-    main-9x:
-      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
-      goto main-go
-      
-    main-go:
-      ClearErrors
-      IfFileExists "$EXEDIR\App\fonts\fonts.ini" 0 no_fonts
-      EnumIni::Section "$EXEDIR\App\fonts\fonts.ini" "fonts"
-      pop $R0
-      StrCmp $R0 "error" no_fonts
-    loop_fonts:
-      IntCmp $R0 "0" no_fonts no_fonts 0
-      Pop $R1
-      DetailPrint "$R1"
-      IfFileExists "$FONTS\$R1" no_install
-      IfFileExists "$EXEDIR\App\fonts\$R1" 0 no_install
-      ReadINIStr $R2 "$EXEDIR\App\fonts\fonts.ini" "fonts" "$R1"
-      DetailPrint "Temporarily Installing Font: $R2"
-      CopyFiles /SILENT "$EXEDIR\App\fonts\$R1" "$FONTS\$R1"
-      IfFileExists "$FONTS\$R1" 0 no_install
-      WriteRegStr HKLM "$FONT_REG" "$R2" "$FONTS\$R1"
-      WriteINIStr "$TEMP\ep\ep-reg.ini" "font.tmp" "$R1" "$R2"
-      StrCpy $INSTALL_FONT "1"
-    no_install:
-      IntOp $R0 $R0 - 1
-      Goto loop_fonts
-    no_fonts:
-      IfFileExists "$EXEDIR\App\fonts" 0 end
-      IfFileExists "$EXEDIR\App\eps\addfont.exe" 0 end
-      Exec "$\"$EXEDIR\App\eps\addfont.exe$\" $\"$EXEDIR\App\fonts$\""
-      WriteINIStr "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
-      SetOutPath "$TEMP\ep"
-      IfFileExists "$TEMP\ep\rmfont.exe" +2 0
-      File "..\..\..\App\eps\rmfont.exe"
-      DetailPrint "Extracted font cleanup files."
-    end:
-      # End Install
-  FunctionEnd
-  !define InstallFonts "Call InstallFonts"
-  
-#+END_SRC
-
 ** Setup Emacs Contents Directory for Mac OS X
 #+BEGIN_SRC nsis
   !include "emacsCall.nsh"
@@ -1110,7 +1073,7 @@ FunctionEnd
     IfFileExists $R1 launch_putty end
     
     launch_putty:
-      Exec "$TEMP\ep\run.exe $R1\PageantPortable.exe $R0"
+      Exec "$EXEDIR\App\eps\run.exe $R1\PageantPortable.exe $R0"
       StrCpy $LaunchPutty "1"
       
     found_pageant:
@@ -1230,7 +1193,7 @@ Now Finalize Putty Proxy settings
       ClearErrors
       IntOp $R3 $option_font_size * 96
       IntOp $R3 $R3 / 72
-      WriteRegStr HKCU "SOFTWARE\GNU\Emacs" "Emacs.Font"  "$R0$R3$R1"
+      ##WriteRegStr HKCU "SOFTWARE\GNU\Emacs" "Emacs.Font"  "$R0$R3$R1"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPFONT", "$R0$R3$R1").r0'
       StrCmp $found_gdb "" 0 +3
       StrCpy $emacs '$emacs --font """"$R0$R3$R1""""'
@@ -1270,12 +1233,6 @@ Now Finalize Putty Proxy settings
 ** Setup things necessary to call Emacs
 #+BEGIN_SRC nsis
   !macro emacs_setup
-    DetailPrint "Extracting run/2.exe"
-    SetOutPath "$TEMP\ep"
-    IfFileExists $TEMP\ep\run.exe" +4
-    File "..\..\..\App\eps\run.exe"
-    File "..\..\..\App\eps\run2.exe"
-    File "..\..\..\App\eps\EmacsPortableServer.exe"
     DetailPrint "Setup Mac Contents Folder and AppInfo"
     Call SetupContents
     DetailPrint "Setup Home path"
@@ -1284,6 +1241,7 @@ Now Finalize Putty Proxy settings
     Call CreateZip
     DetailPrint "Extract Binaries"
     Call ExtractZip
+    IfFileExists "$EXEDIR\App\emacs-$option_version\bin" +3  
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
     StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
     DetailPrint "Setup PuTTy if available"
@@ -1294,21 +1252,33 @@ Now Finalize Putty Proxy settings
     ${SetupEmacsExe}
     DetailPrint "Setup Necessary DLLs"
     ${CpDll}
-    DetailPrint "Install Fonts"
-    ${InstallFonts}
     DetailPrint "Setup Proxy"
     ${SetupProxy}
     DetailPrint "Add to Environment Variables"
     ${AddToEnvironment}
-    DetailPrint "Setup Emacs Registry"
-    SetOutPath "$TEMP\ep"
-    File "..\..\..\App\eps\ep-reg.exe"
-    WriteIniStr "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR" "$EXEDIR"
-    Exec "$TEMP\ep\ep-reg.exe"
     DetailPrint "Setup where emacs should run from"
     ${SetupDirs}
     DetailPrint "Setup emacs options"
     ${EmacsCmd}
+
+    WriteIniStr "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR" "$EXEDIR"
+    SetOutPath "$EXEDIR\App\eps"
+    EnumINI::Section "$EXEDIR\App\ini\plugins.ini" "plugins"
+    Pop $R0 
+    StrCmp $R0 "error" done_plugins
+    loop_plugins:
+      IntCmp $R0 "0" done_plugins done_plugins 0
+      Pop $R1
+      ReadINIStr $R2 "$EXEDIR\App\ini\plugins.ini" "plugins" "$R1"
+      IfFileExists "$EXEDIR\App\eps\$R1" 0 +6
+      IfFileExists "$EXEDIR\App\eps\rm-$R1" 0 +3
+      DetailPrint "$R2 has already been installed"
+      Goto +3
+      DetailPrint "Setup $R2"
+      ExecWait "$EXEDIR\App\eps\$R1"
+      IntOp $R0 $R0 - 1
+      Goto loop_plugins
+    done_plugins:
   !macroend
   !define emacs_setup "!insertmacro emacs_setup"
   
@@ -1367,37 +1337,32 @@ Now Finalize Putty Proxy settings
      start_emacs_gdb:
        Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$TEMP\ep\run2.exe $emacs"
+       Exec "$EXEDIR\App\eps\run2.exe $emacs"
        ${FinalizePutty}
-       StrCmp $INSTALL_FONT "1" 0 +2
-       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
        Pop $R0
        Goto loop
      start_emacs_regular:
        Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$TEMP\ep\run.exe $emacs"
+       Exec "$EXEDIR\App\eps\run.exe $emacs"
        ${FinalizePutty}
-       StrCmp $INSTALL_FONT "1" 0 +2
-       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
-       Pop $R0
+       Pop $R0                  
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto loop
      start_emacs_dos:
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$TEMP\ep\run2.exe $emacs"
+       Exec "$EXEDIR\App\eps\run2.exe $emacs"
        ${FinalizePutty}
        Goto end
      loop:
        StrCmp "1" $option_daemon 0 end
        StrCmp "" $option_q 0 end
        StrCpy $cnt 300
-       IfFileExists "$TEMP\ep\EmacsPortableServer-$option_version.exe" +3 0
-       IfFileExists "$TEMP\ep\EmacsPortableServer.exe" 0 end
-       CopyFiles /SILENT "$TEMP\ep\EmacsPortableServer.exe" \
-           "$TEMP\ep\EmacsPortableServer-$option_version.exe"
-       Exec "$TEMP\ep\EmacsPortableServer-$option_version.exe $option_version"
+       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +2 0
+       CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
+           "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe"
+       Exec "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe $option_version"
      look_for_running_emacs:
        FindProcDLL::FindProc "emacs-$option_version.exe"
        StrCmp "$R0" "1" found_running_emacs
@@ -1409,12 +1374,12 @@ Now Finalize Putty Proxy settings
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
        IfFileExists "$TEMP\ep\ep-rm.exe" end 0
        writeUninstaller "$TEMP\ep\ep-rm.exe"
-       Exec "$TEMP\ep\run.exe $TEMP\ep\ep-rm.exe"
+       Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\ep-rm.exe"
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
        Goto end
      start_emacsclient:
        ${emacsclient_setup}
-       Exec "$TEMP\ep\run.exe $emacs"
+       Exec "$EXEDIR\App\eps\run.exe $emacs"
      end:
        #
    SectionEnd
@@ -1459,48 +1424,32 @@ This removes registry settings, fonts and other settings.
     none_left:
       ClearErrors
       Delete "$TEMP\ep\ep-rm.exe"
-      IfFileExists "$TEMP\ep\rmfont.exe" 0 skip_font_rm
-      ReadIniStr $R0 "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir"
-      IfErrors 0 +3
-      Delete "$TEMP\ep\rmfont.exe"
-      Goto skip_font_rm
-      ExecWait "$\"$TEMP\ep\rmfont$\" $\"$R0$\""
-      Delete "$TEMP\ep\rmfont.exe"
-    skip_font_rm:
-      ClearErrors
-      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
-      IfErrors uninstall-9x uninstall-NT 
-    uninstall-NT:
-      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-      goto uninstall-go
-      
-    uninstall-9x:
-      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
-      goto uninstall-go
-      
-    uninstall-go:
-      ClearErrors
-      EnumINI::Section "$TEMP\ep\ep-reg.ini" "font.tmp"
-      Pop $R0
-      StrCmp $R0 "error" skip_font
-    loop_font:
-      IntCmp "0" "$R0" skip_font skip_font 0
-      Pop $R1
-      ReadIniStr $R2 "$TEMP\ep\ep-reg.ini" "font.rm" "$R1"
-      System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
-      DeleteRegValue HKLM "$FONT_REG" "$R2"
-      Delete /REBOOTOK "$FONTS\$R2"
-      IntOp $R0 $R0 - 1
-      goto loop_font
-    skip_font:
       IfFileExists "$TEMP\ep\ep-reg.ini" 0 done
       Delete "$TEMP\ep\ep-reg.ini"
       Delete "$TEMP\ep\ep-RemoveReg.exe"
     done:
-      IfFileExists "$TEMP\ep\ep-rm-reg.exe" 0 +2
-      Exec "$TEMP\ep\ep-rm-reg.exe"
+      SetOutPath "$TEMP\ep"
+      ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+      EnumINI::Section "$EPEXE\App\ini\plugins.ini" "plugins"
+      Pop $R0
+      StrCmp $R0 "error" done_plugins
+    loop_plugins:
+      IntCmp $R0 "0" done_plugins done_plugins 0
+      Pop $R1
+      ReadINIStr $R2 "$EPEXE\App\ini\plugins.ini" "plugins" "$R1"
+      IfFileExists "$TEMP\ep\rm-$R1" 0 +3
+      DetailPrint "Remove $R2"
+      ExecWait "$TEMP\ep\rm-$R1"
+      IntOp $R0 $R0 - 1
+      Goto loop_plugins
+    done_plugins:
       ClearErrors
-      SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+      Delete "$TEMP\ep\ep-env.ini"
+      Delete "$TEMP\ep\ep-ip2.ini"
+      Delete "$TEMP\ep\ep.ini"
+      ReadIniStr $R2 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Clean"
+      ClearErrors
+      StrCmp $R2 "1" 0 +2
       RmDir /R "$TEMP\ep"
   SectionEnd ; sec_uninstall
   

@@ -122,12 +122,13 @@ Function RegEditWith
 FunctionEnd
 !define RegEditWith "Call RegEditWith"
 #+END_SRC
-
-* Un-install Registry
 * Main
 #+BEGIN_SRC nsis
 Section "Main" sec_main
     HideWindow
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\..\"
+    Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
     DetailPrint "Add Org-protocol"
     ${RegOrgProtocol}
@@ -136,7 +137,7 @@ Section "Main" sec_main
     DetailPrint "Add IE registry entries"
     ${RegIE}
     DetailPrint "Write Uninstaller information"
-    writeUninstaller "$TEMP\ep\ep-rm-reg.exe"
+    writeUninstaller "$TEMP\ep\rm-ep-reg.exe"
 SectionEnd
 #+END_SRC
 * Uninstaller
@@ -147,10 +148,10 @@ SectionEnd
     Delete "$TEMP\ep\ep-reg.exe"
     IfFileExists "$TEMP\ep-reg.exe" 0 +2
     Delete "$TEMP\ep\ep-reg.exe"
-    IfFileExists "$TEMP\ep\ep-rm-reg.exe" 0 +2
-    Delete "$TEMP\ep\ep-rm-reg.exe"
-    IfFileExists "$TEMP\ep-rm-reg.exe" 0 +2
-    Delete "$TEMP\ep-rm-reg.exe"
+    IfFileExists "$TEMP\ep\rm-ep-reg.exe" 0 +2
+    Delete "$TEMP\ep\rm-ep-reg.exe"
+    IfFileExists "$TEMP\rm-ep-reg.exe" 0 +2
+    Delete "$TEMP\rm-ep-reg.exe"
     ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
     IfErrors look_for_acrobat 0
     IfFileExists "$R0\Javascripts" 0 look_for_acrobat
