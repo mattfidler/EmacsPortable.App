@@ -120,6 +120,12 @@ executables.
           Delete "$TEMP\lb.zip"
         end:      
         SectionEnd ; sec_loading_bar_ui
+        Section /o "Xml (nsisXML)" sec_xml ; Unchecked (/o)
+          ; Description:
+          ; Xml Plugin
+          !insertmacro getPluginFull "nsisxml"
+          CopyFiles /SILENT "$PA\NSISPortableANSI\App\NSIS\Bin\nsisXML.dll" "$PA\NSISPortableANSI\App\NSIS\Plugins\nsisXML.dll"
+        SectionEnd ; sec_xml
         Section /o "ZipDLL" sec_zipdll ; Unchecked (/o)
           ; Description:
           ; Plugin to allow zip file extraction
@@ -140,6 +146,7 @@ executables.
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_nsis_portable_components ${LANG_ENGLISH} "Downloads and installs NSIS Portable and the components needed to make EmacsPortable.App"  
+  LangString DESC_sec_xml ${LANG_ENGLISH} "Xml Plugin"
   LangString DESC_sec_sed ${LANG_ENGLISH} "String Editor (sed)"
   LangString DESC_sec_grep ${LANG_ENGLISH} "Grep"
   LangString DESC_sec_hunspell ${LANG_ENGLISH} "Hunspell is a spellchecker that is used in many programs inculding firefox, open office, etc."
@@ -182,7 +189,10 @@ executables.
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_hunspell} $(DESC_sec_hunspell)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_grep} $(DESC_sec_grep)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_sed} $(DESC_sec_sed)
+    
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_xml} $(DESC_sec_xml)
   !macroend
+  
 #+END_SRC
 ** Initialization Macro
 #+BEGIN_SRC nsis
@@ -194,6 +204,7 @@ executables.
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\inetc.dll" ${sec_inetc}
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\IpConfig.dll" ${sec_ipconfig}
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Contrib\UIs\LoadingBar_Icon.exe" ${sec_loading_bar_ui}
+    ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\nsisXML.dll" ${sec_xml}
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\ZipDLL.dll" ${sec_zipdll}
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\blowfish.dll" ${sec_blowfish_plugin}
     ${setInstallIfExists} "$PA\NSISPortableANSI\App\NSIS\Plugins\EnumINI.dll" ${sec_enumini}

@@ -1,0 +1,499 @@
+#+TITLE: Emacs LiberKey Settings
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsLiberKey.nsi
+* Introduction
+LiberKey is a PortableApps Launcher that includes KeyFile Association
+as well as 
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+OutFile "..\..\..\App\eps\ep-liberkey.exe"
+Icon "..\img\ico\appicon.ico"
+!include "LogicLib.nsh"
+!include "FileFunc.nsh"
+!include "XML.nsh"
+var EPEXE
+var XML
+var cmdLineParams
+#+END_SRC
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis 
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+
+* Functions
+** Explode
+From http://nsis.sourceforge.net/Explode
+#+BEGIN_SRC nsis
+!define Explode "!insertmacro Explode"
+ 
+!macro  Explode Length  Separator   String
+    Push    `${Separator}`
+    Push    `${String}`
+    Call    Explode
+    Pop     `${Length}`
+!macroend
+
+!define unExplode "!insertmacro unExplode"
+ 
+!macro  unExplode Length  Separator   String
+    Push    `${Separator}`
+    Push    `${String}`
+    Call    un.Explode
+    Pop     `${Length}`
+!macroend
+ 
+Function Explode
+  ; Initialize variables
+  Var /GLOBAL explString
+  Var /GLOBAL explSeparator
+  Var /GLOBAL explStrLen
+  Var /GLOBAL explSepLen
+  Var /GLOBAL explOffset
+  Var /GLOBAL explTmp
+  Var /GLOBAL explTmp2
+  Var /GLOBAL explTmp3
+  Var /GLOBAL explArrCount
+ 
+  ; Get input from user
+  Pop $explString
+  Pop $explSeparator
+ 
+  ; Calculates initial values
+  StrLen $explStrLen $explString
+  StrLen $explSepLen $explSeparator
+  StrCpy $explArrCount 1
+ 
+  ${If}   $explStrLen <= 1          ;   If we got a single character
+  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+    Push    $explString             ;   then we return initial string with no change
+    Push    1                       ;   and set array's length to 1
+    Return
+  ${EndIf}
+ 
+  ; Set offset to the last symbol of the string
+  StrCpy $explOffset $explStrLen
+  IntOp  $explOffset $explOffset - 1
+ 
+  ; Clear temp string to exclude the possibility of appearance of occasional data
+  StrCpy $explTmp   ""
+  StrCpy $explTmp2  ""
+  StrCpy $explTmp3  ""
+ 
+  ; Loop until the offset becomes negative
+  ${Do}
+    ;   If offset becomes negative, it is time to leave the function
+    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+ 
+    ;   Remove everything before and after the searched part ("TempStr")
+    StrCpy $explTmp $explString $explSepLen $explOffset
+ 
+    ${If} $explTmp == $explSeparator
+        ;   Calculating offset to start copy from
+        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+        StrCpy  $explTmp3 $explString "" $explTmp2
+ 
+        Push    $explTmp3                           ;   Throwing array item to the stack
+        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+ 
+        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+        StrLen  $explStrLen $explString
+    ${EndIf}
+ 
+    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                ;   copying the rest of the string
+        ${If} $explSeparator == ""              ;   Fix for the empty separator
+            IntOp   $explArrCount   $explArrCount - 1
+        ${Else}
+            Push    $explString
+        ${EndIf}
+    ${EndIf}
+ 
+    IntOp   $explOffset $explOffset - 1
+  ${Loop}
+ 
+  Push $explArrCount
+FunctionEnd
+Function un.Explode
+  ; Initialize variables
+  ; Get input from user
+  Pop $explString
+  Pop $explSeparator
+ 
+  ; Calculates initial values
+  StrLen $explStrLen $explString
+  StrLen $explSepLen $explSeparator
+  StrCpy $explArrCount 1
+ 
+  ${If}   $explStrLen <= 1          ;   If we got a single character
+  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+    Push    $explString             ;   then we return initial string with no change
+    Push    1                       ;   and set array's length to 1
+    Return
+  ${EndIf}
+ 
+  ; Set offset to the last symbol of the string
+  StrCpy $explOffset $explStrLen
+  IntOp  $explOffset $explOffset - 1
+ 
+  ; Clear temp string to exclude the possibility of appearance of occasional data
+  StrCpy $explTmp   ""
+  StrCpy $explTmp2  ""
+  StrCpy $explTmp3  ""
+ 
+  ; Loop until the offset becomes negative
+  ${Do}
+    ;   If offset becomes negative, it is time to leave the function
+    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+ 
+    ;   Remove everything before and after the searched part ("TempStr")
+    StrCpy $explTmp $explString $explSepLen $explOffset
+ 
+    ${If} $explTmp == $explSeparator
+        ;   Calculating offset to start copy from
+        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+        StrCpy  $explTmp3 $explString "" $explTmp2
+ 
+        Push    $explTmp3                           ;   Throwing array item to the stack
+        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+ 
+        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+        StrLen  $explStrLen $explString
+    ${EndIf}
+ 
+    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                ;   copying the rest of the string
+        ${If} $explSeparator == ""              ;   Fix for the empty separator
+            IntOp   $explArrCount   $explArrCount - 1
+        ${Else}
+            Push    $explString
+        ${EndIf}
+    ${EndIf}
+ 
+    IntOp   $explOffset $explOffset - 1
+  ${Loop}
+ 
+  Push $explArrCount
+FunctionEnd
+#+END_SRC
+** Register EmacsPortable.App Extensions
+This registers EmacsPortable.App file-type associations with liberkey.
+#+BEGIN_SRC nsis
+  Function epRegExt
+    ${xml::LoadFile} $XML $0
+    DetailPrint 'LoadFile $XML $0'
+    StrCmp "$0" "-1" not_found
+    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    Pop $R0
+    StrCmp $R0 "error" done_assoc
+    loop_assoc:
+      IntCmp $R0 "0" done_assoc done_assoc 0
+      Pop $R1
+      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ${Explode}  $9  "," "$R2"
+      ${For} $8 1 $9
+        Pop $7
+        ${xml::RootElement} $0 $1
+        ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]' $0
+        DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"] $0'
+        StrCmp "$0" "-1" +3
+        Call FoundExt
+        Goto +2
+        Call MissingExt
+      ${Next}
+      IntOp $R0 $R0 - 1
+      Goto loop_assoc
+    done_assoc:
+      ## Now add org-protocol://
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@class="org-protocol"]' $0
+      StrCmp "$0" "-1" +2
+      ${xml::RemoveNode} $0
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
+      StrCmp $R0 "1" 0 save
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc' $0
+      ${xml::CreateNode} '<FileType class="org-protocol" urlprotocol="yes"><TypeDescription.en>URL : Org-mode Protocol (org-mode)</TypeDescription.en><Shell><Action name="emacs_portable_app"><Description.en>Open with EmacsPortable.App</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><CmdArgs>&quot;%1&quot;</CmdArgs></Action></Shell></FileType>' $1
+      ${xml::InsertEndChild} $1 $0
+    save:
+      ${xml::SaveFile} $XML $0
+    not_found:
+    FunctionEnd
+  
+#+END_SRC
+*** Add Missing Extension to XML file
+This function adds the missing extension to the XML file.  It assumes
+that the description is $R1.  It also assumes the extension is $7 and
+the xml file is already open
+#+BEGIN_SRC nsis
+  Function MissingExt0
+    ${xml::RootElement} $0 $1
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell' $0
+    DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell $0'
+    ${xml::CreateNode} '<Action name="emacs_portable_app"><Description.en>Edit with EmacsPortable.App</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><AppName>%MYAPPS%\EmacsPortable.App\EmacsPortable.App</AppName><CmdArgs>"%1"</CmdArgs></Action>' $1
+    ${xml::InsertEndChild} $1 $0
+    DetailPrint "Inserting Action Node (.$7) $0"
+  FunctionEnd
+  
+  Function MissingExt
+    ${xml::RootElement} $0 $1
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc' $0
+    DetailPrint '/KeyFileAssoc/AppsAssoc $0'
+    ${xml::CreateNode} '<FileType ext="$7"><TypeDescription.en>$R1</TypeDescription.en><Shell></Shell></FileType>' $1
+    ${xml::InsertEndChild} $1 $0
+    DetailPrint "Inserting FileType Node (.$7) $0"
+    Call MissingExt0
+    end:
+      ClearErrors 
+  FunctionEnd
+#+END_SRC
+*** Add Missing Association to already present association
+If an extension is already present in the XML file, add the
+EmacsPortableApp association.
+#+BEGIN_SRC nsis
+Function FoundExt
+  ${xml::RootElement} $0 $1
+  ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="emacs_portable_app"]' $0
+  StrCmp "$0" "-1" notfound
+  ${xml::RemoveNode} $0
+  notfound:
+    Call MissingExt0
+FunctionEnd
+#+END_SRC
+
+** Remove EmacsPortable.App Registry
+#+BEGIN_SRC nsis
+  Function un.epRmRegExt
+    ${xml::LoadFile} $XML $0
+    DetailPrint 'LoadFile $XML $0'
+    StrCmp "$0" "-1" notfound   
+    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    Pop $R0
+    StrCmp $R0 "error" done_assoc
+    loop_assoc:
+      IntCmp $R0 "0" done_assoc done_assoc 0
+      Pop $R1
+      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ${unExplode}  $9  "," "$R2"
+      ${For} $8 1 $9
+        Pop $7
+        Call un.rmExt
+        # Extension =.XXX, description =$R1
+      ${Next}
+      IntOp $R0 $R0 - 1
+      Goto loop_assoc
+    done_assoc:
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@class="org-protocol"]' $0
+      StrCmp "$0" "-1" +2
+      ${xml::RemoveNode} $0
+      ${xml::SaveFile} $XML $0
+    notfound: 
+      ClearErrors
+    FunctionEnd
+#+END_SRC
+*** Remove Extension from XML file
+#+BEGIN_SRC nsis
+  Function un.rmExt
+    ${xml::RootElement} $0 $1
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="emacs_portable_app"]' $0
+    DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="emacs_portable_app"] $0'
+    StrCmp "$0" "-1" notfound
+    ${xml::RemoveNode} $0
+    ${xml::RootElement} $0 $1
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action' $0
+    DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action $0'
+    StrCmp "$0" "-1" 0 notfound
+    ${xml::RootElement} $0 $1
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]' $0
+    DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"] $0'
+    StrCmp "$0" "-1" notfound
+    ${xml::RemoveNode} $0
+    notfound:
+      ClearErrors
+  FunctionEnd
+  
+#+END_SRC
+
+** Find LiberKey Key Configuration
+#+BEGIN_SRC nsis
+  Function GetDriveVars
+    StrCmp $8 "HDD" gpa
+    StrCmp $9 "a:\" spa
+    StrCmp $9 "b:\" spa
+    gpa:
+      IfFileExists "$9LiberKey\LiberKeyTools\KeyFileAssoc\KeyFileAssoc.xml" 0 spa
+      StrCpy $XML "$9LiberKey\LiberKeyTools\KeyFileAssoc\KeyFileAssoc.xml"
+      IfFileExists "$9LiberKey\MyApps\EmacsPortable.App\EmacsPortableApp.exe" spa
+      SetOutPath  "$9LiberKey\MyApps\EmacsPortable.App"
+      CopyFiles /SILENT "$EPEXE\App\eps\ver-shortcut.exe" "$9LiberKey\MyApps\EmacsPortable.App\EmacsPortableApp.exe"
+      WriteIniStr "$9LiberKey\MyApps\EmacsPortable.App\ep.ini" "EmacsPortableApp" "EXEDIR" "$EPEXE"
+      CopyFiles /SILENT "$EPEXE\Emacs-Q.exe" "$9LiberKey\MyApps\EmacsPortable.App\Emacs-Q.exe"
+      CopyFiles /SILENT "$EPEXE\EmacsDebug.exe" "$9LiberKey\MyApps\EmacsPortable.App\EmacsDebug.exe"
+      CopyFiles /SILENT "$EPEXE\EmacsDos.exe" "$9LiberKey\MyApps\EmacsPortable.App\EmacsDos.exe"
+      IfFileExists "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\localapps.db.xml" 0 spa
+      ${xml::LoadFile} "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\localapps.db.xml" $0
+      DetailPrint 'LoadFile "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\localapps.db.xml" $0'
+      StrCmp "$0" "-1" spa
+  
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app"]' $0
+      StrCmp "$0" "-1" +2
+      ${xml::RemoveNode} $0
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} "/LiberKeyDB/Apps" $0
+      ${xml::CreateNode} '<Software id="emacs_portable_app"><Name>EmacsPortable.App</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+      
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app_debug"]' $0
+      StrCmp "$0" "-1" +2
+      ${xml::RemoveNode} $0
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} "/LiberKeyDB/Apps" $0
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app_debug"><Name>EmacsPortable.App Debug</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsDebug.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+      
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app_q"]' $0
+      StrCmp "$0" "-1" +2
+      ${xml::RemoveNode} $0
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} "/LiberKeyDB/Apps" $0
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app_q"><Name>EmacsPortable.App -Q</Name><ExePath>%MyApps%\EmacsPortable.App\Emacs-Q.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+      
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app_dos"]' $0
+      StrCmp "$0" "-1" +2
+      ${xml::RemoveNode} $0
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} "/LiberKeyDB/Apps" $0
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app_Dos"><Name>EmacsPortable.App (Dos Mode)</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsDos.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+      ${xml::SaveFile} "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\localapps.db.xml" $0
+      
+      ${xml::LoadFile} "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\Menu\myapps.xml" $0
+      DetailPrint 'LoadFile "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\localapps.db.xml" $0'
+      StrCmp "$0" "-1" spa
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0
+      StrCmp "$0" "-1" 0 +5
+      ${xml::CreateNode} '<Category name="Text editor" icon="auto:Blue" id="user_office:text_editor"></Category>' $1
+      ${xml::InsertEndChild} $1 $0
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app"]' $0
+      StrCmp "$0" "-1" 0 +5
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app"></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+      
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app_debug"]' $0
+      StrCmp "$0" "-1" 0 +5
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0    
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app_debug"></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+  
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app_q"]' $0
+      StrCmp "$0" "-1" 0 +5
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0 
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app_q"></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+  
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app_dos"]' $0
+      StrCmp "$0" "-1" 0 +5
+      ${xml::RootElement} $0 $1
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0 
+      ${xml::CreateNode} '<Software id="user_emacs_portable_app_dos"></Software>' $1
+      ${xml::InsertEndChild} $1 $0
+      
+      ${xml::SaveFile} "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\Menu\myapps.xml" $0
+      Goto spa
+    spa:    
+      Push $0      
+  FunctionEnd
+  
+  
+  Function un.GetDriveVars
+    StrCmp $8 "HDD" gpa
+    StrCmp $9 "a:\" spa
+    StrCmp $9 "b:\" spa
+    gpa:
+      IfFileExists "$9LiberKey\LiberKeyTools\KeyFileAssoc\KeyFileAssoc.xml" 0 spa
+      StrCpy $XML "$9LiberKey\LiberKeyTools\KeyFileAssoc\KeyFileAssoc.xml"
+      Goto spa
+    spa:    
+      Push $0      
+  FunctionEnd
+  
+#+END_SRC
+
+* Main
+#+BEGIN_SRC nsis
+  Section "Main" sec_main
+    HideWindow
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+    ClearErrors
+    StrCmp $R0 "1" 0 end
+    StrCpy "$XML" ""
+    ${GetDrives} "FDD+HDD" "GetDriveVars"
+    StrCmp "$XML" "" end
+    Call epRegExt
+    ## Now Get Association information
+    writeUninstaller "$EXEDIR\rm-ep-liberkey.exe"
+    MessageBox MB_OK "Associations and Programs have been integrated into LiberKey.  You may need to restart to see them."
+    end:
+      ClearErrors
+  SectionEnd
+  
+#+END_SRC
+* Uninstaller
+#+BEGIN_SRC nsis
+  Section "Uninstall" sec_uninstall
+    SetAutoClose true
+    StrCpy "$XML" ""
+    ${GetDrives} "FDD+HDD" "un.GetDriveVars"
+    StrCmp "$XML" "" end
+    IfFileExists "$TEMP\ep\ep-liberkey.exe" 0 +2
+    Delete "$TEMP\ep\ep-liberkey.exe"
+    IfFileExists "$TEMP\ep-liberkey.exe" 0 +2
+    Delete "$TEMP\ep\ep-liberkey.exe"
+    IfFileExists "$TEMP\ep\rm-ep-liberkey.exe" 0 +2
+    Delete "$TEMP\ep\rm-ep-liberkey.exe"
+    IfFileExists "$TEMP\rm-ep-liberkey.exe" 0 +2
+    Delete "$TEMP\rm-ep-liberkey.exe"
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    Delete "$EPEXE\App\eps\rm-ep-liberkey.exe"
+    Call un.epRmRegExt
+    end:
+      ClearErrors
+  SectionEnd
+#+END_SRC
+
+

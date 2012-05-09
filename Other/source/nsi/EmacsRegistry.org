@@ -97,6 +97,9 @@ Function RegOrgProtocol
     IfFileExists "$EPEXE\App\js\org-store-link.js" 0 +2
     CopyFiles /SILENT "$EPEXE\App\js\org-store-link.js" "$R0\org-store-link.js"
   register_protocol:
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+    ClearErrors
+    StrCmp $R0 "1" end
     WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "" "URL:Org Protocol"
     WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
     WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell" "" ""
@@ -127,7 +130,7 @@ FunctionEnd
 Section "Main" sec_main
     HideWindow
     IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\..\"
+    GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
     DetailPrint "Add Org-protocol"
@@ -144,6 +147,10 @@ SectionEnd
 #+BEGIN_SRC nsis
   Section "Uninstall" sec_uninstall
     SetAutoClose true
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
     IfFileExists "$TEMP\ep\ep-reg.exe" 0 +2
     Delete "$TEMP\ep\ep-reg.exe"
     IfFileExists "$TEMP\ep-reg.exe" 0 +2
@@ -171,6 +178,9 @@ SectionEnd
       IfFileExists "$R0\org-store-link.js" 0 +2
       Delete "$R0\org-store-link.js"
     delete_open_with:
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+      ClearErrors
+      StrCmp $R0 "1" viewsource_ie
       ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
       DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"
       DeleteRegKey HKEY_CLASSES_ROOT "*\shell\orgstorelink"

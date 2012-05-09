@@ -1321,7 +1321,7 @@ Now Finalize Putty Proxy settings
 #+END_SRC
 
 * Main Script
- #+BEGIN_SRC nsis
+#+BEGIN_SRC nsis
    Section "Main" sec_mainN
      StrCpy "$emacs" "$EXEDIR\App\emacs-$option_version\bin"
      IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
@@ -1384,7 +1384,7 @@ Now Finalize Putty Proxy settings
        #
    SectionEnd
    
- #+END_SRC
+#+END_SRC
 * Uninstall section
 This removes registry settings, fonts and other settings.
 #+BEGIN_SRC nsis

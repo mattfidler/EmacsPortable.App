@@ -6,30 +6,40 @@ so that the larger EmacsPortableApp.exe doesn't need to be copied as
 many times.
 
 #+BEGIN_SRC nsis
-SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Icon "..\img\ico\appicon.ico"
-OutFile "..\..\..\App\eps\ver-shortcut.exe"
-
-CRCCheck On
-WindowIcon Off
-SilentInstall Silent
-AutoCloseWindow True
-RequestExecutionLevel user
-
-Section 
-  StrLen $R2 $EXEFILE
-  IntOp $R2 17 - $R2
-  StrCpy $R0 $EXEFILE "" $R2
-  StrLen $R2 $R0
-  IntOp $R2 $R2 - 4
-  StrCpy $R7 $R0 $R2
-  IfFileExists $EXEDIR\App\emacs-$R7\bin\emacs.exe +4
-  IfFileExists $EXEDIR\App\emacs-$R7\bin\emacs-$R7.exe +3
-  IfFileExists $EXEDIR\App\emacs-$R7\bare-bin.zip +2
-  Goto +2
-  Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$R7'
-SectionEnd
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Icon "..\img\ico\appicon.ico"
+  OutFile "..\..\..\App\eps\ver-shortcut.exe"
+  
+  CRCCheck On
+  WindowIcon Off
+  SilentInstall Silent
+  AutoCloseWindow True
+  RequestExecutionLevel user
+  !include "FileFunc.nsh"
+  
+  Section
+    Var /GLOBAL cmdLineParams
+    ${GetParameters} $cmdLineParams
+    StrLen $R2 $EXEFILE
+    IntOp $R2 17 - $R2
+    StrCpy $R0 $EXEFILE "" $R2
+    StrCmp "$R0" "exe" exe
+    StrLen $R2 $R0
+    IntOp $R2 $R2 - 4
+    StrCpy $R7 $R0 $R2
+    IfFileExists $EXEDIR\App\emacs-$R7\bin\emacs.exe +4
+    IfFileExists $EXEDIR\App\emacs-$R7\bin\emacs-$R7.exe +3
+    IfFileExists $EXEDIR\App\emacs-$R7\bare-bin.zip +2
+    Goto +2
+    Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$R7 $cmdLineParams'
+    Goto end
+    exe:
+      IfFileExists "$EXEDIR\ep.ini" 0 end
+      ReadINIStr $R0 "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+      Exec '"$R0\EmacsPortableApp.exe" $cmdLineParams'
+    end:
+  SectionEnd
 #+END_SRC

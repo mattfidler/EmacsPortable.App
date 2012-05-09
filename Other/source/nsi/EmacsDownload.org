@@ -379,8 +379,12 @@ the mirrors.ini file
     StrCmp $9 "b:\" spa
     
     gpa:
-      IfFileExists "$9PortableApps" 0 git
+      IfFileExists "$9PortableApps" 0 liberkey
       StrCpy $PA "$9PortableApps"
+      Goto git
+    liberkey:
+      IfFileExists "$9LiberKey\MyApps" 0 git
+      StrCpy $PA "$9LiberKey\MyApps"
     git:
       IfFileExists "$9cygwin\bin\git.exe" 0 +2
       StrCpy $PG "$9cygwin\bin\git.exe"

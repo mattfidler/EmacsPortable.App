@@ -190,7 +190,6 @@ Function un.Explode
   Push $explArrCount
 FunctionEnd
 #+END_SRC
-
 * Main
 #+BEGIN_SRC nsis
 Section "Main" sec_main
@@ -199,6 +198,9 @@ Section "Main" sec_main
     GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+    ClearErrors
+    StrCmp $R0 "1" end
     ## Now Get Association information
     EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
     Pop $R0
@@ -217,6 +219,8 @@ Section "Main" sec_main
     done_assoc:
     System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
     writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
+    end:
+      ClearErrors
 SectionEnd
 #+END_SRC
 * Uninstaller
