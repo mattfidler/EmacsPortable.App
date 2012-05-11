@@ -229,7 +229,7 @@ This registers EmacsPortable.App file-type associations with liberkey.
       StrCmp $R0 "1" 0 save
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc' $0
-      ${xml::CreateNode} '<FileType class="org-protocol" urlprotocol="yes"><TypeDescription.en>URL : Org-mode Protocol (org-mode)</TypeDescription.en><Shell default="edit_with_emacsportableapp__liberkey"><Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><CmdArgs>&quot;%1&quot;</CmdArgs></Action></Shell></FileType>' $1
+      ${xml::CreateNode} '<FileType class="org-protocol" urlprotocol="yes"><TypeDescription.en>URL : Org-mode Protocol (org-mode)</TypeDescription.en><Shell default="edit_with_emacsportableapp__liberkey"><Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\App\eps\EmacsDoc.exe</ExePath><CmdArgs>&quot;%1&quot;</CmdArgs></Action></Shell></FileType>' $1
       ${xml::InsertEndChild} $1 $0
     save:
       ${xml::SaveFile} $XML $0
@@ -246,7 +246,7 @@ the xml file is already open
     ${xml::RootElement} $0 $1
     ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell' $0
     DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell $0'
-    ${xml::CreateNode} '<Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><CmdArgs>"%1"</CmdArgs></Action>' $1
+    ${xml::CreateNode} '<Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\App\eps\EmacsDoc.exe</ExePath><CmdArgs>"%1"</CmdArgs></Action>' $1
     ${xml::InsertEndChild} $1 $0
     DetailPrint "Inserting Action Node (.$7) $0"
     ReadINIStr $R9 "$EPEXE\App\ini\assoc.ini" "primary" "$7"
@@ -349,6 +349,8 @@ FunctionEnd
       IfFileExists "$9LiberKey\LiberKeyTools\KeyFileAssoc\KeyFileAssoc.xml" 0 spa
       StrCpy $XML "$9LiberKey\LiberKeyTools\KeyFileAssoc\KeyFileAssoc.xml"
       IfFileExists "$9LiberKey\MyApps\EmacsPortable.App\EmacsPortableApp.exe" spa
+      SetOutPath  "$9LiberKey\MyApps\EmacsPortable.App\App\eps"
+      CopyFiles /SILENT "$EPEXE\App\eps\EmacsDoc.exe" "$9LiberKey\MyApps\EmacsPortable.App\App\eps\EmacsDoc.exe"
       SetOutPath  "$9LiberKey\MyApps\EmacsPortable.App"
       CopyFiles /SILENT "$EPEXE\App\eps\ver-shortcut.exe" "$9LiberKey\MyApps\EmacsPortable.App\EmacsPortableApp.exe"
       WriteIniStr "$9LiberKey\MyApps\EmacsPortable.App\ep.ini" "EmacsPortableApp" "EXEDIR" "$EPEXE"
@@ -452,6 +454,7 @@ FunctionEnd
     spa:    
       Push $0      
   FunctionEnd
+  
 #+END_SRC
 * Main
 #+BEGIN_SRC nsis
@@ -467,12 +470,12 @@ FunctionEnd
     StrCpy "$XML" ""
     ${GetDrives} "FDD+HDD" "GetDriveVars"
     StrCmp "$XML" "" end
-    MessageBox MB_OKCANCEL|MB_ICONQUESTION "If LiberKey Menu is running, or KeyFileAssoc is running the settings may not be saved. $\nIt is recommended that you close out of these applications before integrating with LiberKey.  $\n$\nWould you like to continue the LiberKey integration?" IDOK 0 IDCANCEL end
-  
+    FindProcDLL::FindProc "LiberKeyMenu.exe"
+    StrCmp $R0 "1" 0 +2
+    MessageBox MB_OKCANCEL|MB_ICONQUESTION "If LiberKey Menu is running, or KeyFileAssoc is running the settings may not be saved. $\nIt is recommended that you close out of these applications before integrating with LiberKey.$\nNOTE: You do not need to close out other running portable apps.  $\n$\nWould you like to continue the LiberKey integration?" IDOK 0 IDCANCEL end
     Call epRegExt
     ## Now Get Association information
     writeUninstaller "$EXEDIR\rm-ep-liberkey.exe"
-    MessageBox MB_OK "Associations and Programs have been integrated into LiberKey.  You will need to restart to see them.  If you update your LiberKey, these settings may be overwritten."
     end:
       ClearErrors
   SectionEnd
@@ -485,6 +488,9 @@ FunctionEnd
     StrCpy "$XML" ""
     ${GetDrives} "FDD+HDD" "un.GetDriveVars"
     StrCmp "$XML" "" end
+    FindProcDLL::FindProc "LiberKeyMenu.exe"
+    StrCmp $R0 "1" 0 +2
+    MessageBox MB_OKCANCEL|MB_ICONQUESTION "If LiberKey Menu is running, or KeyFileAssoc is running the settings may not be saved. $\nIt is recommended that you close out of these applications before removing LiberKey integration.$\nNOTE: You do not need to close out other running portable apps.  $\n$\nWould you like to continue removing the LiberKey integration?" IDOK 0 IDCANCEL end
     IfFileExists "$TEMP\ep\ep-liberkey.exe" 0 +2
     Delete "$TEMP\ep\ep-liberkey.exe"
     IfFileExists "$TEMP\ep-liberkey.exe" 0 +2
@@ -502,6 +508,7 @@ FunctionEnd
     end:
       ClearErrors
   SectionEnd
+  
 #+END_SRC
 
 

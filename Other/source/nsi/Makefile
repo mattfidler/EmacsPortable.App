@@ -3,7 +3,13 @@ emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh se
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe
+
+../../../App/eps/EmacsDoc.exe: EmacsDoc.nsi
+	$(MAKENSIS) EmacsDoc.nsi
+
+EmacsDoc.nsi: EmacsShortcuts.el
+	$(EMACS) -Q --batch -l ./EmacsShortcuts.el 
 
 ../../../App/eps/ep-proxy.exe: emacsproxyplugin.nsi emacsproxy.nsh
 	$(MAKENSIS) emacsproxyplugin.nsi

@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Fri Jan 20 08:11:13 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Apr 11 13:33:08 2012 (-0500)
+;; Last-Updated: Thu May 10 21:08:45 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 6
+;;     Update #: 18
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -49,9 +49,9 @@
 ;; 
 ;;; Code:
 
-(defun ep-shortcut (output icon switch)
+(defun ep-shortcut (output icon switch &optional name)
   "Creates an EmacsPortable.App shortcut"
-  (with-temp-file (concat "./" output ".nsi")
+  (with-temp-file (concat "./" (or name output) ".nsi")
     (insert (format "SetCompress Auto
 SetCompressor /SOLID lzma
 SetCompressorDictSize 32
@@ -64,14 +64,28 @@ WindowIcon Off
 SilentInstall Silent
 AutoCloseWindow True
 RequestExecutionLevel user
+!include \"FileFunc.nsh\"
 
-Section 
-  Exec '\"$EXEDIR\\EmacsPortableApp.exe\" %s'
-SectionEnd" icon output switch)))
+Section
+  Var /GLOBAL cmdLineParams
+  ${GetParameters} $cmdLineParams
+  IfFileExists \"$EXEDIR\\EmacsPortableApp.exe\" same_dir different_dir
+  same_dir:
+    Exec '\"$EXEDIR\\EmacsPortableApp.exe\" %s  $cmdLineParams'
+    Goto end
+  different_dir:
+    IfFileExists \"$EXEDIR\\..\\..\\EmacsPortableApp.exe\" 0 end
+    GetFullPathName $R0 \"$EXEDIR\\..\\..\"
+    SetOutPath $R0
+    Exec '\"$R0\\EmacsPortableApp.exe\" %s  $cmdLineParams'
+  end:
+    Clearerrors
+SectionEnd" icon output switch switch)))
   (concat "./" output ".nsi"))
 
 (ep-shortcut "EmacsDos" "Gnome-terminal-non-nuvola" "/DOS")
 (ep-shortcut "Emacs-Q" "kbugbuster" "/Q")
 (ep-shortcut "EmacsDebug" "kbugbuster" "/DEBUG")
+(ep-shortcut "App\\eps\\EmacsDoc" "..\\..\\..\\..\\App\\document" "" "EmacsDoc")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; EmacsShortcuts.el ends here

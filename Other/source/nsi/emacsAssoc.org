@@ -240,6 +240,8 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
     ReadRegStr $R7 HKCR $R9 ""
     StrCmp $R8 $R7 0 end ; Not created by EmacsPortable.App
     ReadRegStr $R7 HKCR $R9 "ep_backup_val"
+    IfErrors +3
+    ClearErrors
     StrCmp $R7 "" 0 restore
     DeleteRegKey HKCR $R9
     Goto end

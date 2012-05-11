@@ -452,8 +452,12 @@ This provides an interface to the Emacs Startup options
     ${WR} "Zip" "${ep_zip}"
     ${WR} "Clean" "${ep_clean}"
     ${WR} "LiberKey" "${ep_liber}"
-
-    
+    StrCmp "$R0" "1" 0 +4
+    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" +5
+    IfFileExists "$EXEDIR\App\eps\ep-liberkey.exe" 0 +4
+    Exec "$EXEDIR\App\eps\ep-liberkey.exe"
+    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" 0 +2
+    Exec "$EXEDIR\App\eps\rm-ep-liberkey.exe"
     
     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
     StrCmp $R0 "" skip_proxy
