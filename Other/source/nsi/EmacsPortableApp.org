@@ -19,24 +19,14 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\EmacsPortableApp.exe"
 Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\trash_empty.ico"
 #+END_SRC
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis  
+#+BEGIN_SRC nsis 
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
-#+END_SRC
-
-** Headers and Plug ins
-#+BEGIN_SRC nsis
-  !include "FileFunc.nsh"
-  !include "ReadINIStrWithDefault.nsh"
-  !include "blowfish.nsh"
-  !include "logiclib.nsh"
-  !include "WinMessages.nsh"
-  !include "emacspathifexists.nsh"
-  !include "setupEmacsData.nsh"
 #+END_SRC
 
 ** Variables
@@ -80,11 +70,24 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_maximized
   var option_fullwidth
   var option_fullheight
+  var PA
   
   Var nini
   Var EPEXE
   
 #+END_SRC
+
+** Headers and Plug ins
+#+BEGIN_SRC nsis
+  !include "FileFunc.nsh"
+  !include "ReadINIStrWithDefault.nsh"
+  !include "blowfish.nsh"
+  !include "logiclib.nsh"
+  !include "WinMessages.nsh"
+  !include "emacspathifexists.nsh"
+  !include "setupEmacsData.nsh"
+#+END_SRC
+
 
 * Macros/Functions
 ** File Time Differences
@@ -589,6 +592,7 @@ FunctionEnd
       Goto findcygwin
       
     set_home:
+      StrCpy $PA "$9PortableApps" 
       StrCpy $home "$9$option_home_usb"
       Goto set_usb
       
@@ -1268,7 +1272,7 @@ Now Finalize Putty Proxy settings
       IfFileExists "$EXEDIR\App\eps\$R1" 0 +6
       IfFileExists "$EXEDIR\App\eps\rm-$R1" 0 +3
       DetailPrint "$R2 has already been installed"
-      Goto +3
+      Goto +9
       DetailPrint "Setup $R2"
       ## Wait for the Plug-in to finish before launching emacs?
       ReadINIStr $R3 "$EXEDIR\App\ini\plugins.ini" "wait.for" "$R1"
@@ -1287,23 +1291,28 @@ Now Finalize Putty Proxy settings
 
 ** Setup things necessary to call EmacsClient
 #+BEGIN_SRC nsis
-!macro emacsclient_setup
-  ${SetupDirs}
-  StrCmp "" $option_dos setupwin_client setupdos_client
-  setupdos_client:
-    StrCmp $cmdLineParams "" +3
-    StrCpy $emacs `"$emacs\$option_emacsclient" -d 0 --server-file "$TEMP\ep\epd-$option_version\server" $cmdLineParams`
-    Goto +2
-    StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"`
-    goto end_client
-  setupwin_client:
-    StrCmp $cmdLineParams "" +3
-    StrCpy $emacs `"$emacs\$option_emacsclient" -c --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
-    Goto +2
-    StrCpy $emacs `"$emacs\$option_emacsclient" -c --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"`
-  end_client:
-!macroend
-!define emacsclient_setup "!insertmacro emacsclient_setup"
+  !macro emacsclient_setup
+    ${SetupDirs}
+    StrCmp "" $option_dos setupwin_client setupdos_client
+    setupdos_client:
+      StrCmp $cmdLineParams "" +3
+      StrCpy $emacs `"$emacs\$option_emacsclient" -d 0 --server-file "$TEMP\ep\epd-$option_version\server" $cmdLineParams`
+      Goto +2
+      StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"`
+      goto end_client
+    setupwin_client:
+      ## Only open a new window when emacs isn't visible.
+      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
+      StrCmp $R0 "1" +3
+      StrCpy $R9 ""
+      IfFileExists "$TEMP\ep\hidden-$option_version" 0 +2
+      StrCpy $R9 " -c"
+      StrCpy $emacs `"$emacs\$option_emacsclient" $R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
+    end_client:
+      ClearErrors
+  !macroend
+  !define emacsclient_setup "!insertmacro emacsclient_setup"
+  
 #+END_SRC
 
 * Callback Functions

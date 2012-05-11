@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Fri Jan 20 08:11:13 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Thu May 10 21:08:45 2012 (-0500)
+;; Last-Updated: Fri May 11 15:56:42 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 18
+;;     Update #: 19
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -84,8 +84,8 @@ SectionEnd" icon output switch switch)))
   (concat "./" output ".nsi"))
 
 (ep-shortcut "EmacsDos" "Gnome-terminal-non-nuvola" "/DOS")
-(ep-shortcut "Emacs-Q" "kbugbuster" "/Q")
-(ep-shortcut "EmacsDebug" "kbugbuster" "/DEBUG")
+(ep-shortcut "Emacs-Q" "bug" "/Q")
+(ep-shortcut "EmacsDebug" "bug" "/DEBUG")
 (ep-shortcut "App\\eps\\EmacsDoc" "..\\..\\..\\..\\App\\document" "" "EmacsDoc")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; EmacsShortcuts.el ends here

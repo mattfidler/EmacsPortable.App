@@ -171,6 +171,9 @@ EmacsPortable.App will add LiberKey File associations when it locates
 LiberKey, and the LiberKey support is checked.  Note that you should
 restart LiberKey and make sure that the associations actually
 installed correctly.
+*** Associations Support
+EmacsPortable.App handles file associations in the following ways:
+
 ** General Customization
 
 - git branch :: The first step to user-specific customization is (like
@@ -600,41 +603,16 @@ Therefore, you do not need to always manually edit proxy settings, and
 plink should work most of the time.
 * Icons
 Icons came from various places:
--  [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
+- [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
+- Modified Uninstall Icon (original at http://findicons.com/icon/127390/trash_empty)
+- Modified Debug Icon (original at http://findicons.com/icon/457399/bug?width=512)
 
 * EmacsPortable.App Wish List/TODO list
-** TODO Gnus behind a firewall/proxy server
 ** TODO Add Mac Support of Daemon Mode
 [2011-12-14 Wed 21:48]
-** TODO Make a portable browser a selectable EmacsOption
-[2011-12-15 Thu 13:15]
-** TODO When Cygwin is found drop GnuWin32 Support, or make it secondary.
-*** TODO Email [[outlook:00000000D828B23AB54D3743ADC344CEEFD9F057842F2000][M&S draft objective 2012 (Sarangapani, Ramesh)]] 
-
-[2012-02-27 Mon 08:16]
-** STARTED Remove Emacs Binaries
-:LOGBOOK:
-CLOCK: [2012-01-24 Tue 09:41]--[2012-01-24 Tue 10:14] =>  0:33
-:END:
-*** TODO List Emacs Binaries Contents
-*** TODO Figure out a way to remove specific components of the Emacs binaries
-
-** TODO Compress Info Files
 ** TODO More Hunspell Dictionaries, and/or use Firefox dictionaries.
-** TODO Add EmacsPortable.App Extensions to eXpresso?
 ** TODO Add command prompt, MSYS, and cygwin here commands
-** TODO Fix shell issues
 ** TODO Try to find Putty Local, and other local applications via the registry.
-** TODO Stop Pageant on registry cleanup if launched by Emacs.
-** HOLD Remove PuTTY Portable startup screen when launching Pageant Portable.
-- State "DONE"       from "STARTED"    [2012-01-29 Sun 23:45]
 ** TODO Make the proxy settings a little less finicky.
-** TODO  Make launching of PuTTY optional.
-** TODO EmacsPortable.App will launch whatever emacs is running.
-** TODO Fix EmacsPortable.App startup so that the USB drive is considered to be the drive that EmacsPortable.App is on if it has a PortableApps directory.
-:LOGBOOK:
-CLOCK: [2012-02-23 Thu 09:44]--[2012-02-23 Thu 09:45] =>  0:01
-:END:
-[2012-02-23 Thu 09:44]
-[[file:~/org/pde4-nasal.org::*C92-011][C92-011]
-]
+** TODO Add XML to the NSIS downloads
+** TODO Add Large String support to the NSIS compiler.

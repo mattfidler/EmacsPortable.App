@@ -22,34 +22,33 @@ This provides an interface to the Emacs Startup options
   Var PA
   !define TEMP1 $R0 ;Temp variable
   !define ep_version "Field 3"
-  !define ep_org "Field 9"
-  !define ep_right "Field 8"
-  !define ep_iemail "Field 6"
-  !define ep_iesrc "Field 7"
-  !define ep_ienews "Field 4"
-  !define ep_putty_key "Field 5"
-  !define ep_daemon "Field 6"
-  !define ep_zip    "Field 7"
-  !define ep_clean    "Field 8"
-  !define ep_liber    "Field 9"
+  !define ep_org "Field 4"
+  !define ep_right "Field 5"
 
-  !define ep_font "Field 15"
-  !define ep_font_size "Field 17"
-  !define ep_bg "Field 19"
-  !define ep_fg "Field 21"
-  !define ep_g1 "Field 24"
-  !define ep_g2 "Field 25"
-  !define ep_g3 "Field 27"
-  !define ep_g4 "Field 28"
-  !define ep_mm "Field 31"
-  !define ep_fw "Field 32"
-  !define ep_fh "Field 33"
-  !define ep_debug "Field 34"
-  !define ep_home "Field 35"
-  !define ep_proxy_server "Field 37"
-  !define ep_proxy_port "Field 39"
-  !define ep_proxy_user "Field 41"
-  !define ep_proxy_password "Field 43"
+  !define ep_putty_key "Field 6"
+  !define ep_daemon "Field 7"
+  !define ep_zip    "Field 8"
+  !define ep_clean    "Field 9"
+  !define ep_liber    "Field 10"
+  !define ep_newframe "Field 11"
+
+  !define ep_font "Field 13"
+  !define ep_font_size "Field 15"
+  !define ep_bg "Field 17"
+  !define ep_fg "Field 19"
+  !define ep_g1 "Field 22"
+  !define ep_g2 "Field 23"
+  !define ep_g3 "Field 25"
+  !define ep_g4 "Field 26"
+  !define ep_mm "Field 29"
+  !define ep_fw "Field 30"
+  !define ep_fh "Field 31"
+  !define ep_debug "Field 32"
+  !define ep_home "Field 33"
+  !define ep_proxy_server "Field 35"
+  !define ep_proxy_port "Field 37"
+  !define ep_proxy_user "Field 39"
+  !define ep_proxy_password "Field 41"
 
   !define as_list "3"
   !define as_desc "11"
@@ -59,6 +58,7 @@ This provides an interface to the Emacs Startup options
   !define as_save  "7"
   !define as_new "5"
   !define as_delete "8"
+  !define as_as "9"
   
 #+END_SRC
 
@@ -437,7 +437,6 @@ FunctionEnd
     var /GLOBAL nemacs
     var /GLOBAL lastversion
     SetOutPath "$EXEDIR\Data\ini"
-    IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
     CopyFiles /SILENT "$EXEDIR\App\ini\ep.ini" "$EXEDIR\Data\ini\ep.ini"
     CopyFiles /SILENT "$EXEDIR\App\ini\assoc-io.ini" "$EXEDIR\Data\ini\assoc-io.ini"
     StrCpy $versions ""
@@ -523,9 +522,6 @@ FunctionEnd
       
       ${RW} "OrgProtocol" "${ep_org}"
       ${RW} "RightEdit" "${ep_right}"
-      ${RW} "IEmailto" "${ep_iemail}"
-      ${RW} "IEsource" "${ep_iesrc}"
-      ${RW} "IEnews" "${ep_ienews}"
       ${RW} "Font" "${ep_font}"
       ${RW} "FontSize" "${ep_font_size}"
       ${RW} "Foreground" "${ep_fg}"
@@ -538,6 +534,7 @@ FunctionEnd
       ${RW} "Zip" "${ep_zip}"
       ${RW} "Clean" "${ep_clean}"
       ${RW} "LiberKey" "${ep_liber}"
+      ${RW} "NewFrame" "${ep_newframe}"
     end_init:
       ClearErrors
     FunctionEnd  
@@ -659,9 +656,6 @@ FunctionEnd
     ${WR} "Version" "${ep_version}"
     ${WR} "OrgProtocol" "${ep_org}"
     ${WR} "RightEdit" "${ep_right}"
-    ${WR} "IEmailto" "${ep_iemail}"
-    ${WR} "IEsource" "${ep_iesrc}"
-    ${WR} "IEnews" "${ep_ienews}"
     ${WR} "Font" "${ep_font}"
     ${WR} "FontSize" "${ep_font_size}"
     ${WR} "Foreground" "${ep_fg}"
@@ -674,12 +668,7 @@ FunctionEnd
     ${WR} "Zip" "${ep_zip}"
     ${WR} "Clean" "${ep_clean}"
     ${WR} "LiberKey" "${ep_liber}"
-    StrCmp "$R0" "1" 0 +4
-    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" +5
-    IfFileExists "$EXEDIR\App\eps\ep-liberkey.exe" 0 +4
-    Exec "$EXEDIR\App\eps\ep-liberkey.exe"
-    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" 0 +2
-    Exec "$EXEDIR\App\eps\rm-ep-liberkey.exe"
+    ${WR} "NewFrame" "${ep_newframe}"
     
     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
     StrCmp $R0 "" skip_proxy
@@ -713,20 +702,16 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Function SetAssoc
     Var /GLOBAL pinned_assoc
+    Var /GLOBAL removed_assoc
     StrCpy $pinned_assoc ""
-    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" 0 +2
-    Exec "$EXEDIR\App\eps\rm-ep-liberkey.exe"
+    StrCpy $removed_assoc ""
     
-    IfFileExists "$EXEDIR\App\eps\rm-ep-assoc.exe" 0 +3
-    Exec "$EXEDIR\App\eps\rm-ep-assoc.exe"
-    StrCpy $pinned_assoc "1"
-
-    IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +2
-    Exec "$TEMP\ep\rm-ep-assoc.exe"
-
     ;Display the InstallOptions dialog
     
     ; First Populate the Fields
+  
+    ReadIniStr $R0 "$EXEDIATA\Data\ini\EmacsPortableApp.ini" "Assoc" 
+    WriteIniStr "$EXEDATA\Data\ini\assoc-io.ini" "Field ${as_as}" "State" "$R0"
     
     Call GetFileTypes
     WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" "$R4"
@@ -766,6 +751,8 @@ FunctionEnd
   
   Function FillOutFileTypes
     Var /GLOBAL lastDesc
+    Var /GLOBAL lastExt
+    var /GLOBAL lastSteal
     ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
     StrCmp "$R0" "" end
     StrCpy $R0 $R0 -1
@@ -782,6 +769,7 @@ FunctionEnd
       ReadIniStr $R0 "$EXEDIR\App\ini\assoc.ini" "assoc" "$R1"
       StrCpy $lastDesc $R1
       WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" $R0
+      StrCpy $lastExt $R0
       StrCpy $R3 ""
       StrCpy $R4 "" 
       ${Explode}  $0  "," "$R0"
@@ -794,13 +782,14 @@ FunctionEnd
         StrCpy $R4 "$2"
         Goto +2
         StrCpy $R4 "$2|$R4"
-
+  
         StrCmp $R3 "" 0 +3
         StrCpy $R3 "$2"
         Goto +2
         StrCpy $R3 "$2|$R3"
       ${Next}
       WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" $R4
+      StrCpy $lastSteal $R4
       WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" $R3
     end:
       ClearErrors
@@ -818,7 +807,13 @@ FunctionEnd
     StrCmp "$0" "${as_save}" save_changes ;Save Changes
     StrCmp "$0" "${as_new}" new ; New Association
     StrCmp "$0" "${as_delete}" del ; Delete Association
+    StrCmp "$0" "${as_as}" as ; Associate Files has changed.
     Abort ; Return to the page
+    as:
+      Call RemoveAssoc
+      ReadIniStr $R0 "$EXEDATA\Data\ini\assoc-io.ini" "Field ${as_as}" "State"
+      WriteIniStr "$EXEDIATA\Data\ini\EmacsPortableApp.ini" "Assoc" "$R0"
+      Abort
     del:
       Call ClearSteal
       Call ClearAssoc
@@ -833,7 +828,7 @@ FunctionEnd
       WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" ""
       WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" ""
       WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" ""
-      
+      Call RemoveAssoc
       DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$lastDesc" 
       Call GetFileTypes
       
@@ -888,21 +883,36 @@ FunctionEnd
     validate:
       ; This is the function to validate.
       ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
-      StrCmp "$R0" "" +2
+      StrCmp "$R0" "" end
+      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State"
+      StrCmp $lastSteal $R0 0 saveassoc
+      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State"
+      StrCmp $lastExt $R0 saveassoc
+      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State"
+      StrCmp $lastDesc $R0 saveassoc
+    saveassoc:
       Call SaveAssoc
-      IfFileExists "$EXEDIR\App\eps\ep-liberkey.exe" 0 +2
-      Exec "$EXEDIR\App\eps\ep-liberkey.exe"
-      
-      IfFileExists "$EXEDIR\App\eps\ep-assoc.exe" 0 +3
-      ExecWait "$EXEDIR\App\eps\ep-assoc.exe"
-      
-      StrCmp $pinned_assoc "1" 0 +7
-      IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +3
-      CopyFiles /SILENT "$TEMP\ep\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
-      Delete "$TEMP\ep\rm-ep-assoc.exe"
-      IfFileExists "$TEMP\rm-ep-assoc.exe" 0 +3
-      CopyFiles /SILENT "$TEMP\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
-      Delete "$TEMP\rm-ep-assoc.exe"
+    end:
+      Call RestoreAssoc
+  FunctionEnd
+  
+  Function RestoreAssoc
+    StrCmp $removed_assoc "1" 0 end
+    IfFileExists "$EXEDIR\App\eps\ep-liberkey.exe" 0 +2
+    Exec "$EXEDIR\App\eps\ep-liberkey.exe"
+    
+    IfFileExists "$EXEDIR\App\eps\ep-assoc.exe" 0 +3
+    ExecWait "$EXEDIR\App\eps\ep-assoc.exe"
+    
+    StrCmp $pinned_assoc "1" 0 +7
+    IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +3
+    CopyFiles /SILENT "$TEMP\ep\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
+    Delete "$TEMP\ep\rm-ep-assoc.exe"
+    IfFileExists "$TEMP\rm-ep-assoc.exe" 0 +3
+    CopyFiles /SILENT "$TEMP\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
+    Delete "$TEMP\rm-ep-assoc.exe"
+    end:
+      ClearErrors
   FunctionEnd
   
   Function ClearAssoc
@@ -978,6 +988,7 @@ FunctionEnd
     WriteIniStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" "$R0 ($R1)"
     StrCmp $new_button "1" +3
     StrCmp "$R0" "$lastDesc" +2
+    Call RemoveAssoc
     DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$lastDesc"
     WriteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$R0" "$R1"
     
@@ -995,6 +1006,22 @@ FunctionEnd
       Pop $2
       WriteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$2" "1"
     ${Next}
+  FunctionEnd
+  
+  Function RemoveAssoc
+    StrCmp $removed_assoc "1" end
+    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" 0 +2
+    Exec "$EXEDIR\App\eps\rm-ep-liberkey.exe"
+    
+    IfFileExists "$EXEDIR\App\eps\rm-ep-assoc.exe" 0 +3
+    Exec "$EXEDIR\App\eps\rm-ep-assoc.exe"
+    StrCpy $pinned_assoc "1"    
+    
+    IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +2
+    Exec "$TEMP\ep\rm-ep-assoc.exe"
+    StrCpy $removed_assoc "1"
+    end:
+      ClearErrors
   FunctionEnd
   
 #+END_SRC

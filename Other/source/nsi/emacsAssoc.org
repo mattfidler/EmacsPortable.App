@@ -22,6 +22,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-assoc.exe"
 Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\trash_empty.ico"
 !include "LogicLib.nsh"
 !define SHCNE_ASSOCCHANGED 0x08000000
 !define SHCNF_IDLIST 0
@@ -267,6 +268,9 @@ Section "Main" sec_main
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
     ClearErrors
     StrCmp $R0 "1" end
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
+    ClearErrors
+    StrCmp $R0 "1" 0 end
     ## Now Get Association information
     EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
     Pop $R0

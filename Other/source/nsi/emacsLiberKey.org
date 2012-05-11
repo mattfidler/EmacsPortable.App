@@ -23,6 +23,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-liberkey.exe"
 Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\trash_empty.ico"
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
 !include "XML.nsh"
@@ -467,6 +468,11 @@ FunctionEnd
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
     ClearErrors
     StrCmp $R0 "1" 0 end
+
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
+    ClearErrors
+    StrCmp $R0 "1" 0 end
+
     StrCpy "$XML" ""
     ${GetDrives} "FDD+HDD" "GetDriveVars"
     StrCmp "$XML" "" end

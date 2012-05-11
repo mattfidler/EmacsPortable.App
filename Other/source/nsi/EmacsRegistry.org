@@ -26,6 +26,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-reg.exe"
 Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\trash_empty.ico"
 var EPEXE 
 #+END_SRC
 
@@ -36,42 +37,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
 * Setup Registry
-** Register Internet Explorer
-#+BEGIN_SRC nsis
-Function RegIE
-  ## Key: HKCR\mailto\shell\open\command\(Default) 
-  ## Value: emacsclientw -e "(message-mail (substring \"%1\" 7))"
-  ; WriteRegStr HKEY_CLASSES_ROOT "mailto" "" "URL:Org Protocol"
-  ; WriteRegStr HKEY_CLASSES_ROOT "mailto" "URL Protocol" ""
-  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell" "" ""
-  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell\open" "" ""
-  ; WriteRegStr HKEY_CLASSES_ROOT "mailto\shell\open\command"
-  
-  ## News 
-  ## Key: HKCR\news\shell\open\command\(Default)
-  ## Value: emacsclientw -e "(gnus-fetch-group (substring \"%1\" 5)"
-  
-  ## View Source 
-  ## Key: HKCR\htmlfile\shell\edit\command\(Default)
-  ## Value: emacsclientw "%1"
-  
-  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name"
-  IfErrors 0 +2
-  StrCpy $0 ""
-  ClearErrors
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name-backup" "$0"
-  WriteRegStr HKLM "SOFTWARE\Microsoft\Internet Explorer\View Source Editor" "Editor Name" "$\"$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
-  
-  ReadRegStr $0 HKCR "htmlfile\shell\edit\command" ""
-  IfErrors 0 +2
-  StrCpy $0 ""
-  ClearErrors
-  WriteRegStr HKCR "htmlfile\shell\edit\command" "-backup" "$0"
-  WriteRegStr HKCR "htmlfile\shell\edit\command" "" "$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
-FunctionEnd
-!define RegIE "Call RegIE"
-#+END_SRC
-
 ** Register Org-Protocol
 #+BEGIN_SRC nsis
 Function RegOrgProtocol
@@ -137,8 +102,6 @@ Section "Main" sec_main
     ${RegOrgProtocol}
     DetailPrint "Add Edit With..."
     ${RegEditWith}
-    DetailPrint "Add IE registry entries"
-    ${RegIE}
     DetailPrint "Write Uninstaller information"
     writeUninstaller "$TEMP\ep\rm-ep-reg.exe"
 SectionEnd

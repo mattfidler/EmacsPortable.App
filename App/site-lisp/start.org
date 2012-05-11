@@ -493,6 +493,8 @@ demand.  This is done emacsclient -a, but we need to
     "Used to add back the kill emacs functions when a new emacs window is opened."
     (when ep-kill-emacs-query-functions
       (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+      (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
+        (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver )))
       (setq ep-kill-emacs-query-functions nil))
     ad-do-it)
   
@@ -500,6 +502,8 @@ demand.  This is done emacsclient -a, but we need to
     "Used to add back the kill emacs functions when a new emacs window is opened."
     (when ep-kill-emacs-query-functions
       (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+      (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
+        (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver )))
       (setq ep-kill-emacs-query-functions nil))
     ad-do-it)
   
@@ -676,6 +680,9 @@ killed. Using this we can create a function that:
       (if (not ep-emacs-kill-frame) nil
         (setq ep-emacs-kill-frame nil)
         (setq ep-kill-emacs-query-functions kill-emacs-query-functions)
+        (unless (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
+          (with-temp-file (concat (getenv "TEMP") "/hidden-" emacs-ver)
+            (insert "hidden")))
         (setq kill-emacs-query-functions nil)
         t)))
   
