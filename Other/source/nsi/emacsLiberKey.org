@@ -229,7 +229,7 @@ This registers EmacsPortable.App file-type associations with liberkey.
       StrCmp $R0 "1" 0 save
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc' $0
-      ${xml::CreateNode} '<FileType class="org-protocol" urlprotocol="yes"><TypeDescription.en>URL : Org-mode Protocol (org-mode)</TypeDescription.en><Shell><Action name="emacs_portable_app"><Description.en>Open with EmacsPortable.App</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><CmdArgs>&quot;%1&quot;</CmdArgs></Action></Shell></FileType>' $1
+      ${xml::CreateNode} '<FileType class="org-protocol" urlprotocol="yes"><TypeDescription.en>URL : Org-mode Protocol (org-mode)</TypeDescription.en><Shell default="edit_with_emacsportableapp__liberkey"><Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><CmdArgs>&quot;%1&quot;</CmdArgs></Action></Shell></FileType>' $1
       ${xml::InsertEndChild} $1 $0
     save:
       ${xml::SaveFile} $XML $0
@@ -246,9 +246,17 @@ the xml file is already open
     ${xml::RootElement} $0 $1
     ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell' $0
     DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell $0'
-    ${xml::CreateNode} '<Action name="emacs_portable_app"><Description.en>Edit with EmacsPortable.App</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><AppName>%MYAPPS%\EmacsPortable.App\EmacsPortable.App</AppName><CmdArgs>"%1"</CmdArgs></Action>' $1
+    ${xml::CreateNode} '<Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><CmdArgs>"%1"</CmdArgs></Action>' $1
     ${xml::InsertEndChild} $1 $0
     DetailPrint "Inserting Action Node (.$7) $0"
+    ReadINIStr $R9 "$EPEXE\App\ini\assoc.ini" "primary" "$7"
+    ClearErrors
+    StrCmp "$R9" "1" 0 end
+    ${xml::RootElement} $0 $1
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell' $0
+    ${xml::SetAttribute} "default" "edit_with_emacsportableapp__liberkey" $0
+    end:
+      ClearErrors
   FunctionEnd
   
   Function MissingExt
@@ -269,7 +277,7 @@ EmacsPortableApp association.
 #+BEGIN_SRC nsis
 Function FoundExt
   ${xml::RootElement} $0 $1
-  ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="emacs_portable_app"]' $0
+  ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="edit_with_emacsportableapp__liberkey"]' $0
   StrCmp "$0" "-1" notfound
   ${xml::RemoveNode} $0
   notfound:
@@ -312,8 +320,8 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Function un.rmExt
     ${xml::RootElement} $0 $1
-    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="emacs_portable_app"]' $0
-    DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="emacs_portable_app"] $0'
+    ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="edit_with_emacsportableapp__liberkey"]' $0
+    DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]/Shell/Action[@name="edit_with_emacsportableapp__liberkey"] $0'
     StrCmp "$0" "-1" notfound
     ${xml::RemoveNode} $0
     ${xml::RootElement} $0 $1
@@ -353,36 +361,36 @@ FunctionEnd
       StrCmp "$0" "-1" spa
   
       ${xml::RootElement} $0 $1
-      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app"]' $0
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="user_emacsportable_app_emacsportableapp"]' $0
       StrCmp "$0" "-1" +2
       ${xml::RemoveNode} $0
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} "/LiberKeyDB/Apps" $0
-      ${xml::CreateNode} '<Software id="emacs_portable_app"><Name>EmacsPortable.App</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacsportableapp"><Name>EmacsPortable.App</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsPortableApp.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite><Description><![CDATA[GNU Emacs is an extensible, customizable text editor - and more. At its core is an interpreter for Emacs Lisp, a dialect of the Lisp programming language with extensions to support text editing.]]></Description></Software>' $1
       ${xml::InsertEndChild} $1 $0
       
-      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app_debug"]' $0
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="user_emacsportable_app_emacsdebug"]' $0
       StrCmp "$0" "-1" +2
       ${xml::RemoveNode} $0
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} "/LiberKeyDB/Apps" $0
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app_debug"><Name>EmacsPortable.App Debug</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsDebug.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacsdebug"><Name>EmacsPortable.App Debug</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsDebug.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite><Description><![CDATA[Debug Startup;  Start Emacs with gdb, if found.]]></Description></Software>' $1
       ${xml::InsertEndChild} $1 $0
       
-      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app_q"]' $0
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="user_emacsportable_app_emacs_q"]' $0
       StrCmp "$0" "-1" +2
       ${xml::RemoveNode} $0
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} "/LiberKeyDB/Apps" $0
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app_q"><Name>EmacsPortable.App -Q</Name><ExePath>%MyApps%\EmacsPortable.App\Emacs-Q.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacs_q"><Name>EmacsPortable.App -Q</Name><ExePath>%MyApps%\EmacsPortable.App\Emacs-Q.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite><Description><![CDATA[Emacs Quick Startup -- Do not load any customizations.]]></Description></Software>' $1
       ${xml::InsertEndChild} $1 $0
       
-      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="emacs_portable_app_dos"]' $0
+      ${xml::XPathNode} '/LiberKeyDB/Apps/Software[@id="user_emacsportable_app_emacsdos"]' $0
       StrCmp "$0" "-1" +2
       ${xml::RemoveNode} $0
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} "/LiberKeyDB/Apps" $0
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app_Dos"><Name>EmacsPortable.App (Dos Mode)</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsDos.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacsdos"><Name>EmacsPortable.App (Dos Mode)</Name><ExePath>%MyApps%\EmacsPortable.App\EmacsDos.exe</ExePath><Platform>2000/XP/Vista/7</Platform><License>GPL 3</License><Developer>Matthew L. Fidler (Portable Launcher) and Emacs Team</Developer><WebSite>https://github.com/mlf176f2/EmacsPortable.App</WebSite><Description><![CDATA[Emacs DOS mode]]></Description></Software>' $1
       ${xml::InsertEndChild} $1 $0
       ${xml::SaveFile} "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\localapps.db.xml" $0
       
@@ -395,35 +403,35 @@ FunctionEnd
       ${xml::CreateNode} '<Category name="Text editor" icon="auto:Blue" id="user_office:text_editor"></Category>' $1
       ${xml::InsertEndChild} $1 $0
       ${xml::RootElement} $0 $1
-      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app"]' $0
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacsportable_app_emacsportableapp"]' $0
       StrCmp "$0" "-1" 0 +5
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app"></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacsportableapp"></Software>' $1
       ${xml::InsertEndChild} $1 $0
       
       ${xml::RootElement} $0 $1
-      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app_debug"]' $0
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacsportable_app_emacsdebug"]' $0
       StrCmp "$0" "-1" 0 +5
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0    
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app_debug"></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacsdebug"></Software>' $1
       ${xml::InsertEndChild} $1 $0
-  
+      
       ${xml::RootElement} $0 $1
-      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app_q"]' $0
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacsportable_app_emacs_q"]' $0
       StrCmp "$0" "-1" 0 +5
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0 
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app_q"></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacs_q"></Software>' $1
       ${xml::InsertEndChild} $1 $0
-  
+      
       ${xml::RootElement} $0 $1
-      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacs_portable_app_dos"]' $0
+      ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]/Software[@id="user_emacsportable_app_emacsdos"]' $0
       StrCmp "$0" "-1" 0 +5
       ${xml::RootElement} $0 $1
       ${xml::XPathNode} '/LiberKeyMenu/Category[@name="Text editor"]' $0 
-      ${xml::CreateNode} '<Software id="user_emacs_portable_app_dos"></Software>' $1
+      ${xml::CreateNode} '<Software id="user_emacsportable_app_emacsdos"></Software>' $1
       ${xml::InsertEndChild} $1 $0
       
       ${xml::SaveFile} "$9LiberKey\LiberKeyTools\LiberKeyMenu\data\Menu\myapps.xml" $0
@@ -444,9 +452,7 @@ FunctionEnd
     spa:    
       Push $0      
   FunctionEnd
-  
 #+END_SRC
-
 * Main
 #+BEGIN_SRC nsis
   Section "Main" sec_main
@@ -461,10 +467,12 @@ FunctionEnd
     StrCpy "$XML" ""
     ${GetDrives} "FDD+HDD" "GetDriveVars"
     StrCmp "$XML" "" end
+    MessageBox MB_OKCANCEL|MB_ICONQUESTION "If LiberKey Menu is running, or KeyFileAssoc is running the settings may not be saved. $\nIt is recommended that you close out of these applications before integrating with LiberKey.  $\n$\nWould you like to continue the LiberKey integration?" IDOK 0 IDCANCEL end
+  
     Call epRegExt
     ## Now Get Association information
     writeUninstaller "$EXEDIR\rm-ep-liberkey.exe"
-    MessageBox MB_OK "Associations and Programs have been integrated into LiberKey.  You may need to restart to see them."
+    MessageBox MB_OK "Associations and Programs have been integrated into LiberKey.  You will need to restart to see them.  If you update your LiberKey, these settings may be overwritten."
     end:
       ClearErrors
   SectionEnd

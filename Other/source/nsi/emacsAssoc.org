@@ -23,7 +23,6 @@ XPStyle on
 OutFile "..\..\..\App\eps\ep-assoc.exe"
 Icon "..\img\ico\appicon.ico"
 !include "LogicLib.nsh"
-!include "FileAssociation.nsh"
 !define SHCNE_ASSOCCHANGED 0x08000000
 !define SHCNF_IDLIST 0
 var EPEXE 
@@ -31,7 +30,7 @@ var EPEXE
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis
+#+BEGIN_SRC nsis 
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -190,6 +189,71 @@ Function un.Explode
   Push $explArrCount
 FunctionEnd
 #+END_SRC
+* Register/Unregister Associations
+Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.sourceforge.net/FileAssoc
+** Register Associations
+#+BEGIN_SRC nsis
+  Function RegisterExtension
+    Pop $R9 ; Extension
+    Pop $R8 ; Description
+    StrCpy $R6 $R9 "" 1
+    DetailPrint "$R9=$R8"
+    ReadRegStr $R7 HKCR $R9 ""  ; read current file association
+    StrCmp "$R7" "" NoBackup  
+    ;; Should we associate this as the main action?
+    ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "primary" "$R6"
+    ClearErrors
+    StrCmp "$R2" "1" 0 not_primary
+    DetailPrint "$R9 has an alernative association, overwriting"
+    WriteRegStr HKCR $R9 "ep_backup_val" "$R7"  ; backup current value
+    NoBackup:
+      DetailPrint "$R9 is a new association"
+      WriteRegStr HKCR $R9 "" "$R8"  ; set our file association
+      ReadRegStr $9 HKCR $R8 ""
+      StrCmp $9 "" 0 Skip
+      WriteRegStr HKCR "$R9" "" "$R8"
+      WriteRegStr HKCR "$R9\shell" "" "open"
+      WriteRegStr HKCR "$R9\DefaultIcon" "" "$EPEXE\App\document.ico"
+    Skip:
+      WriteRegStr HKCR "$R9\shell\open\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
+      WriteRegStr HKCR "$R9\shell\edit" "" "Edit $R8"
+      WriteRegStr HKCR "$R9\shell\edit\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
+      Goto end
+    not_primary:
+      DetailPrint "$R9 has an alernative association, Adding action"
+      WriteRegStr HKCR "$R9\shell\edit_emacs_portable_app" "" 'Edit $R8 (EmacsPortable.App)'
+      WriteRegStr HKCR "$R9\shell\edit_emacs_portable_app\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
+    end:
+      DetailPrint "$R9 should be registered to EmacsPortable.App"
+      ClearErrors
+  FunctionEnd
+  
+#+END_SRC
+** Unregister Associations
+#+BEGIN_SRC nsis
+  Function un.RegisterExtension
+    Pop $R9 ; Extension
+    Pop $R8 ; Description
+    ReadRegStr $R7 HKCR '$R9\shell\edit_emacs_portable_app' ""
+    StrCmp $R7 "" 0 not_primary
+    
+    ReadRegStr $R7 HKCR $R9 ""
+    StrCmp $R8 $R7 0 end ; Not created by EmacsPortable.App
+    ReadRegStr $R7 HKCR $R9 "ep_backup_val"
+    StrCmp $R7 "" 0 restore
+    DeleteRegKey HKCR $R9
+    Goto end
+    restore:
+      WriteRegStr HKCR $R9 "" $R7
+      DeleteRegValue HKCR $R9 "ep_backup_val"
+      DeleteRegKey HKCR $R8
+    not_primary:
+      DeleteRegKey HKCR "$R9\shell\edit_emacs_portable_app"
+    end:
+      ClearErrors
+  FunctionEnd 
+#+END_SRC
+
 * Main
 #+BEGIN_SRC nsis
 Section "Main" sec_main
@@ -212,7 +276,9 @@ Section "Main" sec_main
       ${Explode}  $0  "," "$R2"
       ${For} $1 1 $0
           Pop $2
-          ${registerExtension} "$EPEXE\EmacsPortableApp.exe" ".$2" "$R1"
+          Push $R1
+          Push ".$2"
+          Call RegisterExtension
       ${Next}
       IntOp $R0 $R0 - 1
       Goto loop_assoc
@@ -249,7 +315,9 @@ SectionEnd
       ${unExplode}  $0  "," "$R2"
       ${For} $1 1 $0
           Pop $2
-          ${unregisterExtension} ".$2" "$R1"
+          Push $R1
+          Push ".$2"
+          Call un.RegisterExtension
       ${Next}
       IntOp $R0 $R0 - 1
       Goto loop_assoc

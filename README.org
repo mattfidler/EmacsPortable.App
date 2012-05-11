@@ -166,6 +166,11 @@ emacs binaries are extracted to the temporary directory before
 running.  I have found that running emacs in this manner is faster
 than running it on the USB stick alone.  If not selected the binaries
 will run from the usb drive.  If you are running EmacsPortable.App locally
+*** LiberKey Support
+EmacsPortable.App will add LiberKey File associations when it locates
+LiberKey, and the LiberKey support is checked.  Note that you should
+restart LiberKey and make sure that the associations actually
+installed correctly.
 ** General Customization
 
 - git branch :: The first step to user-specific customization is (like

@@ -157,6 +157,7 @@ it alone when OTHER_SEC is read-only.
       Goto end
       DetailPrint "Download of ${WHAT} failed, trying wget with proxy setting set"
       ${SetupProxy}
+      Pop $0
       IfFileExists "$INSTDIR\Data\ini\proxy-$PROXY_IDE.ini" read_proxy set_proxy
     set_proxy:
       IfFileExists "$INSTDIR\App\eps\set-proxy.exe" +3 0

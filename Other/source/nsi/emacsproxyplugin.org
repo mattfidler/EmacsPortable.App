@@ -1,0 +1,103 @@
+#+TITLE: Emacs Proxy Configuration Plugin
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsproxyplugin.nsi
+* Introduction
+This allows the proxy configuration to be specified and read by
+emacs.  It still allows the dynamic proxy configuration supported by
+EmacsPortable.App. 
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+OutFile "..\..\..\App\eps\ep-proxy.exe"
+Icon "..\img\ico\appicon.ico"
+!include "emacsproxy.nsh" 
+var EPEXE
+#+END_SRC
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis 
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+
+
+* Setup Putty
+#+BEGIN_SRC nsis
+  !define puttystr `WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
+  !define puttyint `WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
+  Function FinalizePutty
+    StrCmp "" $PROXY_SERVER clear_proxy set_proxy
+    set_proxy:
+      ${puttystr} "ProxyHost" $PROXY_SERVER
+      ${puttystr} "ProxyUsername" $PROXY_USER
+      ${puttystr} "ProxyPassword" $PROXY_PASS
+      ${puttyint} "ProxyPort" $PROXY_PORT
+      ${puttyint} "ProxyMethod" 3
+      Goto end
+    clear_proxy:
+      ${puttystr} "ProxyHost" ""
+      ${puttystr} "ProxyUsername" ""
+      ${puttystr} "ProxyPassword" ""
+      ${puttyint} "ProxyPort" ""
+      ${puttyint} "ProxyMethod" 0
+      Goto end
+    end:
+      ClearErrors
+  FunctionEnd
+  
+  Function un.Putty
+    ${puttystr} "ProxyHost" ""
+    ${puttystr} "ProxyUsername" ""
+    ${puttystr} "ProxyPassword" ""
+    ${puttyint} "ProxyPort" ""
+    ${puttyint} "ProxyMethod" 0
+  FunctionEnd
+  
+  !define FinalizePutty `Call FinalizePutty`
+  
+#+END_SRC
+
+* Main Script
+#+BEGIN_SRC nsis
+  Section "Main" sec_main
+    HideWindow
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    Push "$EPEXE"
+    Push "write"
+    Push "$EPEXE\Data\ini\"
+    Call SetupProxy
+    WriteUninstaller "$TEMP\ep\rm-ep-proxy.exe"
+  SectionEnd 
+#+END_SRC
+* Uninstaller
+#+BEGIN_SRC nsis
+Section "Uninstall" sec_uninstall
+    SetAutoClose true
+    IfFileExists "$TEMP\ep\rm-ep-proxy.exe" 0 +2
+    Delete "$TEMP\ep\rm-ep-proxy.exe"
+    IfFileExists "$TEMP\rm-ep-proxy.exe" 0 +2
+    Delete "$TEMP\rm-ep-proxy.exe"
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    Call un.Putty
+  SectionEnd
+#+END_SRC

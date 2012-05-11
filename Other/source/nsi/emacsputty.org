@@ -1,0 +1,50 @@
+#+TITLE: Emacs Putty Setup
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle: emacsputty.nsi
+* Launch PuTTy
+Writes the appropriate Proxy settings to PuTTy.  
+1) Get the putty key from the saved options
+2) Launches paegent
+
+#+BEGIN_SRC nsis
+  Function setupPutty
+    Var /GLOBAL LaunchPutty
+    StrCpy $LaunchPutty ""
+    FindProcDLL::FindProc "pageant.exe"
+    StrCmp $R0 "1" found_pageant 0
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" 
+    StrCpy $R1 $R0 5
+    StrCmp "$R1" "USB:\" 0 +3
+    StrCpy $R0 $R0 "" 4
+    StrCpy $R0 "$usbs$R0"
+    
+    StrCpy $R1 $R0 8
+    StrCmp "$R1" "EXEDIR:\" 0 +3
+    StrCpy $R0 $R0 "" 8
+    StrCpy $R0 "$EXEDIR\$R0"
+    
+    IfFileExists $R0 0 end
+    StrCpy $R1 "$usbs\PuTTYPortable" 
+    IfFileExists $R1 launch_putty 
+  
+    StrCpy $R1 "$usbs\PortableApps\PuTTYPortable"
+    IfFileExists $R1 launch_putty
+    
+    StrCpy $R1 "$usbs\Apps\PuTTYPortable"
+    IfFileExists $R1 launch_putty end
+    
+    launch_putty:
+      Exec "$EXEDIR\App\eps\run.exe $R1\PageantPortable.exe $R0"
+      StrCpy $LaunchPutty "1"
+      
+    found_pageant:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPPAGEANT", "1").r0'
+    end:
+  
+      ClearErrors
+  FunctionEnd
+  
+  !define SetupPutty `call setupPutty`
+  
+#+END_SRC

@@ -230,7 +230,8 @@ This provides an interface to the Emacs Startup options
       CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
       WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
       ${SetupProxy}
-      
+      Pop $0
+
       WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
       WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
       WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""

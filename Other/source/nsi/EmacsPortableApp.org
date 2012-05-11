@@ -35,7 +35,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   !include "blowfish.nsh"
   !include "logiclib.nsh"
   !include "WinMessages.nsh"
-  !include "emacsproxy.nsh"
   !include "emacspathifexists.nsh"
   !include "setupEmacsData.nsh"
 #+END_SRC
@@ -1244,16 +1243,12 @@ Now Finalize Putty Proxy settings
     IfFileExists "$EXEDIR\App\emacs-$option_version\bin" +3  
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
     StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
-    DetailPrint "Setup PuTTy if available"
-    ${SetupPutty}
     DetailPrint "Remove Stale Emacs Server, if it exists"
     Call SetupServer
     DetailPrint "Setup Emacs EXE"
     ${SetupEmacsExe}
     DetailPrint "Setup Necessary DLLs"
     ${CpDll}
-    DetailPrint "Setup Proxy"
-    ${SetupProxy}
     DetailPrint "Add to Environment Variables"
     ${AddToEnvironment}
     DetailPrint "Setup where emacs should run from"
@@ -1275,13 +1270,19 @@ Now Finalize Putty Proxy settings
       DetailPrint "$R2 has already been installed"
       Goto +3
       DetailPrint "Setup $R2"
+      ## Wait for the Plug-in to finish before launching emacs?
+      ReadINIStr $R3 "$EXEDIR\App\ini\plugins.ini" "wait.for" "$R1"
+      IfErrors +4
+      StrCmp "$R3" "1" 0 +3
       ExecWait "$EXEDIR\App\eps\$R1"
+      Goto +2
+      Exec "$EXEDIR\App\eps\$R1"
+      ClearErrors
       IntOp $R0 $R0 - 1
       Goto loop_plugins
     done_plugins:
   !macroend
   !define emacs_setup "!insertmacro emacs_setup"
-  
 #+END_SRC
 
 ** Setup things necessary to call EmacsClient
@@ -1297,9 +1298,9 @@ Now Finalize Putty Proxy settings
     goto end_client
   setupwin_client:
     StrCmp $cmdLineParams "" +3
-    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
+    StrCpy $emacs `"$emacs\$option_emacsclient" -c --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
     Goto +2
-    StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" -e "(new-emacs)"`
+    StrCpy $emacs `"$emacs\$option_emacsclient" -c --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"`
   end_client:
 !macroend
 !define emacsclient_setup "!insertmacro emacsclient_setup"
@@ -1338,14 +1339,12 @@ Now Finalize Putty Proxy settings
        Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
-       ${FinalizePutty}
        Pop $R0
        Goto loop
      start_emacs_regular:
        Push $TEMP
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run.exe $emacs"
-       ${FinalizePutty}
        Pop $R0                  
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
@@ -1353,7 +1352,6 @@ Now Finalize Putty Proxy settings
      start_emacs_dos:
        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
        Exec "$EXEDIR\App\eps\run2.exe $emacs"
-       ${FinalizePutty}
        Goto end
      loop:
        StrCmp "1" $option_daemon 0 end

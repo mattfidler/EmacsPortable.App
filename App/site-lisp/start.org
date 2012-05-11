@@ -486,9 +486,23 @@ This also attempts to speed up the recent files cleanup list by
 :ID: ff11d00d-fe0c-499f-9e35-1a3d703bf0c8
 :END:
 To use the NSIS daemon, we need to be able to start a frame on
-demand.  This is done with the =new-emacs= function:
+demand.  This is done emacsclient -a, but we need to 
 
 #+begin_src emacs-lisp
+  (defadvice make-frame (around ep-daemon-new-frame activate)
+    "Used to add back the kill emacs functions when a new emacs window is opened."
+    (when ep-kill-emacs-query-functions
+      (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+      (setq ep-kill-emacs-query-functions nil))
+    ad-do-it)
+  
+  (defadvice new-frame (around ep-daemon-new-frame activate)
+    "Used to add back the kill emacs functions when a new emacs window is opened."
+    (when ep-kill-emacs-query-functions
+      (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
+      (setq ep-kill-emacs-query-functions nil))
+    ad-do-it)
+  
   (defvar ep-kill-emacs-query-functions nil
     "Variable to save `kill-emacs-query-functions'")
   (defun new-emacs (&optional rename &rest arg)
@@ -497,9 +511,6 @@ demand.  This is done with the =new-emacs= function:
     (when window-system
       (let (tmp
             (sf (selected-frame)))
-        (when ep-kill-emacs-query-functions
-          (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
-          (setq ep-kill-emacs-query-functions nil))
         (select-frame (new-frame))
         (when rename
           (modify-frame-parameters (selected-frame) (list (cons 'name (concat "___EmacsPortableDaemon_" emacs-ver "___"))))
@@ -511,10 +522,8 @@ demand.  This is done with the =new-emacs= function:
           (mapc (lambda(x)
                   (when (file-exists-p x)
                     (find-file x)))
-                arg))
-        (when (and (boundp 'EmacsPortable-ecb-mode) EmacsPortable-ecb-mode)
-          (ecb-minor-mode)))))
-   
+                arg)))))
+  
   
 #+end_src
 
@@ -933,18 +942,32 @@ the implementation
 #+END_SRC
 
 * Fix Proxy settings for various programs
-** git
 #+BEGIN_SRC emacs-lisp
-  (if (and (executable-find "git")
-           (getenv "HTTP_PROXY"))
-      (progn
-        (shell-command-to-string (concat "git config --global http.proxy "
-                                         (getenv "HTTP_PROXY"))))
-    (shell-command-to-string (concat "git config --global --unset http.proxy")))
+  (defun refresh-proxy ()
+    "Refreshes proxy settings"
+    (interactive)
+    (let ((el-proxy (expand-file-name (concat usb-app-dir "../App/eps/ep-proxy.exe")))
+          (delete-by-moving-to-trash nil)
+          (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el"))))
+      (if (file-exists-p proxy)
+          (progn
+            (load-file proxy)
+            (delete-file proxy))
+        (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy))
+          (shell-command-to-string el-proxy)
+          (when (file-exists-p proxy)
+            (load-file proxy)
+            (delete-file proxy))))
+      ;; Setup Git
+      (if (and (executable-find "git")
+               (getenv "HTTP_PROXY"))
+          (progn
+            (shell-command-to-string (concat "git config --global http.proxy "
+                                             (getenv "HTTP_PROXY"))))
+        (shell-command-to-string (concat "git config --global --unset http.proxy")))))
+  
+  
 #+END_SRC
-
-** cvs
-** svn
 * Set default shell to bash 
 El-get uses many Unix recipes.  They may not work without bash.
 #+BEGIN_SRC emacs-lisp
