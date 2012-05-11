@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Tue Apr 10 15:25:37 2012 (-0500)
 ;; Version: 
-;; Last-Updated: Wed Apr 11 14:38:09 2012 (-0500)
+;; Last-Updated: Fri May 11 13:24:15 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 39
+;;     Update #: 46
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -168,7 +168,14 @@
         (with-temp-buffer
           (insert-file-contents (concat usb-app-dir "ini/assoc.ini"))
           (goto-char (point-min))
-          (when (re-search-forward "\\[assocs\\]" nil t)
+          (when (re-search-forward "\\[assoc\\]" nil t) 
+            (save-match-data
+              (save-excursion
+                (sort-lines nil (point)
+                            (progn
+                              (re-search-forward "\\[.*?\\]" nil t)
+                              (point-at-bol))))
+              (write-file (concat usb-app-dir "ini/assoc.ini")))
             (replace-match ""))
           (delete-region (point-min) (point))
           (when (re-search-forward "\\[.*?\\]" nil t)
@@ -178,22 +185,22 @@
             (setq ft (concat ft "," (match-string 1)))))
         (insert "FileTypes=html,htm,xhtml,xhtm,xht,shtml\n"))
       (insert "Protocols=mailto,org-protocol\n"))
-
+    
     (unless (file-exists-p (concat usb-app-dir "AppInfo/appicon.ico"))
       (when (file-exists-p (concat usb-app-dir "../Other/source/img/ico/appicon.ico"))
         (copy-file (concat usb-app-dir "../Other/source/img/ico/appicon.ico")
                    (concat usb-app-dir "AppInfo/appicon.ico"))))
-
+    
     (unless (file-exists-p (concat usb-app-dir "AppInfo/appicon_16.png"))
       (when (file-exists-p (concat usb-app-dir "../Other/source/img/appicon_16.png"))
         (copy-file (concat usb-app-dir "../Other/source/img/appicon_16.png")
                    (concat usb-app-dir "AppInfo/appicon_16.png"))))
-
+    
     (unless (file-exists-p (concat usb-app-dir "AppInfo/appicon_32.png"))
       (when (file-exists-p (concat usb-app-dir "../Other/source/img/appicon_32.png"))
         (copy-file (concat usb-app-dir "../Other/source/img/appicon_32.png")
                    (concat usb-app-dir "AppInfo/appicon_32.png"))))
-
+    
     (unless (file-exists-p (concat usb-app-dir "AppInfo/appicon_128.png"))
       (when (file-exists-p (concat usb-app-dir "../Other/source/img/appicon_128.png"))
         (copy-file (concat usb-app-dir "../Other/source/img/appicon_128.png")
@@ -202,7 +209,7 @@
     (with-temp-buffer
       (insert-file-contents (concat usb-app-dir "ini/assoc.ini"))
       (goto-char (point-min))
-      (when (re-search-forward "\\[assocs\\]" nil t)
+      (when (re-search-forward "\\[assoc\\]" nil t)
         (replace-match ""))
       (delete-region (point-min) (point))
       (when (re-search-forward "\\[.*?\\]" nil t)
@@ -211,6 +218,7 @@
       (while (re-search-forward "^[ \t]*\\([^=\n]*?\\)[ \t]*=[ \t]*\\(.*?\\)[ \t]*$" nil t)
         (setq name (match-string 1))
         (setq ext (match-string 2))
+        (message "%s,%s" name ext)
         (setq ret
               (concat ret "<dict>\n<key>CFBundleTypeExtensions</key>\n<array>\n"
                       (mapconcat
@@ -365,6 +373,7 @@
                   "))
     (unless (file-exists-p (concat usb-app-dir "../Contents/Resources/English.lproj"))
       (make-directory  (concat usb-app-dir "../Contents/Resources/English.lproj") t))
+    
     (with-temp-file (concat usb-app-dir "../Contents/Info.plist")
       (insert ret)
       (nxml-mode)

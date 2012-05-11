@@ -14,12 +14,61 @@ This provides an interface to the Emacs Startup options
   SetCompressorDictSize 32
   SetDatablockOptimize On
 #+END_SRC
+** Definitions and Variables
+#+BEGIN_SRC nsis
+  Var usb
+  Var usbs
+  Var option_version
+  Var PA
+  !define TEMP1 $R0 ;Temp variable
+  !define ep_version "Field 3"
+  !define ep_org "Field 9"
+  !define ep_right "Field 8"
+  !define ep_iemail "Field 6"
+  !define ep_iesrc "Field 7"
+  !define ep_ienews "Field 4"
+  !define ep_putty_key "Field 5"
+  !define ep_daemon "Field 6"
+  !define ep_zip    "Field 7"
+  !define ep_clean    "Field 8"
+  !define ep_liber    "Field 9"
+
+  !define ep_font "Field 15"
+  !define ep_font_size "Field 17"
+  !define ep_bg "Field 19"
+  !define ep_fg "Field 21"
+  !define ep_g1 "Field 24"
+  !define ep_g2 "Field 25"
+  !define ep_g3 "Field 27"
+  !define ep_g4 "Field 28"
+  !define ep_mm "Field 31"
+  !define ep_fw "Field 32"
+  !define ep_fh "Field 33"
+  !define ep_debug "Field 34"
+  !define ep_home "Field 35"
+  !define ep_proxy_server "Field 37"
+  !define ep_proxy_port "Field 39"
+  !define ep_proxy_user "Field 41"
+  !define ep_proxy_password "Field 43"
+
+  !define as_list "3"
+  !define as_desc "11"
+  !define as_ext "10"
+  !define as_steal "12"
+
+  !define as_save  "7"
+  !define as_new "5"
+  !define as_delete "8"
+  
+#+END_SRC
+
+
 ** Include files
 #+BEGIN_SRC nsis
   !include "MUI2.nsh"
-  
+  !include "LogicLib.nsh"
+  !include "WinMessages.nsh"
   !include "FileFunc.nsh"
-  !include ReadINIStrWithDefault.nsh
   !include "emacsproxy.nsh"
   !include "setupEmacsData.nsh"
   !include "emacsCall.nsh"
@@ -52,47 +101,12 @@ This provides an interface to the Emacs Startup options
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !define MUI_HEADERIMAGE_RIGHT
 #+END_SRC
-** Definitions and Variables
-#+BEGIN_SRC nsis
-  Var usb
-  Var usbs
-  !define TEMP1 $R0 ;Temp variable
-  !define ep_version "Field 3"
-  !define ep_org "Field 9"
-  !define ep_right "Field 8"
-  !define ep_iemail "Field 6"
-  !define ep_iesrc "Field 7"
-  !define ep_ienews "Field 4"
-  !define ep_putty_key "Field 5"
-  !define ep_daemon "Field 6"
-  !define ep_zip    "Field 7"
-  !define ep_clean    "Field 8"
-  !define ep_liber    "Field 9"
-
-  !define ep_font "Field 15"
-  !define ep_font_size "Field 17"
-  !define ep_bg "Field 19"
-  !define ep_fg "Field 21"
-  !define ep_g1 "Field 24"
-  !define ep_g2 "Field 25"
-  !define ep_g3 "Field 27"
-  !define ep_g4 "Field 28"
-  !define ep_mm "Field 31"
-  !define ep_fw "Field 32"
-  !define ep_fh "Field 33"
-  !define ep_debug "Field 34"
-  !define ep_home "Field 35"
-  !define ep_proxy_server "Field 37"
-  !define ep_proxy_port "Field 39"
-  !define ep_proxy_user "Field 41"
-  !define ep_proxy_password "Field 43"
-  
-#+END_SRC
 
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
   Page custom SetCustom ValidateCustom ": EmacsPortable Options" ;Custom page. InstallOptions gets called in SetCustom.
+  Page custom SetAssoc ValidateAssoc ": EmacsPortable Association Options"
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
@@ -164,10 +178,216 @@ This provides an interface to the Emacs Startup options
       Exch $R3
   FunctionEnd
 #+END_SRC
+** Replace in String
+This came from [[http://nsis.sourceforge.net/Another_String_Replace_%28and_Slash/BackSlash_Converter%29][here]]
+#+BEGIN_SRC nsis
+!macro _StrReplaceConstructor ORIGINAL_STRING TO_REPLACE REPLACE_BY VAR
+  Push "${ORIGINAL_STRING}"
+  Push "${TO_REPLACE}"
+  Push "${REPLACE_BY}"
+  Call StrRep
+  Pop ${VAR}
+!macroend
+
+
+Function StrRep
+  Exch $R4 ; $R4 = Replacement String
+  Exch
+  Exch $R3 ; $R3 = String to replace (needle)
+  Exch 2
+  Exch $R1 ; $R1 = String to do replacement in (haystack)
+  Push $R2 ; Replaced haystack
+  Push $R5 ; Len (needle)
+  Push $R6 ; len (haystack)
+  Push $R7 ; Scratch reg
+  StrCpy $R2 ""
+  StrLen $R5 $R3
+  StrLen $R6 $R1
+  loop:
+    StrCpy $R7 $R1 $R5
+    StrCmp $R7 $R3 found
+    StrCpy $R7 $R1 1 ; - optimization can be removed if U know len needle=1
+    StrCpy $R2 "$R2$R7"
+    StrCpy $R1 $R1 $R6 1
+    StrCmp $R1 "" done loop
+  found:
+    StrCpy $R2 "$R2$R4"
+    StrCpy $R1 $R1 $R6 $R5
+    StrCmp $R1 "" done loop
+  done:
+    StrCpy $R3 $R2
+    Pop $R7
+    Pop $R6
+    Pop $R5
+    Pop $R2
+    Pop $R1
+    Pop $R4
+    Exch $R3
+FunctionEnd
+
+!define StrReplace '!insertmacro "_StrReplaceConstructor"'
+
+#+END_SRC
+
+** Explode
+From http://nsis.sourceforge.net/Explode
+#+BEGIN_SRC nsis
+!define Explode "!insertmacro Explode"
+ 
+!macro  Explode Length  Separator   String
+    Push    `${Separator}`
+    Push    `${String}`
+    Call    Explode
+    Pop     `${Length}`
+!macroend
+
+!define unExplode "!insertmacro unExplode"
+ 
+!macro  unExplode Length  Separator   String
+    Push    `${Separator}`
+    Push    `${String}`
+    Call    un.Explode
+    Pop     `${Length}`
+!macroend
+ 
+Function Explode
+  ; Initialize variables
+  Var /GLOBAL explString
+  Var /GLOBAL explSeparator
+  Var /GLOBAL explStrLen
+  Var /GLOBAL explSepLen
+  Var /GLOBAL explOffset
+  Var /GLOBAL explTmp
+  Var /GLOBAL explTmp2
+  Var /GLOBAL explTmp3
+  Var /GLOBAL explArrCount
+ 
+  ; Get input from user
+  Pop $explString
+  Pop $explSeparator
+ 
+  ; Calculates initial values
+  StrLen $explStrLen $explString
+  StrLen $explSepLen $explSeparator
+  StrCpy $explArrCount 1
+ 
+  ${If}   $explStrLen <= 1          ;   If we got a single character
+  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+    Push    $explString             ;   then we return initial string with no change
+    Push    1                       ;   and set array's length to 1
+    Return
+  ${EndIf}
+ 
+  ; Set offset to the last symbol of the string
+  StrCpy $explOffset $explStrLen
+  IntOp  $explOffset $explOffset - 1
+ 
+  ; Clear temp string to exclude the possibility of appearance of occasional data
+  StrCpy $explTmp   ""
+  StrCpy $explTmp2  ""
+  StrCpy $explTmp3  ""
+ 
+  ; Loop until the offset becomes negative
+  ${Do}
+    ;   If offset becomes negative, it is time to leave the function
+    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+ 
+    ;   Remove everything before and after the searched part ("TempStr")
+    StrCpy $explTmp $explString $explSepLen $explOffset
+ 
+    ${If} $explTmp == $explSeparator
+        ;   Calculating offset to start copy from
+        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+        StrCpy  $explTmp3 $explString "" $explTmp2
+ 
+        Push    $explTmp3                           ;   Throwing array item to the stack
+        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+ 
+        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+        StrLen  $explStrLen $explString
+    ${EndIf}
+ 
+    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                ;   copying the rest of the string
+        ${If} $explSeparator == ""              ;   Fix for the empty separator
+            IntOp   $explArrCount   $explArrCount - 1
+        ${Else}
+            Push    $explString
+        ${EndIf}
+    ${EndIf}
+ 
+    IntOp   $explOffset $explOffset - 1
+  ${Loop}
+ 
+  Push $explArrCount
+FunctionEnd
+Function un.Explode
+  ; Initialize variables
+  ; Get input from user
+  Pop $explString
+  Pop $explSeparator
+ 
+  ; Calculates initial values
+  StrLen $explStrLen $explString
+  StrLen $explSepLen $explSeparator
+  StrCpy $explArrCount 1
+ 
+  ${If}   $explStrLen <= 1          ;   If we got a single character
+  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+    Push    $explString             ;   then we return initial string with no change
+    Push    1                       ;   and set array's length to 1
+    Return
+  ${EndIf}
+ 
+  ; Set offset to the last symbol of the string
+  StrCpy $explOffset $explStrLen
+  IntOp  $explOffset $explOffset - 1
+ 
+  ; Clear temp string to exclude the possibility of appearance of occasional data
+  StrCpy $explTmp   ""
+  StrCpy $explTmp2  ""
+  StrCpy $explTmp3  ""
+ 
+  ; Loop until the offset becomes negative
+  ${Do}
+    ;   If offset becomes negative, it is time to leave the function
+    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+ 
+    ;   Remove everything before and after the searched part ("TempStr")
+    StrCpy $explTmp $explString $explSepLen $explOffset
+ 
+    ${If} $explTmp == $explSeparator
+        ;   Calculating offset to start copy from
+        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+        StrCpy  $explTmp3 $explString "" $explTmp2
+ 
+        Push    $explTmp3                           ;   Throwing array item to the stack
+        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+ 
+        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+        StrLen  $explStrLen $explString
+    ${EndIf}
+ 
+    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                ;   copying the rest of the string
+        ${If} $explSeparator == ""              ;   Fix for the empty separator
+            IntOp   $explArrCount   $explArrCount - 1
+        ${Else}
+            Push    $explString
+        ${EndIf}
+    ${EndIf}
+ 
+    IntOp   $explOffset $explOffset - 1
+  ${Loop}
+ 
+  Push $explArrCount
+FunctionEnd
+#+END_SRC
 * Functions
 ** Get Portable Apps Directories
 #+BEGIN_SRC nsis
   Function GetDriveVars
+    Var /GLOBAL option_home_usb
     StrCmp $9 "c:\" findcygwin
     StrCmp $8 "HDD" gpa
     StrCmp $9 "a:\" spa
@@ -184,6 +404,7 @@ This provides an interface to the Emacs Startup options
       Goto findcygwin
       
     set_home:
+      StrCpy $PA "$9PortableApps"
       Goto set_usb
       
     is_emacs_portable:
@@ -209,117 +430,117 @@ This provides an interface to the Emacs Startup options
 ** Callback Functions
 *** Initialization Function
 #+BEGIN_SRC nsis
-    Function .onInit
-      ${setupData}
-      ${GetDrives} "FDD+HDD" "GetDriveVars"
-      var /GLOBAL versions
-      var /GLOBAL nemacs
-      var /GLOBAL lastversion
-      SetOutPath "$EXEDIR\Data\ini"
-      IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
-      CopyFiles /SILENT "$EXEDIR\App\ini\ep.ini" "$EXEDIR\Data\ini\ep.ini"
-      StrCpy $versions ""
-      StrCpy $nemacs 0
-      StrCpy $lastversion ""
-      ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
-      StrCmp $versions "" 0 +4
-      ExecWait "$EXEDIR\EmacsDownload.exe"
-      ExecWait "$EXEDIR\EmacsOptions.exe"
-      Abort
-      StrCmp $nemacs 1 +2 0
-      CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
-      ${SetupProxy}
-      Pop $0
-
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State" ""
-      
-      
-      IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
-      ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
-      
-      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
-      
-      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
-      
-      ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
-      end_proxy_init:
-        ;; Put in some selected options
-        IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
-        
-        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey"
-        Push $R0
-        Push "/"
-        Call StrSlash
-        Pop $R0
-        StrCpy $R1 $R0 5
-        StrCmp "$R1" "USB:\" 0 +3
-        StrCpy $R0 $R0 "" 4
-        StrCpy $R0 "$usbs$R0"
-        
-        StrCpy $R1 $R0 8
-        StrCmp "$R1" "EXEDIR:\" 0 +3
-        StrCpy $R0 $R0 "" 8
-        StrCpy $R0 "$EXEDIR\$R0"
-        WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State" "$R0"
-        
-        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" 
-        Push $R0
-        Push "/"
-        Call StrSlash
-        Pop $R0
-        StrCpy $R1 $R0 5
-        StrCmp "$R1" "USB:\" 0 +3
-        StrCpy $R0 $R0 "" 4
-        StrCpy $R0 "$usbs$R0"
-        
-        StrCpy $R1 $R0 8
-        StrCmp "$R1" "EXEDIR:\" 0 +3
-        StrCpy $R0 $R0 "" 8
-        StrCpy $R0 "$EXEDIR\$R0"
-        WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State" "$R0"
-        
-        ${RW} "OrgProtocol" "${ep_org}"
-        ${RW} "RightEdit" "${ep_right}"
-        ${RW} "IEmailto" "${ep_iemail}"
-        ${RW} "IEsource" "${ep_iesrc}"
-        ${RW} "IEnews" "${ep_ienews}"
-        ${RW} "Font" "${ep_font}"
-        ${RW} "FontSize" "${ep_font_size}"
-        ${RW} "Foreground" "${ep_fg}"
-        ${RW} "Background" "${ep_bg}"
-        ${RW} "Maximized" "${ep_mm}"
-        ${RW} "Fullwidth" "${ep_fw}"
-        ${RW} "Fullheight" "${ep_fh}"
-        ${RW} "Debug" "${ep_debug}"
-        ${RW} "Daemon" "${ep_daemon}"
-        ${RW} "Zip" "${ep_zip}"
-        ${RW} "Clean" "${ep_clean}"
-        ${RW} "LiberKey" "${ep_liber}"
-      end_init:
-        ClearErrors
-      FunctionEnd
-      
+  Function .onInit
+    ${setupData}
+    ${GetDrives} "FDD+HDD" "GetDriveVars"
+    var /GLOBAL versions
+    var /GLOBAL nemacs
+    var /GLOBAL lastversion
+    SetOutPath "$EXEDIR\Data\ini"
+    IfFileExists "$EXEDIR\Data\ini\ep.ini" +2 0
+    CopyFiles /SILENT "$EXEDIR\App\ini\ep.ini" "$EXEDIR\Data\ini\ep.ini"
+    CopyFiles /SILENT "$EXEDIR\App\ini\assoc-io.ini" "$EXEDIR\Data\ini\assoc-io.ini"
+    StrCpy $versions ""
+    StrCpy $nemacs 0
+    StrCpy $lastversion ""
+    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+    StrCmp $versions "" 0 +4
+    ExecWait "$EXEDIR\EmacsDownload.exe"
+    ExecWait "$EXEDIR\EmacsOptions.exe"
+    Abort
+    StrCpy $option_version $lastversion
+    StrCmp $nemacs 1 +2 0
+    CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
+    ${SetupProxy}
+    Pop $0
+  
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State" ""
     
+    
+    IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
+    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
+    end_proxy_init:
+      ;; Put in some selected options
+      IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
+      
+      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey"
+      Push $R0
+      Push "/"
+      Call StrSlash
+      Pop $R0
+      StrCpy $R1 $R0 5
+      StrCmp "$R1" "USB:\" 0 +3
+      StrCpy $R0 $R0 "" 4
+      StrCpy $R0 "$usbs$R0"
+      
+      StrCpy $R1 $R0 8
+      StrCmp "$R1" "EXEDIR:\" 0 +3
+      StrCpy $R0 $R0 "" 8
+      StrCpy $R0 "$EXEDIR\$R0"
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State" "$R0"
+      
+      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" 
+      Push $R0
+      Push "/"
+      Call StrSlash
+      Pop $R0
+      StrCpy $R1 $R0 5
+      StrCmp "$R1" "USB:\" 0 +3
+      StrCpy $R0 $R0 "" 4
+      StrCpy $R0 "$usbs$R0"
+      
+      StrCpy $R1 $R0 8
+      StrCmp "$R1" "EXEDIR:\" 0 +3
+      StrCpy $R0 $R0 "" 8
+      StrCpy $R0 "$EXEDIR\$R0"
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State" "$R0"
+      
+      ${RW} "OrgProtocol" "${ep_org}"
+      ${RW} "RightEdit" "${ep_right}"
+      ${RW} "IEmailto" "${ep_iemail}"
+      ${RW} "IEsource" "${ep_iesrc}"
+      ${RW} "IEnews" "${ep_ienews}"
+      ${RW} "Font" "${ep_font}"
+      ${RW} "FontSize" "${ep_font_size}"
+      ${RW} "Foreground" "${ep_fg}"
+      ${RW} "Background" "${ep_bg}"
+      ${RW} "Maximized" "${ep_mm}"
+      ${RW} "Fullwidth" "${ep_fw}"
+      ${RW} "Fullheight" "${ep_fh}"
+      ${RW} "Debug" "${ep_debug}"
+      ${RW} "Daemon" "${ep_daemon}"
+      ${RW} "Zip" "${ep_zip}"
+      ${RW} "Clean" "${ep_clean}"
+      ${RW} "LiberKey" "${ep_liber}"
+    end_init:
+      ClearErrors
+    FunctionEnd  
 #+END_SRC
 *** Exit Function
 #+BEGIN_SRC nsis
@@ -362,6 +583,7 @@ This provides an interface to the Emacs Startup options
     
   FunctionEnd
 #+END_SRC
+
 
 ** Write the startup options to EmacsPortable.ini
 #+BEGIN_SRC nsis
@@ -486,6 +708,296 @@ This provides an interface to the Emacs Startup options
   FunctionEnd  
 #+END_SRC
 
+** Association InstallOptions dialog
+*** Startup
+#+BEGIN_SRC nsis
+  Function SetAssoc
+    Var /GLOBAL pinned_assoc
+    StrCpy $pinned_assoc ""
+    IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" 0 +2
+    Exec "$EXEDIR\App\eps\rm-ep-liberkey.exe"
+    
+    IfFileExists "$EXEDIR\App\eps\rm-ep-assoc.exe" 0 +3
+    Exec "$EXEDIR\App\eps\rm-ep-assoc.exe"
+    StrCpy $pinned_assoc "1"
+
+    IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +2
+    Exec "$TEMP\ep\rm-ep-assoc.exe"
+
+    ;Display the InstallOptions dialog
+    
+    ; First Populate the Fields
+    
+    Call GetFileTypes
+    WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" "$R4"
+    
+    Call FillOutFileTypes
+    
+    Push ${TEMP1}
+    
+    InstallOptions::dialog "$EXEDIR\Data\ini\assoc-io.ini"
+    Pop ${TEMP1}
+    
+    Pop ${TEMP1}
+    
+  FunctionEnd
+  
+  Function GetFileTypes
+    EnumINI::Section "$EXEDIR\App\ini\assoc.ini" "assoc"
+    Pop $R0
+    StrCpy $R3 "" 
+    StrCpy $R4 ""
+    StrCmp $R0 "error" done_assoc
+    loop_assoc:
+      IntCmp $R0 "0" done_assoc done_assoc 0
+      Pop $R1
+      ReadINIStr $R2 "$EXEDIR\App\ini\assoc.ini" "assoc" "$R1"
+      StrCmp $R3 "" 0 +3
+      StrCpy $R3 "$R1 ($R2)"
+      Goto +2
+      StrCpy $R3 "$R1 ($R2)|$R3"
+      StrCpy $R4 "$R1 ($R2)"
+      IntOp $R0 $R0 - 1
+      Goto loop_assoc
+    done_assoc:
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "ListItems" "$R3"
+      ClearErrors
+  FunctionEnd
+  
+  Function FillOutFileTypes
+    Var /GLOBAL lastDesc
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
+    StrCmp "$R0" "" end
+    StrCpy $R0 $R0 -1
+    StrCpy $R1 -1
+    loop_find:
+      StrCpy $R2 $R0 1 $R1
+      IntOp $R1 $R1 - 1
+      StrCmp $R2 "(" loop_end loop_find
+    loop_end:
+      StrLen $R2 $R0
+      IntOp $R1 $R1 + $R2
+      StrCpy $R1 $R0 $R1
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State" $R1
+      ReadIniStr $R0 "$EXEDIR\App\ini\assoc.ini" "assoc" "$R1"
+      StrCpy $lastDesc $R1
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" $R0
+      StrCpy $R3 ""
+      StrCpy $R4 "" 
+      ${Explode}  $0  "," "$R0"
+      ${For} $1 1 $0
+        Pop $2
+        ReadIniStr $R5 "$EXEDIR\App\ini\assoc.ini" "primary" "$2"
+        ClearErrors
+        StrCmp $R5 "1" 0 +5
+        StrCmp $R4 "" 0 +3
+        StrCpy $R4 "$2"
+        Goto +2
+        StrCpy $R4 "$2|$R4"
+
+        StrCmp $R3 "" 0 +3
+        StrCpy $R3 "$2"
+        Goto +2
+        StrCpy $R3 "$2|$R3"
+      ${Next}
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" $R4
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" $R3
+    end:
+      ClearErrors
+  FunctionEnd
+  
+#+END_SRC
+
+*** Validation
+#+BEGIN_SRC nsis
+  Function ValidateAssoc
+    Var /GLOBAL new_button
+    ReadINIStr $0 "$EXEDIR\Data\ini\assoc-io.ini" "Settings" "State"
+    StrCmp $0 0 validate  ; Next button?
+    StrCmp "$0" "${as_list}" change_list ;Change in list?
+    StrCmp "$0" "${as_save}" save_changes ;Save Changes
+    StrCmp "$0" "${as_new}" new ; New Association
+    StrCmp "$0" "${as_delete}" del ; Delete Association
+    Abort ; Return to the page
+    del:
+      Call ClearSteal
+      Call ClearAssoc
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State" ""
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "HWND"
+      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
+      
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" ""
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "HWND"
+      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
+      
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" ""
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" ""
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" ""
+      
+      DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$lastDesc" 
+      Call GetFileTypes
+      
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_save}" "HWND"
+      EnableWindow $R1 0
+      Call UpdateTop
+      Abort
+    new:
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_save}" "HWND"
+      EnableWindow $R1 1      
+      Call ClearSteal
+      Call ClearAssoc
+      
+      StrCpy $new_button "1"
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State" ""
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "HWND"
+      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
+      
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" ""
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "HWND"
+      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
+      
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" ""
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" ""
+      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" ""
+      
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_delete}" "HWND"
+      EnableWindow $R1 0
+      Call UpdateTop
+      Abort
+    save_changes:
+      Call ClearSteal
+      Call ClearAssoc
+      Call SaveAssoc
+      Call GetFileTypes
+      Call FillOutFileTypes
+      StrCmp $new_button "1" 0 +3
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_delete}" "HWND"
+      EnableWindow $R1 1
+      StrCpy $new_button ""
+      Call UpdateTop
+      Call UpdateBottom
+      ## Now update Listboxes
+      Abort
+    change_list:
+      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_save}" "HWND"
+      EnableWindow $R1 1
+      Call ClearSteal
+      Call FillOutFileTypes
+      Call UpdateBottom
+      Abort
+    validate:
+      ; This is the function to validate.
+      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
+      StrCmp "$R0" "" +2
+      Call SaveAssoc
+      IfFileExists "$EXEDIR\App\eps\ep-liberkey.exe" 0 +2
+      Exec "$EXEDIR\App\eps\ep-liberkey.exe"
+      
+      IfFileExists "$EXEDIR\App\eps\ep-assoc.exe" 0 +3
+      ExecWait "$EXEDIR\App\eps\ep-assoc.exe"
+      
+      StrCmp $pinned_assoc "1" 0 +7
+      IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +3
+      CopyFiles /SILENT "$TEMP\ep\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
+      Delete "$TEMP\ep\rm-ep-assoc.exe"
+      IfFileExists "$TEMP\rm-ep-assoc.exe" 0 +3
+      CopyFiles /SILENT "$TEMP\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
+      Delete "$TEMP\rm-ep-assoc.exe"
+  FunctionEnd
+  
+  Function ClearAssoc
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "ListItems"
+    ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "HWND"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      SendMessage $R1 ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
+      SendMessage $R1 ${LB_DELETESTRING} $3 0
+    ${Next}
+  FunctionEnd
+  
+  Function ClearSteal
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems"
+    ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "HWND"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      SendMessage $R1 ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
+      SendMessage $R1 ${LB_DELETESTRING} $3 0
+    ${Next}
+  FunctionEnd
+  
+  Function UpdateTop
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "ListItems"
+    ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "HWND"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      SendMessage $R1 ${LB_ADDSTRING} 0 "STR:$2"
+    ${Next}
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
+    StrCmp "$R0" "" +2
+    SendMessage $R1 ${LB_SELECTSTRING} -1 "STR:$R0"
+  FunctionEnd
+  
+  
+  Function UpdateBottom
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State"
+    ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "HWND"
+    SendMessage $R1 ${WM_SETTEXT} 1 'STR:$R0'
+    
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State"
+    ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "HWND"
+    SendMessage $R1 ${WM_SETTEXT} 1 'STR:$R0'
+    
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems"
+    ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "HWND"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      SendMessage $R1 ${LB_ADDSTRING} 0 "STR:$2"
+    ${Next}
+    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      SendMessage $R1 ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
+      StrCmp "$3" "-1" +2
+      SendMessage $R1 ${LB_SETSEL} 1 $3
+    ${Next}
+  FunctionEnd
+  
+  Function SaveAssoc
+    ## Write Description/Extension Information.
+    ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State"
+    ReadIniStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State"
+    ${StrReplace} $R1 "." "" $R1
+    ${StrReplace} $R1 " " "" $R1
+    ${StrReplace} $R1 ";" "," $R1
+    ${StrReplace} $R1 "|" "," $R1
+    WriteIniStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" "$R0 ($R1)"
+    StrCmp $new_button "1" +3
+    StrCmp "$R0" "$lastDesc" +2
+    DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$lastDesc"
+    WriteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$R0" "$R1"
+    
+    ## Steal Associations?
+    ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      WriteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$2" "0"
+    ${Next}
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State"
+    ${Explode}  $0  "|" "$R0"
+    ${For} $1 1 $0
+      Pop $2
+      WriteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$2" "1"
+    ${Next}
+  FunctionEnd
+  
+#+END_SRC
 * Obligatory Section
 #+BEGIN_SRC nsis
   Section "Components" 
