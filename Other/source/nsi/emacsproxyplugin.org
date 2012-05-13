@@ -24,7 +24,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-proxy.exe"
 Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\trash_empty.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
 !include "emacsproxy.nsh" 
 var EPEXE
 #+END_SRC

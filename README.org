@@ -604,8 +604,14 @@ plink should work most of the time.
 * Icons
 Icons came from various places:
 - [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
-- Modified Uninstall Icon (original at http://findicons.com/icon/127390/trash_empty)
-- Modified Debug Icon (original at http://findicons.com/icon/457399/bug?width=512)
+- USB Icon
+  - http://www.clker.com/clipart-10031.html
+- Modified Lady Bug http://www.clker.com/clipart-23283.html
+- Modified Uninstall Icon (original at
+  http://findicons.com/icon/127390/trash_empty)
+- Dos Box/Terminal http://www.clker.com/clipart-3716.html
+- Wrench http://www.clker.com/clipart-3716.html
+- Screw Driver http://www.clker.com/clipart-14895.html
 
 * EmacsPortable.App Wish List/TODO list
 ** TODO Add Mac Support of Daemon Mode

@@ -26,7 +26,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-reg.exe"
 Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\trash_empty.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
 var EPEXE 
 #+END_SRC
 

@@ -22,7 +22,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-assoc.exe"
 Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\trash_empty.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
 !include "LogicLib.nsh"
 !define SHCNE_ASSOCCHANGED 0x08000000
 !define SHCNF_IDLIST 0

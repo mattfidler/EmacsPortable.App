@@ -19,7 +19,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\EmacsPortableApp.exe"
 Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\trash_empty.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
 #+END_SRC
 
 ** User Interface
@@ -1301,7 +1301,9 @@ Now Finalize Putty Proxy settings
       StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"`
       goto end_client
     setupwin_client:
-      ## Only open a new window when emacs isn't visible.
+      ## Only open a new window when emacs isn't visible, or when
+      ## clicking on EmacsPortableApp
+      StrCmp "$cmdLineParams" "" +5
       ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
       StrCmp $R0 "1" +3
       StrCpy $R9 ""

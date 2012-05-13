@@ -24,6 +24,7 @@ Subcaption 3 " "
 XPStyle on
 OutFile "..\..\..\App\eps\ep-font.exe"
 Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
 !include "WinMessages.nsh"
 var EPEXE 
 Var INSTALL_FONT
