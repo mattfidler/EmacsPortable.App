@@ -1154,8 +1154,10 @@ Now Finalize Putty Proxy settings
       IfFileExists "$msys\bin\gdb.exe" msys_exe
       IfFileExists "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe" msys_pa
       IfFileExists "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe" msys_pa2
+      IfFileExists "$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe" msys_liber
       Goto cygwin_exe
     msys_pa:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\PortableApps\CommonFiles\MinGW").r0'
       IfFileExists "$EXEDIR\App\gdbinit" 0 +3
       StrCpy $emacs `""""$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
       Goto +2
@@ -1163,10 +1165,19 @@ Now Finalize Putty Proxy settings
       StrCpy $found_gdb "1"
       Goto setup_options
     msys_pa2:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\Apps\CommonFiles\MinGW").r0'
       IfFileExists "$EXEDIR\App\gdbinit" 0 +3
       StrCpy $emacs `""""$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
       Goto +2
       StrCpy $emacs `""""$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
+      StrCpy $found_gdb "1"
+      Goto setup_options
+    msys_liber:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\LiberKey\MyApps\CommonFiles\MinGW").r0'
+      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
+      StrCpy $emacs `""""$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"source $EXEDIR\App\gdbinit"""" --eval-command """"Run `
+      Goto +2
+      StrCpy $emacs `""""$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe"""" """"$emacs\$option_emacs"""" --eval-command """"Run `
       StrCpy $found_gdb "1"
       Goto setup_options
     msys_exe:

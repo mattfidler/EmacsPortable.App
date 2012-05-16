@@ -622,3 +622,4 @@ Icons came from various places:
 ** TODO Make the proxy settings a little less finicky.
 ** TODO Add XML to the NSIS downloads
 ** TODO Add Large String support to the NSIS compiler.
+** TODO Add md5 to the NSIS downloads

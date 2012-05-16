@@ -74,7 +74,6 @@ This sets the variables for EmacsPortable.App
 #+END_SRC
 * Paths and load-path
 ** Set package directory, autoload file and custom file.
-This 
 #+BEGIN_SRC emacs-lisp
   (setq autoload-file (expand-file-name
                        (concat usb-site-lisp-dir "../Data/saves/loaddefs.el")))
@@ -83,8 +82,6 @@ This
   (setq custom-file (expand-file-name
                      (concat usb-site-lisp-dir "../Data/saves/custom.el")))
 #+END_SRC
-
-** Set appropriate load paths
 ** Add Path to Java if exists
 :PROPERTIES:
 :ID: a0a4e48f-1a05-4c30-a596-efcb90d5f395
@@ -768,16 +765,6 @@ This starts the pseudo-daemon.  If you are running Windows it:
 3. Starts up the nsis psudo-loading bar.
 
 * Needed starting settings
-** Special path variables
-:PROPERTIES:
-:ID: a78ceacb-d6c7-4f8b-afb2-237db13b9b66
-:END:
-Moved to site-init.el
-
-#+begin_src emacs-lisp
-  
-#+end_src
-
 ** Frame name
 :PROPERTIES:
 :ID: 883e8775-2cfc-4e44-b51f-800598e14c80
@@ -800,22 +787,6 @@ Moved to site-init.el
                                      '(buffer-file-name ": %f")))
     (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
 
-#+end_src
-
-* Bugs and Speed
-:PROPERTIES:
-:ID: 5f0b0410-d812-466d-a569-36ccd8442c86
-:END:
-
-** Still have clients, kill it?
-:PROPERTIES:
-:ID: 27645d3a-7bc9-4736-b340-a24d8c303f8e
-:END:
-This is really annoying.  See
-http://shreevatsa.wordpress.com/2007/01/06/using-emacsclient/
-
-#+begin_src emacs-lisp
-(remove-hook 'kill-buffer-query-functions 'server-kill-buffer-query-function)
 #+end_src
 * Miscellaneous
 ** Spell Checking
@@ -863,7 +834,6 @@ I prefer right-click for correct word.
   (setq minibuffer-prompt-properties
         (plist-put minibuffer-prompt-properties
                    'point-entered 'minibuffer-avoid-prompt))
-
 #+end_src
 
 ** Display Options
@@ -929,7 +899,6 @@ Using putty, you may add tramp support.  This is the emacs piece of
 the implementation 
 #+BEGIN_SRC emacs-lisp
   (when (and
-         (getenv "EPPAGEANT")
          (executable-find "plink"))
     (require 'tramp)
     (ep-m "Tramp (for Putty)")
@@ -974,38 +943,11 @@ the implementation
         (shell-command-to-string (concat "git config --global --unset http.proxy")))))
   
   
+  (let ((proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el"))))
+    (when (file-exists-p proxy)
+      (load-file proxy)
+      (delete-file proxy)))
 #+END_SRC
-* Set default shell to bash 
-El-get uses many Unix recipes.  They may not work without bash.
-#+BEGIN_SRC emacs-lisp
-  (when (and nil (eq system-type 'windows-nt))
-    (let (bash)
-      (cond
-       ((file-exists-p "~usb/PortableApps/CommonFiles/MinGW/msys/1.0/bin/bash.exe")
-        (setq bash (expand-file-name "~usb/PortableApps/CommonFiles/MinGW/msys/1.0/bin/bash.exe")))
-       ((and (getenv "MSYS") (file-exists-p (format "%s/msys/1.0/bin/bash.exe" (getenv "MSYS"))))
-        (setq bash (format "%s/msys/1.0/bin/bash.exe" (getenv "MSYS"))))
-       ((and (getenv "CYGWIN_DIR") (file-exists-p (format "%s/bin/bash.exe" (getenv "CYGWIN_DIR"))))
-        (setq bash (format "%s/bin/bash.exe" (getenv "CYGWIN_DIR")))))
-      (when bash
-        (setq shell-file-name bash)
-        (setenv "SHELL" bash)
-        (setenv "PATH" (concat (getenv "PATH") ";"
-                               (replace-regexp-in-string
-                                "/" "\\" (file-name-directory bash) t t)))
-        (push (file-name-directory bash) exec-path)
-        (setq explicit-shell-file-name bash)
-        (setq ediff-shell bash)
-        (setq explicit-shell-args '("--login" "-i"))
-        (set (intern (format "explicit-%s-args"
-                             (file-name-sans-extension
-                              (file-name-nondirectory bash)))) '("--login" "-i")))))
-  
-#+END_SRC
-
-#+results:
-
-
 * Add el-get support
 El-get is a very nice package management system that allows you to
 keep current with bleeding edge software.  
@@ -1013,12 +955,46 @@ keep current with bleeding edge software.
   (setq el-get-dir (expand-file-name (concat usb-app-dir "../Data/lisp/el-get/")))
   (add-to-list 'load-path (concat el-get-dir "el-get/"))
 #+END_SRC
-* Start the kicker, if present
-Start the EmacsPortable.App kicker.
+* Start a shared startup-script, if present.
+Start the appropriate startup script
 #+BEGIN_SRC emacs-lisp
-  (let ((kicker (concat usb-app-dir "../Data/lisp/kicker/init.el")))
-    (when (file-readable-p kicker)
-      (load-file kicker)))
+  (let ((epi
+         (expand-file-name "EmacsPortableApp.ini"
+                           (expand-file-name "ini"
+                                             (expand-file-name "Data"
+                                                               (expand-file-name ".." usb-app-dir))))))
+    (when (file-exists-p epi)
+      (let ((start-dir))
+        (with-temp-buffer
+          (insert-file-contents epi)
+          (goto-char (point-min))
+          (when (re-search-forward "^[ \t]*[sS]tartup[ \t]*=[ \t]*\\(.*?\\)[ \t]*$" nil t)
+            (setq start-dir (match-string 1))))
+        (when start-dir
+          (setq start-dir (expand-file-name start-dir "~start/"))
+          (message "Using startup at %s" start-dir)
+          (cond
+           ((file-exists-p (expand-file-name ".emacs" start-dir))
+            (load (expand-file-name ".emacs" start-dir))
+            (message "Loaded %s/.emacs" start-dir))
+           
+           ((file-exists-p (expand-file-name "init.el" start-dir))
+            (load (concat start-dir "/init"))
+            (message "Loaded %s/init" start-dir))
+           
+           ((file-exists-p (expand-file-name  "site-start.el" (expand-file-name "site-lisp" start-dir)))
+            (load (concat (expand-file-name "site-lisp" start-dir) "/site-start"))
+            (message "Loaded %s/site-start/site-lisp" start-dir)))))))
+  
+#+END_SRC
+
+* Load Emacs Terminal settings for Windows 32, adapted from emacsW32
+#+BEGIN_SRC emacs-lisp
+  (when (and
+         (eq system-type 'windows-nt)
+         (file-exists-p (expand-file-name "epshell.el"
+                                          (expand-file-name "site-lisp" usb-app-dir))))
+    (load (concat (expand-file-name "site-lisp" usb-app-dir) "/epshell")))
 #+END_SRC
 
 * Load System, User, and Shared Initialization files
@@ -1153,53 +1129,3 @@ compiled lisp file.  Delete intermediary files
    (ep-load-user user-login-name) 
    
 #+END_SRC
-* Add eXpresso Support, if available
-I would like EmacsPortable.App to use the associations that eXpresso
-uses.  This is only on a windows machine, when =sex-mode= from nXhtml
-is loaded.
-#+BEGIN_SRC emacs-lisp
-  (defvar ep-expresso-assocs nil)
-  (defun ep-load-expresso ()
-    (let (loads)
-      (when (eq system-type 'windows-nt)
-        (when (boundp 'usb-drive-letter)
-          (when (file-readable-p
-                 (format "%sPortableApps/eXpresso/Data/eXpresso.ini"
-                         usb-drive-letter))
-            (with-temp-buffer
-              (insert-file-contents (format "%sPortableApps/eXpresso/Data/eXpresso.ini"
-                                            usb-drive-letter))
-              (goto-char (point-min))
-              (when (re-search-forward "[associations]" nil t)
-                (while (re-search-forward "\\(.*?\\)=\\(.*\\)" nil t)
-                  (unless (string= "host" (match-string 2))
-                    (add-to-list 'loads 
-                                 `(,(downcase (match-string 1)) .
-                                   ,(expand-file-name 
-                                     (match-string 2)
-                                     (format "%sPortableApps/eXpresso/"
-                                             usb-drive-letter))))))))
-            (setq ep-expresso-assocs loads))))))
-  
-  (when nil
-    (defadvice w32-browser (around ep-expresso)
-      "Add eXpresso associations to `w32-browser'"
-      (let ((file (ad-get-argument 0)) ext assoc)
-        (setq ext (file-name-extension file))
-        (setq assoc (assoc ext ep-expresso-assocs))
-        (if (not assoc)
-            ad-do-it
-          ;; Open it in another appliaction...
-          (setq assoc (cdr assoc))
-          )
-        )
-      
-      (eval-after-load "sex-mode"
-        (defadvice sex-get-apps (around ep-expresso)
-          "Add eXpresso associations to `sex-mode'"
-          (let ((sex-file-apps (append sex-file-apps)))
-            ad-do-it))
-        (ad-activate 'sex-get-apps))))
-  
-#+END_SRC
-

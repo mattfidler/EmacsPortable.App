@@ -5,6 +5,12 @@ MAKENSIS=makensis
 
 all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe
 
+../../../App/eps/ep-env.exe: EmacsEnv.nsi
+	$(MAKENSIS) EmacsEnv.nsi
+
+EmacsEnv.nsi: EmacsEnv.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsEnv.org)"
+
 ../../../App/eps/EmacsDoc.exe: EmacsDoc.nsi
 	$(MAKENSIS) EmacsDoc.nsi
 

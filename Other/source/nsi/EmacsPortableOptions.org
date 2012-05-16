@@ -31,24 +31,25 @@ This provides an interface to the Emacs Startup options
   !define ep_clean    "Field 9"
   !define ep_liber    "Field 10"
   !define ep_newframe "Field 11"
+  !define ep_startup  "Field 12" 
 
-  !define ep_font "Field 13"
-  !define ep_font_size "Field 15"
-  !define ep_bg "Field 17"
-  !define ep_fg "Field 19"
-  !define ep_g1 "Field 22"
-  !define ep_g2 "Field 23"
-  !define ep_g3 "Field 25"
-  !define ep_g4 "Field 26"
-  !define ep_mm "Field 29"
-  !define ep_fw "Field 30"
-  !define ep_fh "Field 31"
-  !define ep_debug "Field 32"
-  !define ep_home "Field 33"
-  !define ep_proxy_server "Field 35"
-  !define ep_proxy_port "Field 37"
-  !define ep_proxy_user "Field 39"
-  !define ep_proxy_password "Field 41"
+  !define ep_font "Field 14"
+  !define ep_font_size "Field 16"
+  !define ep_fg "Field 18"
+  !define ep_bg "Field 20"
+  !define ep_g1 "Field 23"
+  !define ep_g2 "Field 24"
+  !define ep_g3 "Field 26"
+  !define ep_g4 "Field 27"
+  !define ep_mm "Field 30"
+  !define ep_fw "Field 31"
+  !define ep_fh "Field 32"
+  !define ep_debug "Field 33"
+  !define ep_home "Field 34"
+  !define ep_proxy_server "Field 36"
+  !define ep_proxy_port "Field 38"
+  !define ep_proxy_user "Field 40"
+  !define ep_proxy_password "Field 42"
 
   !define as_list "3"
   !define as_desc "11"
@@ -61,8 +62,6 @@ This provides an interface to the Emacs Startup options
   !define as_as "1"
   
 #+END_SRC
-
-
 ** Include files
 #+BEGIN_SRC nsis
   !include "MUI2.nsh"
@@ -520,6 +519,24 @@ FunctionEnd
       StrCpy $R0 "$EXEDIR\$R0"
       WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State" "$R0"
       
+      StrCpy $3 "(None)"
+      FindFirst $0 $1 $EXEDIR\Data\start\*.*
+    loop_startup:
+      StrCmp $1 "" done_startup
+      StrCmp $1 "system" next_startup 
+      StrCmp $1 "shared" next_startup
+      StrCmp $1 "user" next_startup
+      StrCmp $1 ".." next_startup
+      StrCmp $1 "." next_startup
+      StrCpy $3 "$3|$1"
+    next_startup:
+      FindNext $0 $1
+      Goto loop_startup
+    done_startup:
+      FindClose $0
+      
+      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_startup}" "ListItems" "$3"
+      ${RW} "Startup" "${ep_startup}"
       ${RW} "OrgProtocol" "${ep_org}"
       ${RW} "RightEdit" "${ep_right}"
       ${RW} "Font" "${ep_font}"
@@ -538,6 +555,7 @@ FunctionEnd
     end_init:
       ClearErrors
     FunctionEnd  
+  
 #+END_SRC
 *** Exit Function
 #+BEGIN_SRC nsis
@@ -553,15 +571,15 @@ FunctionEnd
     IntOp $nemacs $nemacs + 1
     StrCmp $lastversion "" +2
     CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
-     StrLen $R1 "$EXEDIR\App\emacs-"
-     StrLen $R2 $R9
-     IntOp $R2 $R1 - $R2
-     StrCpy $R0 $R9 "" $R2
-     StrCpy $versions "$versions|$R0"
-     StrCpy $lastversion $R0
-     StrCpy $R0 $versions "" 1
-     WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "ListItems" "$R0"
-     Push $0
+    StrLen $R1 "$EXEDIR\App\emacs-"
+    StrLen $R2 $R9
+    IntOp $R2 $R1 - $R2
+    StrCpy $R0 $R9 "" $R2
+    StrCpy $versions "$versions|$R0"
+    StrCpy $lastversion $R0
+    StrCpy $R0 $versions "" 1
+    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "ListItems" "$R0" 
+    Push $0
   FunctionEnd
 #+END_SRC
 
@@ -571,6 +589,7 @@ FunctionEnd
   LangString FIRST_SUBTITLE ${LANG_ENGLISH} "Startup Options and Proxy Settings"
   Function SetCustom
     !insertmacro MUI_HEADER_TEXT $(FIRST_TITLE) $(FIRST_SUBTITLE)
+    ## Now Setup the 
     Push ${TEMP1}
     
     InstallOptions::dialog "$EXEDIR\Data\ini\ep.ini"
@@ -599,6 +618,7 @@ FunctionEnd
     ;    Abort
     
     ;  done:
+  
     ReadIniStr $7 "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State"
   
     ;; Home Directory
@@ -655,6 +675,7 @@ FunctionEnd
     
     ${WR} "Version" "${ep_version}"
     ${WR} "OrgProtocol" "${ep_org}"
+    ${WR} "Startup" "${ep_startup}"
     ${WR} "RightEdit" "${ep_right}"
     ${WR} "Font" "${ep_font}"
     ${WR} "FontSize" "${ep_font_size}"
@@ -671,7 +692,7 @@ FunctionEnd
     StrCmp "$R0" "1" +3
     IfFileExists "$EXEDIR\App\eps\ep-rm-liberkey.exe" +2
     Exec "$EXEDIR\App\eps\ep-rm-liberkey.exe"
-
+  
     ${WR} "NewFrame" "${ep_newframe}"
     
     ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"

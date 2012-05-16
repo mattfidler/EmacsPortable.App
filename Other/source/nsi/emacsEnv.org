@@ -1,0 +1,141 @@
+#+TITLE: Environment Setup
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsEnv.nsi
+* Introduction
+This sets up the Emacs Path and environment.  Currently a
+work-in-progress.  Not high priority. 
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Caption "Loading EmacsPortable.App"
+  Subcaption 3 " "
+  XPStyle on
+  OutFile "..\..\..\App\eps\ep-env.exe"
+  Icon "..\img\ico\appicon.ico"
+  UninstallIcon "..\img\ico\trash_empty.ico"
+  var path_ini
+  var path_cache
+  var drives
+  var EPEXE
+#+END_SRC
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis :tangle no
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+* Find Environment Information
+** Get Directory MD5
+#+BEGIN_SRC nsis
+  !macro GetMD5 DIR OUTPUTVAR
+    Push ${DIR}
+    Call GetMD5
+    Pop ${OUTPUTVAR}
+  !macroend
+  !define GetMD5 `!insertmacro GetMD5`
+  Function GetMD5
+    ## Gets the MD5 of the directory
+    Push $0
+    Exch
+    Push $1
+    Exch
+    Push $2
+    Exch
+    Push $3
+    Exch
+    Pop $2
+    StrCpy $3 ""
+    FindFirst $0 $1 $2
+    loop:
+      StrCmp $1 "" done
+      StrCpy $3 "$1$3"
+      FindNext $0 $1
+      Goto loop
+    done:
+      FindClose $0
+      
+      md5dll::GetMD5String "$3"
+      Exch
+      Pop $2
+      Exch
+      Pop $1
+      Exch
+      Pop $0
+  FunctionEnd
+  
+#+END_SRC
+
+
+** Get Path and Directory Information
+
+** Get Drive Variables
+#+BEGIN_SRC nsis
+  Function GetDriveVars
+    ; $9    "drive letter"  (a:\ c:\ ...)
+    ; $8    "drive type"    (FDD HDD ...)
+  
+    ReadIniStr $R0 "$path_ini" "search.portable" "$9"
+    ClearErrors
+    StrCmp "$9" "1" 0 search_local
+    ## Now look for each portable Directory.
+    
+    search_local:
+      
+      ;Push $var    ; If $var="StopGetDrives" Then exit from function
+  FunctionEnd
+  
+#+END_SRC
+
+* Main
+#+BEGIN_SRC nsis
+  !macro shouldsearch DRIVE
+    ReadIniStr $R0 $path_ini "search.portable" "${DRIVE}"
+    ClearErrors
+    StrCmp "$R0" "1" 0 +3
+    StrCpy $drives "${DRIVE}+"
+    Goto +5
+    ReadIniStr $R0 $path_ini "search.local" "${DRIVE}"
+    ClearErrors
+    StrCmp "$R0" "1" 0 +2
+    StrCpy $drives "${DRIVE}+"
+  !macroend
+  Section "Main" sec_main
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+
+    StrCpy $path_ini "$EPEXE\App\ini\paths.ini"
+    StrCpy $drives ""
+    
+    !insertmacro shouldsearch "FDD"
+    !insertmacro shouldsearch "HDD"
+    !insertmacro shouldsearch "CDROM"
+    !insertmacro shouldsearch "NET"
+    !insertmacro shouldsearch "RAM"
+    StrCmp $drives "" end
+    StrCpy $drives $drives -1 ; drop last 
+    ${GetDrives} "$drives" "GetDriveVars"
+    end:
+      ClearErrors
+  SectionEnd
+  
+#+END_SRC
+* Uninstall
+#+BEGIN_SRC nsis :tangle no
+  Section "Uninstall" sec_uninstall
+    SetAutoClose true
+    Delete "$TEMP\ep\rm-ep-font.exe"
+  SectionEnd
+#+END_SRC nsis
