@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 26 16:33:22 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Apr 20 08:17:58 2012 (-0500)
+;; Last-Updated: Wed May 16 15:31:14 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 17
+;;     Update #: 19
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -59,6 +59,7 @@
          ))
       (fn "")
       (ini "")
+      (ini-file "[ezw]\n")
       (ini2 "")
       (ret "")
       (dt ""))
@@ -67,6 +68,7 @@
      (let ((pkg (downcase (nth 0 x)))
            (pkg-d (nth 0 x))
            (desc (nth 1 x)))
+       (setq ini-file (concat ini-file pkg "=1\n"))
        (setq ini
              (format "%s\n${ezwininstalled} \"%s\" ${sec_ezwine_%s}"
                      ini pkg pkg))
@@ -74,12 +76,14 @@
              (format "%s\n${ifSecNotRO} ${sec_ezwine_%s} skip_ezwine_group_ro"
                      ini2 pkg))
        (setq ret
-             (format "%s\nSection /o \"%s\" sec_ezwine_%s\n!insertmacro ezwindown \"%s\"\nSectionEnd\nLangString DESC_sec_ezwine_%s ${LANG_ENGLISH} \"%s - %s\""
+             (format "%s\nSection /o \"%s\" sec_ezwine_%s\n!insertmacro setezwindown \"%s\"\nSectionEnd\nLangString DESC_sec_ezwine_%s ${LANG_ENGLISH} \"%s - %s\""
                      ret pkg-d pkg pkg pkg pkg-d desc))
        (setq dt
              (format "%s\n!insertmacro MUI_DESCRIPTION_TEXT ${sec_ezwine_%s} $(DESC_sec_ezwine_%s)"
                      dt pkg pkg))))
    ezwin-emacs-suggested)
+  (with-temp-file "./unix-download-ezw.ini"
+    (insert ini-file))
   (setq ini2 (format
               "%s\n${setInstallGroup} ${sec_ezwine_grp}\nskip_ezwine_group_ro:\n"
               ini2))
@@ -131,7 +135,7 @@ LangString DESC_sec_ezwine_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests 
               (concat fn "\nPush \"" (downcase id) "\""))
         (setq sec
               (format
-               "%s\nSection /o \"%s\" sec_ezwin_%s\n!insertmacro ezwindown \"%s\"\nSectionEnd"
+               "%s\nSection /o \"%s\" sec_ezwin_%s\n!insertmacro setezwindown \"%s\"\nSectionEnd"
                sec id (downcase id)  (downcase id)))
         (setq ini2
               (format "%s\n${ifSecNotRO} ${sec_ezwin_%s} skip_ezwin_group_ro"

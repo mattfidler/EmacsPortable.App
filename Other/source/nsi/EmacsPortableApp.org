@@ -564,7 +564,10 @@ FunctionEnd
       StrCmp $0 "$\"org-protocol:/" 0 final
       ${StrReplace} $cmdLineParams " " "%20"
       StrCpy $cmdLineParams $0
+      ## Change " to """"
     final:
+      ${StrReplace} $cmdLineParams "$\"" "$\"$\"$\"$\""
+      StrCpy $cmdLineParams $0
       DetailPrint "Removed stale server files"
       ClearErrors
   FunctionEnd

@@ -131,3 +131,7 @@ Readme.org_archive
 /Other/source/nsi/emacsproxyplugin.nsi
 /Other/source/nsi/EmacsDoc.nsi
 /Other/source/nsi/EmacsEnv.nsi
+/Other/source/nsi/EmacsUnix.nsi
+/Other/source/nsi/unix-download-ezw.ini
+/Other/source/nsi/unix-download-gw32.ini
+/Other/source/nsi/unix-download.ini

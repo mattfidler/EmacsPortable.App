@@ -1,0 +1,99 @@
+#+TITLE: Unix Tools Download
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle EmacsUnix.nsi
+* Introduction
+This is a dialog to change which Unix utilities will be downloaded.
+* Installer Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+ - Automatic closing.
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+AutoCloseWindow true
+#+END_SRC
+
+** User Interface
+Modern UI2 user interface
+#+BEGIN_SRC nsis
+!include "MUI2.nsh"
+!include "EmacsDownloadShared.nsh"
+#+END_SRC
+** Defines
+#+BEGIN_SRC nsis
+!define mirror $EXEDIR\App\ini\mirrors.ini
+#+END_SRC
+
+** Headers and Plugins
+#+BEGIN_SRC nsis
+  !include "FileFunc.nsh"
+  !include "nsDialogs.nsh"
+#+END_SRC
+** Output Executable
+#+BEGIN_SRC nsis
+OutFile "..\..\..\App\eps\download-unix.exe"
+#+END_SRC
+
+** Modern UI interface setup
+#+BEGIN_SRC nsis
+  Name "EmacsPortable.App Download Emacs"
+  BrandingText "EmacsPortable.App"
+  !define MUI_ICON "..\img\ico\download.ico"
+  !define MUI_HEADERIMAGE
+  
+  !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+  !define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+  
+  !define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+  !define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+  
+  !define MUI_ABORTWARNING
+  !define MUI_UNABORTWARNING
+  !define MUI_PAGE_HEADER_TEXT "EmacsPortable.app"
+  !define MUI_PAGE_HEADER_SUBTEXT "Emacs on the Go"
+  
+  !define MUI_COMPONENTSPAGE_SMALLDESC
+  !define MUI_HEADERIMAGE_RIGHT
+  !insertmacro MUI_PAGE_COMPONENTS
+  !insertmacro MUI_PAGE_INSTFILES
+  #!insertmacro MUI_PAGE_FINISH
+  !insertmacro MUI_LANGUAGE "English"
+#+END_SRC
+* Sections
+** Lisp-generated sections
+#+BEGIN_SRC nsis
+!include "emacsdownload-gw32.nsi"
+!include "emacsdownload-ezwin.nsi"
+!insertmacro InsertAddEZW
+#+END_SRC
+** Section Descriptions 
+#+BEGIN_SRC nsis
+  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    ${GW32_DESC}
+    ${GW32E_DESC}
+    ${EZWIN_DESC}
+    ${EZWINE_DESC}
+  !insertmacro MUI_FUNCTION_DESCRIPTION_END
+#+END_SRC
+* Functions
+** Initialization
+#+BEGIN_SRC nsis
+  Function .onInit
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $INSTDIR "..\.."
+    Goto +2
+    ReadINIStr $INSTDIR "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ClearErrors
+    Delete "$INSTDIR\Data\ini\unix-download.ini"
+    ${G32_INI}
+    ${EZWIN_INI}
+  FunctionEnd
+#+END_SRC

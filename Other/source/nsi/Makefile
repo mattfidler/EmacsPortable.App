@@ -1,9 +1,18 @@
-download_extras=EmacsDownload-vers.nsi EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
+download_extras=EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
 emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe
+
+../../../App/eps/download-unix.exe: EmacsUnix.nsi unix-download.ini
+	$(MAKENSIS) EmacsUnix.nsi
+
+unix-download.ini: emacsdownload-gw32.nsi emacsdownload-ezwin.nsi
+	copy unix-download-gw32.ini +unix-download-ezw.ini  unix-download.ini
+
+EmacsUnix.nsi: emacsUnix.org emacsdownload-gw32.nsi emacsdownload-ezwin.nsi EmacsDownloadShared.nsh
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsUnix.org)"
 
 ../../../App/eps/ep-env.exe: EmacsEnv.nsi
 	$(MAKENSIS) EmacsEnv.nsi
@@ -113,9 +122,6 @@ emacsproxy.nsh: emacsproxy.org
 
 EmacsDownload-ezwin.nsi: emacsdownload-ezw.el ../../../App/ini/mirrors.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-ezw.el
-
-EmacsDownload-vers.nsi: emacsdownload-vers.el ../../../App/ini/mirrors.ini
-	$(EMACS) -Q --batch -l ./emacsdownload-vers.el
 
 EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-pae.el

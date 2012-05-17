@@ -21,20 +21,19 @@ SetDatablockOptimize On
 Modern UI2 user interface
 #+BEGIN_SRC nsis
 !include "MUI2.nsh"
+!include "EmacsDownloadShared.nsh"
+!include "LogicLib.nsh" 
 #+END_SRC
 ** Defines
 #+BEGIN_SRC nsis
-!define mirror $EXEDIR\App\ini\mirrors.ini
+!define mirror $INSTDIR\App\ini\mirrors.ini
 #+END_SRC
 
 ** Headers and Plugins
 #+BEGIN_SRC nsis
   !include "FileFunc.nsh"
-  !include blowfish.nsh
-  !include "emacsproxy.nsh"
-  !include "EmacsDownloadShared.nsh"
+  !include "nsDialogs.nsh"
 #+END_SRC
-
 ** Output Executable
 #+BEGIN_SRC nsis
 OutFile "..\..\..\EmacsDownload.exe"
@@ -60,471 +59,351 @@ OutFile "..\..\..\EmacsDownload.exe"
   
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !define MUI_HEADERIMAGE_RIGHT
-  !insertmacro MUI_PAGE_COMPONENTS
+  Page Custom fnc_download_Show fnc_download_Leave
   !insertmacro MUI_PAGE_INSTFILES
-  !insertmacro MUI_PAGE_FINISH
+  #!insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
 #+END_SRC
 
 ** Global variables
 #+BEGIN_SRC nsis
-var PA
-var PG
+Var download_emacs_version
+Var download_mac
 #+END_SRC
-
-* Macros
-
-* Installation Sections
-** Use Git when available 
+* Custom Pages
+** Download Page
+*** Component 
 #+BEGIN_SRC nsis
-Section /o "Use GIT instead of ZIP" sec_use_git_instead_of_zip ; Unchecked (/o)
-  ; Description:
-  ; Git Download of EmacsPortable.App
+  ; handle variables
+  Var hCtl_download
+  Var hCtl_download_EmacsDownload
+  Var hCtl_download_DownloadVersion
+  Var hCtl_download_Label1
+  Var hCtl_download_DownloadMac
+  Var hCtl_download_GroupBox2
+  Var hCtl_download_GnuWin32Utils
+  Var hCtl_download_EZWinUtils
+  Var hCtl_download_LinkToSelect
+  Var hCtl_download_Startup
+  Var hCtl_download_DropList1
+  Var hCtl_download_Label2
+  Var hCtl_download_GroupBox1
+  Var hCtl_download_DropList2
+  Var hCtl_download_Label3
+  Var hCtl_download_Link2
+  Var hCtl_download_Use
+  Var hCtl_download_UseLabel
+  Var hCtl_download_CompileTools
+  Var hCtl_download_NSIS
+  Var hCtl_download_CheckBox1
+  Var hCtl_download_SpellGroup
+  Var hCtl_download_DropList3
+  Var hCtl_download_Label4
+  Var hCtl_download_Label5
+  Var hCtl_download_Dict
   
-SectionEnd ; sec_use_git_instead_of_zip
-#+END_SRC
-
-** Download
-#+BEGIN_SRC nsis
-  SectionGroup  "Download and Add" sec_download_and_add ; Collapsed
-    ; Description:
-    ; Download and add these items to the curret EmacsPortable.App
+  
+  ; dialog create function
+  Function fnc_download_Create
     
-#+END_SRC
-
-*** Emacs Versions Sections
- This should be based on the mirror ini file and generated from emacs
- lisp and ported to a NSI install script.  It generates the chekbox
- toggle depending on what is installed.
- 
- [[./EmacsDownload-vers.el]]
-
-#+BEGIN_SRC nsis
-  !include "emacsdownload-vers.nsi"
-#+END_SRC
-
-*** Emacs Compile Tools
-#+BEGIN_SRC nsis
-  !include "EmacsCompileTools.nsi"
-#+END_SRC
-*** Non-ELPA Packages
-**** Fix Functions
-#+BEGIN_SRC nsis
-  Function FixNxhtml
-    IfFileExists "$EXEDIR\App\lisp\src\nxhtml" 0 +2
-    RmDir /r "$EXEDIR\App\lisp\src\nxhtml"
-    Rename "$R9" "$EXEDIR\App\lisp\src\nxhtml"
-    Push $0
-  FunctionEnd
-  
-  Function FixEsn
-    IfFileExists "$EXEDIR\App\lisp\src\esn" 0 +2
-    RmDir /r "$EXEDIR\App\lisp\src\esn"
-    Rename "$R9" "$EXEDIR\App\lisp\src\esn"
-    Push $0
-  FunctionEnd
-  
-  
-  Function FixYasnippet
-    IfFileExists "$EXEDIR\App\lisp\src\yasnippet" 0 +2
-    RmDir /r "$EXEDIR\App\lisp\src\yasnippet"
-    Rename "$R9" "$EXEDIR\App\lisp\src\yasnippet"
-    ;; Keep snippets directory in place...
-    Push $0
-  FunctionEnd
-#+END_SRC
-**** Sections
-#+BEGIN_SRC nsis
-  SectionGroup "Emacs Packages" sec_emacs_packages 
-    ; Description:
-    ; Emacs Packages not included in ELPA or outdated in ELPA
-    Section /o "Color Theme" sec_color_theme ; Unchecked (/o)
-      ; Description:
-      ; Color Theme Support
-      ${DOWN} "color" "$EXEDIR\App\lisp\src"
-    SectionEnd ; sec_color_theme
-    Section /o "Emacs Speaks Statistics" sec_emacs_speaks_statistics ; Unchecked (/o)
-      ; Description:
-      ; Emacs Speaks Statistics
-      ${DOWN} "ess" "$EXEDIR\App\lisp\src"
-    SectionEnd ; sec_emacs_speaks_statist1ics
-    Section /o "Emacs Speaks NONMEM" sec_emacs_speaks_nonmem ; Unchecked (/o)
-      ; Description:
-      ; NONMEM support
-      ${DOWN} "esn" "$EXEDIR\App\lisp\src"
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=*-Emacs-Speaks-NONMEM-* /S= /G=0" "FixEsn"
-    SectionEnd ; sec_emacs_speaks_nonmem
-    Section /o "nxhtml" sec_nxhtml ; Unchecked (/o)
-      ; Description:
-      ; nxhtml mode and utilities
-      ${DOWN} "nxhtml" "$EXEDIR\App\lisp\src"
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=*-nxhtml-* /S= /G=0" "FixNxhtml"
-    SectionEnd ; sec_nxhtml
-    Section /o "Org Mode" sec_org_mode ; Unchecked (/o)
-      ; Description:
-      ; Org Mode
-      StrCmp $org_installed "1" skip_org
-      ${DOWN} "org" "$EXEDIR\App\lisp\src"
-      skip_org:
-        ClearErrors
-    SectionEnd ; sec_org_mode
-    Section /o "Yasnippet" sec_yasnippet ; Unchecked (/o)
-      ; Description:
-      ; Yasnippet github version
-      ${DOWN} "yas" "$EXEDIR\App\lisp\src"
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=*-yasnippet-* /S= /G=0" "FixYasnippet"
-    SectionEnd ; sec_yasnippet
-  SectionGroupEnd ; sec_emacs_packages
-  ;--------------------------------
-  ;Description(s)
-  LangString DESC_sec_emacs_packages ${LANG_ENGLISH} "Emacs Packages not included in ELPA or outdated in ELPA"
-  LangString DESC_sec_color_theme ${LANG_ENGLISH} "Color Theme Support"
-  LangString DESC_sec_org_mode ${LANG_ENGLISH} "Org Mode"
-  LangString DESC_sec_emacs_speaks_nonmem ${LANG_ENGLISH} "NONMEM support"
-  LangString DESC_sec_nxhtml ${LANG_ENGLISH} "nxhtml mode and utilities"
-  LangString DESC_sec_yasnippet ${LANG_ENGLISH} "Yasnippet github version"
-  LangString DESC_sec_emacs_speaks_statistics ${LANG_ENGLISH} "Emacs Speaks Statistics"
-  
-  !define ELPA `!insertmacro ELPA`
-  !macro ELPA
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacs_speaks_nonmem} $(DESC_sec_emacs_speaks_nonmem)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_nxhtml} $(DESC_sec_nxhtml)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_yasnippet} $(DESC_sec_yasnippet)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacs_speaks_statistics} $(DESC_sec_emacs_speaks_statistics)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_emacs_packages} $(DESC_sec_emacs_packages)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_org_mode} $(DESC_sec_org_mode)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_color_theme} $(DESC_sec_color_theme)
-  !macroend
-  
-#+END_SRC
-*** GnuWin32 Applications
-#+BEGIN_SRC nsis
-  !include "emacsdownload-gw32.nsi"
-#+END_SRC
-
-*** EZ Windows Applications
-#+BEGIN_SRC nsis
-  !include "emacsdownload-ezwin.nsi"
-  !insertmacro InsertAddEZW
-#+END_SRC
-*** Portable Apps that Emacs Recognizes
-Using list, the portable apps that Emacs recognizes are generated from
-the mirrors.ini file
-[[file:./EmacsDownload-pae.el]]
-
-
-#+BEGIN_SRC nsis
-  !include "emacsdownload-pae.nsi"
-#+END_SRC
-
-*** End Download and Add Section
-#+BEGIN_SRC nsis
-  SectionGroupEnd ; sec_download_and_add
-  LangString DESC_sec_download_and_add ${LANG_ENGLISH} "Download and add these items to the curret EmacsPortable.App"
-#+END_SRC
-** Remove
-#+BEGIN_SRC nsis
-  SectionGroup "Remove From EmacsPortable.App" sec_remove_from_emacsportable_app ; Collapsed
-    ; Description:
-    ; Remove Packages and Settings from EmacsPortable.App
-#+END_SRC
-*** Remove GnuWin32 Applications 
-#+BEGIN_SRC nsis
-  !include "emacsdownload-rgw32.nsi"
-#+END_SRC
-
-*** End Remove Section
-#+BEGIN_SRC nsis
-  SectionGroupEnd ; sec_remove_from_emacsportable_app
-  ;Description(s)
-  LangString DESC_sec_remove_from_emacsportable_app ${LANG_ENGLISH} "Remove Packages and Settings from EmacsPortable.App"
-#+END_SRC
-
-
-** Tools
-#+BEGIN_SRC nsis
-  SectionGroup "Tools" sec_tools ; Collapsed
-    ; Description:
-    ; Tools for modifying EmacsPortable.App
-    SectionGroup "Decompress EmacsPortable.App" sec_decompress_emacsportable_app ; Collapsed
-      ; Description:
-      ; Decompress of various components in EmacsPortable.App
-      Section /o "Decompress Emacs Lisp Files" sec_decompress_emacs_lisp_files ; Unchecked (/o)
-        ; Description:
-        ; This will decompress .el.gz or .el.bz2 files
-        IfFileExists "$EXEDIR\App\ezwin\bin\find.exe" ezwin_find
-        IfFileExists "$EXEDIR\App\gw32\bin\find.exe" g32_find
-        Goto end
-        ezwin_find:
-          ExecWait '$EXEDIR\App\ezwin\bin\find.exe $EXEDIR -name "*.el.gz" -exec $EXEDIR\App\gw32\bin\gzip.exe -d -v {} ;'
-          Goto end
-        g32_find:
-          ExecWait '$EXEDIR\App\gw32\bin\find.exe $EXEDIR -name "*.el.gz" -exec $EXEDIR\App\gw32\bin\gzip.exe -d -v {} ;'
-        end:
-          ClearErrors
-      SectionEnd ; sec_decompress_emacs_lisp_files
-      Section /o "Decompress Executables" sec_decompress_executables ; Unchecked (/o)
-        ; Description:
-        ; Decompress Executables by upx.
-        StrCpy "$R1" "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler\upx.exe"
-        IfFileExists "$R1" found_upx
-        Goto not_found
-        found_upx:
-          IfFileExists "$EXEDIR\App\gw32\bin" 0 +3
-          DetailPrint "Decompress executables in $EXEDIR\App\gw32\bin"
-          ExecWait '$R1 -d $EXEDIR\App\gw32\bin\*.exe"'
-          IfFileExists "$EXEDIR\App\ezwin\bin" 0 +3
-          DetailPrint "Decompress executables in $EXEDIR\App\ezwin\bin"
-          ExecWait '$R1 -d $EXEDIR\App\ezwin\bin\*.exe"'
-          Goto end
-        not_found:
-          MessageBox MB_OK "Cannot Find upx"
-        end:
-          ClearErrors
-      SectionEnd ; sec_decompress_executables
-    SectionGroupEnd ; sec_decompress_emacsportable_app
-    SectionGroup "Compress EmacsPortable.App" sec_compress_emacsportable_app ; Collapsed
-      ; Description:
-      ; Compression of varios components in EmacsPortable.App
-      Section /o "Compress Emacs Lisp Files" sec_compress_emacs_lisp_files ; Unchecked (/o)
-        ; Description:
-        ; This compresses Emacs Lisp Files that have a corresponding .elc file
-        IfFileExists "$EXEDIR\App\ezwin\bin\find.exe" ezwin_find
-        IfFileExists "$EXEDIR\App\gw32\bin\find.exe" g32_find
-        Goto end
-        ezwin_find:
-          ExecWait '$EXEDIR\App\ezwin\bin\find.exe $EXEDIR -name "*.el" -size +4k -exec cmd /c "$EXEDIR\App\eps\elgz.bat {} " ;'
-          Goto end
-        g32_find:
-          ExecWait '$EXEDIR\App\gw32\bin\find.exe $EXEDIR -name "*.el" -size +4k -exec cmd /c "$EXEDIR\App\eps\elgz.bat {} " ;'
-        end:
-          ClearErrors
-      SectionEnd ; sec_compress_emacs_lisp_files
-      Section /o "Compress Executables" sec_compress_executables ; Unchecked (/o)
-        ; Description:
-        ; Compresses some executables with upx
-        StrCpy "$R1" "$PA\AutoHotKeyPortable\App\AutoHotkey\Compiler\upx.exe"
-        IfFileExists "$R1" found_upx
-        Goto not_found
-        found_upx:
-          IfFileExists "$EXEDIR\App\gw32\bin" 0 +3
-          DetailPrint "Compressing executables in $EXEDIR\App\gw32\bin"
-          ExecWait '$R1 -9 $EXEDIR\App\gw32\bin\*.exe"'
-          IfFileExists "$EXEDIR\App\ezwin\bin" 0 +3
-          DetailPrint "Compressing executables in $EXEDIR\App\ezwin\bin"
-          ExecWait '$R1 -9 $EXEDIR\App\ezwin\bin\*.exe"'
-          Goto end
-        not_found:
-          MessageBox MB_OK  "Could not find upx"
-        end:
-          ClearErrors
-      SectionEnd ; sec_compress_executables
-    SectionGroupEnd ; sec_compress_emacsportable_app
-    SectionGroup "Update Git Repositories" sec_update_git_repositories ; Collapsed
-      ; Description:
-      ; This allow GIT repositories to be updated
-      Section /o "Update EmacsPortable.App launcher" sec_update_emacsportable_app_launcher ; Unchecked (/o)
-        ; Description:
-        ; Update the EmacsPortable.App Launcher to the latest version
-        ExecWait 'cmd /c "cd $EXEDIR & $PG pull origin master"'
-      SectionEnd ; sec_update_emacsportable_app_launcher
-      Section /o "Update Yasnippet" sec_update_yasnippet ; Unchecked (/o)
-        ; Description:
-        ; Update Yasnippet
-        ExecWait 'cmd /c "cd $EXEDIR\App\lisp\src\yasnippet & delete *.elc & $PG pull origin master"'
-      SectionEnd ; sec_update_yasnippet
-    SectionGroupEnd ; sec_update_git_repositories
+    ; === download (type: Dialog) ===
+    nsDialogs::Create 1018
+    Pop $hCtl_download
+    ${If} $hCtl_download == error
+      Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "Select Components to Download" "These are optional components or additional components to download for EmacsPortable.App"
     
-    Section /o "Compile EmacsPortable.App launcher" sec_compile_emacs ; Unchecked (/o)
-      ; Description:
-      ; Compile EmacsPortable.App launcher
-      StrCpy "$INSTDIR" "$EXEDIR"
-      Call CompileEmacsPortableApp
-    SectionEnd ; sec_compile_emacs
-  SectionGroupEnd ; sec_tools
-  ;--------------------------------
-  ;Description(s)
-  LangString DESC_sec_tools ${LANG_ENGLISH} "Tools for modifying EmacsPortable.App"
-  LangString DESC_sec_compress_executables ${LANG_ENGLISH} "Compresses some executables with upx"
-  LangString DESC_sec_decompress_executables ${LANG_ENGLISH} "Decompress Executables by upx."
-  LangString DESC_sec_decompress_emacs_lisp_files ${LANG_ENGLISH} "This will decompress .el.gz or files"
-  LangString DESC_sec_decompress_emacsportable_app ${LANG_ENGLISH} "Decompress of various components in EmacsPortable.App"
-  LangString DESC_sec_compress_emacs_lisp_files ${LANG_ENGLISH} "This compresses Emacs Lisp Files that have a corresponding .elc file"
-  LangString DESC_sec_compress_emacsportable_app ${LANG_ENGLISH} "Compression of varios components in EmacsPortable.App"
-  LangString DESC_sec_update_yasnippet ${LANG_ENGLISH} "Update Yasnippet"
-  LangString DESC_sec_update_git_repositories ${LANG_ENGLISH} "This allow GIT repositories to be updated"
-  LangString DESC_sec_update_emacsportable_app_launcher ${LANG_ENGLISH} "Update the EmacsPortable.App Launcher to the latest version"
-  LangString DESC_sec_compile_emacs ${LANG_ENGLISH} "Compile EmacsPortable.App launcher"
-  
-  !macro tools_desc
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_update_yasnippet} $(DESC_sec_update_yasnippet)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compress_emacsportable_app} $(DESC_sec_compress_emacsportable_app)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compress_emacs_lisp_files} $(DESC_sec_compress_emacs_lisp_files)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_decompress_emacsportable_app} $(DESC_sec_decompress_emacsportable_app)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_decompress_emacs_lisp_files} $(DESC_sec_decompress_emacs_lisp_files)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_decompress_executables} $(DESC_sec_decompress_executables)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compress_executables} $(DESC_sec_compress_executables)
-  !macroend
-  
-#+END_SRC
-: 
-
-* Installer Functions
-** Determine Portable Apps and GIT Location
-#+BEGIN_SRC nsis
-  Function GetDriveVars
-    StrCmp $9 "c:\" git
-    StrCmp $8 "HDD" gpa
-    StrCmp $9 "a:\" spa
-    StrCmp $9 "b:\" spa
+    ; === EmacsDownload (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 7u 131u 44u "Emacs Download"
+    Pop $hCtl_download_EmacsDownload
     
-    gpa:
-      IfFileExists "$9PortableApps" 0 liberkey
-      StrCpy $PA "$9PortableApps"
-      Goto git
-    liberkey:
-      IfFileExists "$9LiberKey\MyApps" 0 git
-      StrCpy $PA "$9LiberKey\MyApps"
-    git:
-      IfFileExists "$9cygwin\bin\git.exe" 0 +2
-      StrCpy $PG "$9cygwin\bin\git.exe"
-      IfFileExists "$9msysgit\msysgit\cmd\git.cmd" 0 +2
-      StrCpy $PG "$9msysgit\msysgit\cmd\git.cmd"
-      IfFileExists "$9msysgit\cmd\git.cmd" 0 +2
-      StrCpy $PG "$9msysgit\cmd\git.cmd"
-      IfFileExists "$9PortableGit\cmd\git.cmd" 0 +2
-      StrCpy $PG "$9PortableGit\cmd\git.cmd"
-      IfFileExists "$9PortableApps\PortableGit\cmd\git.cmd" 0 +2
-      StrCpy $PG "$9PortableApps\PortableGit\cmd\git.cmd"
-      IfFileExists "$9GitPortable\cmd\git.cmd" 0 +2
-      StrCpy $PG "$9GitPortable\cmd\git.cmd"
-      IfFileExists "$9PortableApps\GitPortable\cmd\git.cmd" 0 +2
-      StrCpy $PG "$9PortableApps\GitPortable\cmd\git.cmd"
-    spa:
-      Push $0
-      
+    ; === DownloadVersion (type: DropList) ===
+    ${NSD_CreateDropList} 48u 17u 87u 12u "24.4"
+    Pop $hCtl_download_DownloadVersion
+    SetCtlColors $hCtl_download_DownloadVersion 0x000000 0xFFFFFF
+    ${NSD_OnChange} $hCtl_download_DownloadVersion CheckMac
+    Call SetupVersions
+    
+    ; === Label1 (type: Label) ===
+    ${NSD_CreateLabel} 12u 19u 32u 13u "Version"
+    Pop $hCtl_download_Label1
+    
+    ; === DownloadMac (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 33u 123u 14u "Download Mac Binaries"
+    Pop $hCtl_download_DownloadMac
+    ${NSD_Check} $hCtl_download_DownloadMac
+  
+    SetOutPath "$INSTDIR\Data\ini"
+    File "unix-download.ini"  
+    ; === GroupBox2 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 54u 131u 68u "Unix Utilities Download"
+    Pop $hCtl_download_GroupBox2
+    
+    ; === GnuWin32Utils (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 65u 123u 14u "Download GnuWin32 Utilities"
+    Pop $hCtl_download_GnuWin32Utils
+
+    Call enablegw32
+    
+    ; === EZWinUtils (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 82u 123u 14u "Download EZWin Utilities"
+    Pop $hCtl_download_EZWinUtils
+    
+    ; === LinkToSelect (type: Link) ===
+    ${NSD_CreateLink} 12u 97u 123u 20u "Select individual Unix components"
+    Pop $hCtl_download_LinkToSelect
+    ${NSD_OnClick} $hCtl_download_LinkToSelect SelectUnixComponents
+    
+    ; === VLine1 (type: VLine) ===
+    ${NSD_CreateVLine} 143u 7u 1u 115u ""
+    
+    ; === Startup (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 7u 139u 44u "Startup Script Download"
+    Pop $hCtl_download_Startup
+    
+    ; === DropList1 (type: DropList) ===
+    ${NSD_CreateDropList} 179u 17u 104u 12u ""
+    Pop $hCtl_download_DropList1
+    SetCtlColors $hCtl_download_DropList1 0x000000 0xFFFFFF
+    
+    ; === Label2 (type: Label) ===
+    ${NSD_CreateLabel} 152u 17u 23u 13u "Script"
+    Pop $hCtl_download_Label2
+    
+    ; === GroupBox1 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 7u 139u 44u "Startup Script Download"
+    Pop $hCtl_download_GroupBox1
+    
+    ; === DropList2 (type: DropList) ===
+    ${NSD_CreateDropList} 179u 17u 104u 12u ""
+    Pop $hCtl_download_DropList2
+    SetCtlColors $hCtl_download_DropList2 0x000000 0xFFFFFF
+    
+    ; === Label3 (type: Label) ===
+    ${NSD_CreateLabel} 152u 17u 23u 13u "Script"
+    Pop $hCtl_download_Label3
+    
+    ; === Link2 (type: Link) ===
+    ${NSD_CreateLink} 247u 35u 37u 13u "Add script"
+    Pop $hCtl_download_Link2
+    ${NSD_OnClick} $hCtl_download_Link2 AddStartup
+    
+    ; === Use (type: ComboBox) ===
+    ${NSD_CreateComboBox} 179u 33u 64u 12u "Git"
+    Pop $hCtl_download_Use
+    SetCtlColors $hCtl_download_Use 0x000000 0xFFFFFF
+    ${NSD_CB_AddString} $hCtl_download_Use "Git"
+    ${NSD_CB_AddString} $hCtl_download_Use "Zip"
+    ${NSD_CB_SelectString} $hCtl_download_Use "Git"
+    
+    ; === UseLabel (type: Label) ===
+    ${NSD_CreateLabel} 152u 34u 23u 13u "Use"
+    Pop $hCtl_download_UseLabel
+    
+    ; === CompileTools (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 54u 139u 24u "EmacsPortable.App Compile Tools"
+    Pop $hCtl_download_CompileTools
+    
+    ; === NSIS (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 152u 64u 42u 14u "NSIS"
+    Pop $hCtl_download_NSIS
+    
+    ; === CheckBox1 (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 198u 64u 56u 14u "AutoHotKey"
+    Pop $hCtl_download_CheckBox1
+    
+    ; === SpellGroup (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 81u 139u 41u "Fonts and Spelling Download"
+    Pop $hCtl_download_SpellGroup
+    
+    ; === DropList3 (type: DropList) ===
+    ${NSD_CreateDropList} 188u 90u 96u 12u ""
+    Pop $hCtl_download_DropList3
+    SetCtlColors $hCtl_download_DropList3 0x000000 0xFFFFFF
+    
+    ; === Label4 (type: Label) ===
+    ${NSD_CreateLabel} 155u 92u 20u 13u "Font"
+    Pop $hCtl_download_Label4
+    
+    ; === Label5 (type: Label) ===
+    ${NSD_CreateLabel} 155u 107u 39u 13u "Dictionary"
+    Pop $hCtl_download_Label5
+    
+    ; === ComboBox1 (type: ComboBox) ===
+    ${NSD_CreateDropList} 198u 105u 85u 12u ""
+    Pop $hCtl_download_Dict
+    SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
+  FunctionEnd
+  
+  
+  ; dialog show function
+  Function fnc_download_Show
+    Call fnc_download_Create
+    nsDialogs::Show $hCtl_download
   FunctionEnd
   
 #+END_SRC
-** Set Emacs Lisp Packages as installed
-*** Color Theme
+*** Setup Functions
+**** Setup Emacs Versions for Download
 #+BEGIN_SRC nsis
-Function SetCT_RO
-  ${setInstall} ${sec_color_theme}
-FunctionEnd
-#+END_SRC
-
-*** ESS
-#+BEGIN_SRC nsis
-Function SetESS_RO
-  ${setInstall} ${sec_emacs_speaks_statistics}
-FunctionEnd
-#+END_SRC
-*** Org-Mode
-#+BEGIN_SRC nsis
-  Function SetORG_RO 
-    IfFileExists "$R9\lisp\org.el" 0 org_ro
-    ${setInstall} ${sec_org_mode}
-    ${setInstall} ${sec_ct1}
-    org_ro:
+  Function SetupVersions
+    EnumINI::SectionNames "${mirror}"
+    Pop $R0
+    StrCmp $R0 "error" done
+    loop:
+      IntCmp $R0 "0" done done 0
+      Pop $R1
+      EnumINI::KeyExist "${mirror}" $R1 "win"
+      Pop $R2
+      StrCmp $R2 "1" 0 next
+      ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R1
+    next:
+      IntOp $R0 $R0 - 1
+      Goto loop
+    done:
+      ReadIniStr $R0 "${mirror}" "emacs" "default.ver"
+      ${NSD_CB_SelectString} $hCtl_download_DownloadVersion $R0
       ClearErrors
   FunctionEnd
   
 #+END_SRC
+
+**** Are all the GnuWin32 Components available
+#+BEGIN_SRC nsis
+  Function enablegw32
+    StrCpy $R9 "1"
+    
+    IfFileExists "$INSTDIR\App\ini\gw32.ini" +3
+    StrCpy $R9 "0"
+    Goto done
+    
+    EnumINI::Section "$INSTDIR\Data\ini\unix-download.ini" "gw32"
+    Pop $R0
+    StrCmp $R0 "error" done
+    ${While} $R0 > 0
+      Pop $R1
+       MessageBox MB_OK "$R1, $R0, $R2, $R9!"
+      StrCmp $R9 "0" next
+      
+      ReadINIStr $R2 "$INSTDIR\Data\ini\unix-download.ini" "assoc" "$R1"
+      StrCmp "$R2" "1" 0 next
+       MessageBox MB_OK "$R1, $R0, $R2, $R9!"
+      EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "$R1.bin"
+      Pop $R2
+      MessageBox MB_OK "$R1, $R0, $R2, $R9!"
+      StrCmp "$R2" "1" 0 not_installed
+      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "$R1.bin"
+      Pop $R2
+      StrCmp "$R2" "error" not_installed
+      ${While} $R2 > 0
+        Pop $R3
+        MessageBox MB_OK "$R2, $INSTDIR\App\gw32\$R3, $R9!"
+        StrCmp $R9 "0" next_check
+        IfFileExists "$INSTDIR\App\gw32\$R3" next_check
+        StrCpy $R9 "0"
+        next_check:
+          IntOp $R2 $R2 - 1
+      ${EndWhile}
+      Goto next
+      not_installed:
+        StrCpy $R9 "0"
+      next:
+        IntOp $R0 $R0 - 1
+    ${EndWhile}  
+    done:
+      MessageBox MB_OK "R9: $R9"
+      ClearErrors
+      ${If} $R9 == '0'
+        EnableWindow $hCtl_download_GnuWin32Utils 0
+        ${NSD_Check} $hCtl_download_GnuWin32Utils
+      ${Else}
+        EnableWindow $hCtl_download_GnuWin32Utils 1
+      ${EndIf}
+  FunctionEnd
+  
+#+END_SRC
+
+*** Callback Functions
+**** Check to see if Mac Binaries are available
+#+BEGIN_SRC nsis
+   Function CheckMac
+     
+   FunctionEnd   
+#+END_SRC
+
+**** Select Unix Utilities to Add
+#+BEGIN_SRC nsis
+  Function SelectUnixComponents
+    SetOutPath "$INSTDIR\App\eps"
+    ExecWait "$INSTDIR\App\eps\download-unix.exe"
+    Call enablegw32
+  FunctionEnd
+#+END_SRC
+
+**** Add a startup script
+#+BEGIN_SRC nsis
+Function AddStartup
+FunctionEnd
+#+END_SRC
+
+
+*** Leave Download Page
+#+BEGIN_SRC nsis
+  Function fnc_download_Leave
+    ${NSD_GetText}  $hCtl_download_DownloadVersion $download_emacs_version
+    ${NSD_GetState}  $hCtl_download_DownloadMac $download_mac
+  FunctionEnd
+  
+#+END_SRC
+
+*** Download Functions
+**** Download Emacs
+
+#+BEGIN_SRC nsis
+Function downloadEmacs
+  DetailPrint "Attempting to Download Emacs $download_emacs_version"
+  IfFileExists "$INSTDIR\App\emacs-$download_emacs_version" 0 +3
+  DetailPrint "Emacs $download_emacs_version already exists, not downloading again."
+  Goto download_mac
+  download_pc:
+    Call getWin
+  download_mac:
+    StrCmp "$download_mac" "1" 0 skip_mac
+    IfFileExists "$INSTDIR\App\emacs-$download_emacs_version\MacOS" 0 +3
+    DetailPrint "Emacs $download_emacs_version  Mac files already exist, not downloading again."
+    Goto skip_mac
+    Call getMac
+  skip_mac:
+    ClearErrors
+FunctionEnd
+Function getWin
+  ${getEmacsWin} "$download_emacs_version"
+FunctionEnd
+Function getMac
+  ${getEmacsMac} "$download_emacs_version"
+FunctionEnd
+#+END_SRC
+**** Download Function
+
+#+BEGIN_SRC nsis
+Function DownloadFiles
+  Call downloadEmacs
+FunctionEnd
+#+END_SRC
+
+* Section
+#+BEGIN_SRC nsis
+  Section "Components"
+    Call DownloadFiles
+    ClearErrors
+  SectionEnd
+  
+#+END_SRC
+* Function
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
-    StrCmp "$EXEFILE" "etmp.exe" emacs_temp
-    IfFileExists "$EXEDIR\etmp.exe" wait_for_etmp_exit emacs_etmp 
-    wait_for_etmp_exit:
-      FindProcDLL::FindProc "etmp.exe"
-      StrCmp $R0 "1" 0 +3
-      Sleep 1
-      Goto wait_for_etmp_exit
-      Delete "$EXEDIR\etmp.exe"
-      Abort
-    emacs_etmp:
-      CopyFiles /SILENT "$EXEDIR\$EXEFILE" "$EXEDIR\etmp.exe"
-      Exec "$EXEDIR\etmp.exe"
-      Abort
-    emacs_temp:
-      StrCpy "$INSTDIR" "$EXEDIR"
-      StrCpy $PA ""
-      StrCpy $PROXY_ID ""
-      ${GetDrives} "FDD+HDD" "GetDriveVars"
-      StrCmp "$PG" "" cant_use_git can_use_git
-    cant_use_git:
-      SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_RO}
-      Goto after_git
-    can_use_git:
-      SectionSetFlags ${sec_use_git_instead_of_zip} ${SF_SELECTED}
-      Goto after_git
-    after_git:
-      ${INI_VERS}
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=org* /S= /G=0" "SetORG_RO"
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=color-theme-* /S= /G=0" "SetCT_RO"
-      ${Locate} "$EXEDIR\App\lisp\src" "/L=D /M=ess-* /S= /G=0" "SetESS_RO"
-      ${setInstallIfExists} "$EXEDIR\App\lisp\src\esn" ${sec_emacs_speaks_nonmem}
-      ${setInstallIfExists} "$EXEDIR\App\lisp\src\nxhtml" ${sec_nxhtml}
-      ${setInstallIfExists} "$EXEDIR\App\lisp\src\yasnippet" ${sec_yasnippet}
-      !insertmacro REQ_INI
-      ${PA_INI}
-      ${G32_INI}
-      ${RG32_INI}
-      ${EZWIN_INI}
-      #${RREZWIN_INI}
-      ${ifSecNotRO} ${sec_color_theme}           skip_emacs_packages 
-      ${ifSecNotRO} ${sec_emacs_speaks_statistics} skip_emacs_packages 
-      ${ifSecNotRO} ${sec_emacs_speaks_nonmem}   skip_emacs_packages 
-      ${ifSecNotRO} ${sec_nxhtml}                skip_emacs_packages 
-      ${ifSecNotRO} ${sec_org_mode}              skip_emacs_packages 
-      ${ifSecNotRO} ${sec_yasnippet}             skip_emacs_packages 
-      ${setInstallGroup} ${sec_emacs_packages}
-    skip_emacs_packages:
-    FunctionEnd
-    
-#+END_SRC
-** Termination
-Remove all plug-in directory files, like 7zip.
-#+BEGIN_SRC nsis
-  Function .onGUIEnd
-    StrCmp "$EXEFILE" "etmp.exe" 0 skip
-    Exec "$EXEDIR\EmacsDownload.exe"
-    skip:
-      ClearErrors
+    StrCpy $INSTDIR $EXEDIR
   FunctionEnd
-  
-#+END_SRC
-
-** On Selection Change
-#+BEGIN_SRC nsis
-  Function .onSelChange
-    ${VER_SEL}
-  FunctionEnd  
-#+END_SRC
-* Descriptions
-** Languages
-#+BEGIN_SRC nsis
-  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro tools_desc
-    
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_compile_emacs} $(DESC_sec_compile_emacs)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_tools} $(DESC_sec_tools)
-    
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_from_emacsportable_app} $(DESC_sec_remove_from_emacsportable_app)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_download_and_add} $(DESC_sec_download_and_add)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_update_git_repositories} $(DESC_sec_update_git_repositories)
-    !insertmacro MUI_DESCRIPTION_TEXT ${sec_update_emacsportable_app_launcher} $(DESC_sec_update_emacsportable_app_launcher)
-    ${EMACS_DESC}
-    ${NSIS_DESC}
-    ${ELPA}
-    ${PA_DESC}
-    ${GW32_DESC}
-    ${GW32E_DESC}
-    ${EZWIN_DESC}
-    ${EZWINE_DESC}
-    ${RGW32_DESC}
-    ${RGW32E_DESC}
-  !insertmacro MUI_FUNCTION_DESCRIPTION_END 
-  
 #+END_SRC

@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Apr 11 17:00:01 2012 (-0500)
+;; Last-Updated: Wed May 16 15:27:52 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 81
+;;     Update #: 86
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -74,6 +74,7 @@
          ("Xpm" "library to support XPM images (bundled with Emacs binaries)")
          ("Zip" "used by archive-mode for editing zip files.")
          ("Zlib" "required by LibPng (also in GTK). ")))
+      (ini-file "[gw32]\n")
       (ini "")
       (ini2 "")
       (ret "")
@@ -83,19 +84,22 @@
      (let ((pkg (downcase (nth 0 x)))
            (pkg-d (nth 0 x))
            (desc (nth 1 x)))
+       (setq ini-file (concat ini-file pkg "=1\n"))
        (setq ini
-               (format "%s\n${g32installed} \"%s\" ${sec_gw32e_%s}"
-                       ini pkg pkg))
+             (format "%s\n${g32installed} \"%s\" ${sec_gw32e_%s}"
+                     ini pkg pkg))
        (setq ini2
              (format "%s\n${ifSecNotRO} ${sec_gw32e_%s} skip_gw32e_group_ro"
                      ini2 pkg))
        (setq ret
-             (format "%s\nSection /o \"%s\" sec_gw32e_%s\n!insertmacro g32down \"%s\"\nSectionEnd\nLangString DESC_sec_gw32e_%s ${LANG_ENGLISH} \"%s - %s\""
+             (format "%s\nSection /o \"%s\" sec_gw32e_%s\n!insertmacro setg32down \"%s\"\nSectionEnd\nLangString DESC_sec_gw32e_%s ${LANG_ENGLISH} \"%s - %s\""
                      ret pkg-d pkg pkg pkg pkg-d desc))
-     (setq dt
-           (format "%s\n!insertmacro MUI_DESCRIPTION_TEXT ${sec_gw32e_%s} $(DESC_sec_gw32e_%s)"
-                   dt pkg pkg))))
+       (setq dt
+             (format "%s\n!insertmacro MUI_DESCRIPTION_TEXT ${sec_gw32e_%s} $(DESC_sec_gw32e_%s)"
+                     dt pkg pkg))))
    gw32-emacs-suggested)
+  (with-temp-file "./unix-download-gw32.ini"
+    (insert ini-file))
   (setq ini2 (format
               "%s\n${setInstallGroup} ${sec_gw32e_grp}\nskip_gw32e_group_ro:\n"
               ini2))
@@ -145,7 +149,7 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
         (setq sec-cnt (+ sec-cnt 1))
         (setq sec
               (format
-               "%s\nSection /o \"%s\" sec_gw32_%s\n!insertmacro g32down \"%s\"\nSectionEnd"
+               "%s\nSection /o \"%s\" sec_gw32_%s\n!insertmacro setg32down \"%s\"\nSectionEnd"
                sec id (downcase id)  (downcase id)))
         (setq ini2
               (format "%s\n${ifSecNotRO} ${sec_gw32_%s} skip_gw32_group_ro"
@@ -180,7 +184,7 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
     (while (re-search-forward "gw32" nil t)
       (replace-match "rgw32"))
     (goto-char (point-min))
-    (while (re-search-forward "!insertmacro g32down" nil t)
+    (while (re-search-forward "!insertmacro setg32down" nil t)
       (replace-match "${g32rm}"))
     (goto-char (point-min))
     (while (re-search-forward "G32_INI" nil t)

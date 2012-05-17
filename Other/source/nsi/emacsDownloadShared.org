@@ -405,6 +405,16 @@ it alone when OTHER_SEC is read-only.
   
 #+END_SRC
 
+*** GnuWin32 Set for download
+#+BEGIN_SRC nsis
+  !macro setg32down WHAT
+    SetOutPath "$INSTDIR\Data\ini"
+    WriteINIStr "$INSTDIR\Data\ini\unix-download.ini" "gw32" "${WHAT}" "1"
+    DetailPrint "Requesting ${WHAT} installation"
+  !macroend
+#+END_SRC
+
+
 *** GnuWin32 Remove 
 This removes a gnuwin32 package.
 #+BEGIN_SRC nsis
@@ -481,7 +491,7 @@ This removes a gnuwin32 package.
       Goto "loop_${PREFIX}_${WHAT}_${SEC}"
     "loop_${PREFIX}_${WHAT}_${SEC}_done:"
       StrCmp $R3 "0" "${PREFIX}notinstalled_${WHAT}_${SEC}" "${PREFIX}installed_${WHAT}_${SEC}"
-    "${PREFIX}installed_${WHAT}_${SEC}:"
+      "${PREFIX}installed_${WHAT}_${SEC}:"
       SectionGetFlags ${SEC} $0
       IntOp $0 ${SF_RO} | $0
       SectionSetFlags ${SEC} $0
@@ -489,8 +499,7 @@ This removes a gnuwin32 package.
       StrCpy $0 "$0 (Installed)"
       SectionSetText ${SEC} $0
       "${PREFIX}notinstalled_${WHAT}_${SEC}:"
-      ClearErrors
-      
+      ClearErrors  
   !macroend
   !define g32installed `!insertmacro g32installed "g32" "$INSTDIR\App\ini\gw32.ini" "$INSTDIR\App\gw32"`
   !macro g32removed PREFIX INI PATH WHAT SEC
@@ -503,23 +512,23 @@ This removes a gnuwin32 package.
     StrCmp "$R0" "error" "r${PREFIX}notinstalled_${WHAT}_${SEC}"
     StrCpy $R3 "1"
     "loop_r${PREFIX}_${WHAT}_${SEC}:"
-    IntCmp $R0 "0" "loop_r${PREFIX}_${WHAT}_${SEC}_done" "loop_r${PREFIX}_${WHAT}_${SEC}_done" 0
-    Pop $R1
-    StrCmp $R3 "0" +3
-    IfFileExists "${PATH}\$R1" +2
-    StrCpy $R3 "0"
-    IntOp $R0 $R0 - 1
-    Goto "loop_r${PREFIX}_${WHAT}_${SEC}"
+      IntCmp $R0 "0" "loop_r${PREFIX}_${WHAT}_${SEC}_done" "loop_r${PREFIX}_${WHAT}_${SEC}_done" 0
+      Pop $R1
+      StrCmp $R3 "0" +3
+      IfFileExists "${PATH}\$R1" +2
+      StrCpy $R3 "0"
+      IntOp $R0 $R0 - 1
+      Goto "loop_r${PREFIX}_${WHAT}_${SEC}"
     "loop_r${PREFIX}_${WHAT}_${SEC}_done:"
-    StrCmp $R3 "0" "r${PREFIX}notinstalled_${WHAT}_${SEC}" "r${PREFIX}installed_${WHAT}_${SEC}"
+      StrCmp $R3 "0" "r${PREFIX}notinstalled_${WHAT}_${SEC}" "r${PREFIX}installed_${WHAT}_${SEC}"
     "r${PREFIX}notinstalled_${WHAT}_${SEC}:"
-    SectionGetFlags ${SEC} $0
-    IntOp $0 ${SF_RO} | $0
-    SectionSetFlags ${SEC} $0
-    SectionSetText ${SEC} ""
+      SectionGetFlags ${SEC} $0
+      IntOp $0 ${SF_RO} | $0
+      SectionSetFlags ${SEC} $0
+      SectionSetText ${SEC} ""
     "r${PREFIX}installed_${WHAT}_${SEC}:"
-    ClearErrors
-    
+      ClearErrors
+      
   !macroend
   !define g32removed `!insertmacro g32removed "g32" "$INSTDIR\App\ini\gw32.ini" "$INSTDIR\App\gw32"`
   
@@ -597,6 +606,15 @@ This removes a gnuwin32 package.
   !macroend
   
 #+END_SRC
+*** EzWindows Set for download
+#+BEGIN_SRC nsis
+!macro setezwindown WHAT
+    SetOutPath "$INSTDIR\Data\ini"
+    WriteINIStr "$INSTDIR\Data\ini\unix-download.ini" "ezw" "${WHAT}" "1"
+    DetailPrint "Requesting ${WHAT} installation"
+  !macroend
+#+END_SRC
+
 *** EzWindows Add/Remove/Exists
 #+BEGIN_SRC nsis
   !define ezwinrm `!insertmacro g32rm  "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`

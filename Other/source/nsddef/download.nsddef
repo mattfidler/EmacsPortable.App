@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file was created by NSISDialogDesigner 0.9.16.0
+http://coolsoft.altervista.org/nsisdialogdesigner
+Do not edit manually!
+-->
+<Dialog Name="download" Title="Dialog title..." Subtitle="Dialog subtitle...">
+  <GroupBox Name="EmacsDownload" Location="12, 12" Size="200, 78" Text="Emacs Download" TabIndex="0">
+    <DropList Name="DownloadVersion" Location="61, 19" Size="133, 21" TabIndex="0" SelectedItem="24.4" onChange="CheckMac">
+      <Items>
+        <value>23.3</value>
+        <value>24.4</value>
+      </Items>
+    </DropList>
+    <Label Name="Label1" Location="6, 22" Size="49, 23" Text="Version" TabIndex="1" />
+    <CheckBox Name="DownloadMac" Location="6, 46" Size="188, 24" Text="Download Mac Binaries" Checked="True" TabIndex="2" />
+  </GroupBox>
+  <GroupBox Name="GroupBox2" Location="12, 96" Size="200, 120" Text="Unix Utilities Download" TabIndex="1">
+    <CheckBox Name="GnuWin32Utils" Location="6, 19" Size="188, 24" Text="Download GnuWin32 Utilities" TabIndex="0" />
+    <CheckBox Name="EZWinUtils" Location="6, 49" Size="188, 24" Text="Download EZWin Utilities" TabIndex="0" />
+    <Link Name="LinkToSelect" Location="6, 76" Size="188, 36" Text="Select which Unix components will be downloaded" TabIndex="1" onClick="SelectUnixComponents" />
+  </GroupBox>
+  <VLine Name="VLine1" Location="218, 12" Size="2, 204" />
+  <GroupBox Name="Startup" Location="226, 12" Size="212, 78" Text="Startup Script Download" TabIndex="3">
+    <DropList Name="DropList1" Location="47, 19" Size="159, 21" TabIndex="0" />
+    <Label Name="Label2" Location="6, 19" Size="35, 23" Text="Script" TabIndex="1" />
+    <Link Name="Link1" Location="6, 51" Size="200, 23" Text="Different Startup Script" TabIndex="2" onChange="Add Startup Script" />
+  </GroupBox>
+  <GroupBox Name="GroupBox1" Location="226, 12" Size="212, 78" Text="Startup Script Download" TabIndex="3">
+    <DropList Name="DropList2" Location="47, 19" Size="159, 21" TabIndex="0" />
+    <Label Name="Label3" Location="6, 19" Size="35, 23" Text="Script" TabIndex="1" />
+    <Link Name="Link2" Location="150, 51" Size="56, 23" Text="Add script" TabIndex="2" onClick="AddStartup" />
+    <ComboBox Name="Use" Location="47, 46" Size="97, 21" TabIndex="3" SelectedItem="Git">
+      <Items>
+        <value>Git</value>
+        <value>Zip</value>
+      </Items>
+    </ComboBox>
+    <Label Name="UseLabel" Location="6, 49" Size="35, 23" Text="Use" TabIndex="4" />
+  </GroupBox>
+  <GroupBox Name="CompileTools" Location="226, 96" Size="212, 43" Text="EmacsPortable.App Compile Tools" TabIndex="4">
+    <CheckBox Name="NSIS" Location="6, 18" Size="64, 24" Text="NSIS" TabIndex="0" />
+    <CheckBox Name="CheckBox1" Location="76, 18" Size="86, 24" Text="AutoHotKey" TabIndex="1" />
+  </GroupBox>
+  <GroupBox Name="SpellGroup" Location="226, 144" Size="212, 72" Text="Fonts and Spelling Download" TabIndex="5">
+    <DropList Name="DropList3" Location="60, 16" Size="146, 21" TabIndex="0" />
+    <Label Name="Label4" Location="10, 19" Size="31, 23" Text="Font" TabIndex="1" />
+    <Label Name="Label5" Location="10, 46" Size="60, 23" Text="Dictionary" TabIndex="1" />
+    <ComboBox Name="ComboBox1" Location="76, 43" Size="130, 21" TabIndex="2" SelectedItem="English" />
+  </GroupBox>
+</Dialog>

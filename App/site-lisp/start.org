@@ -504,8 +504,15 @@ demand.  This is done emacsclient -a, but we need to
       (setq ep-kill-emacs-query-functions nil))
     ad-do-it)
   
+  (defadvice server-execute (around ep-daemon-new-frame activate)
+    "Used to delete the %TEMP%/hidden-%EMACSVER% file"
+    ad-do-it
+    (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
+      (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver ))))
+  
   (defvar ep-kill-emacs-query-functions nil
     "Variable to save `kill-emacs-query-functions'")
+  
   (defun new-emacs (&optional rename &rest arg)
     "Starts a new emacs frame (called windows in the rest of the computing world)"
     (interactive)
@@ -524,6 +531,8 @@ demand.  This is done emacsclient -a, but we need to
                   (when (file-exists-p x)
                     (find-file x)))
                 arg)))))
+  
+  
   
   
 #+end_src
@@ -919,34 +928,39 @@ the implementation
 
 * Fix Proxy settings for various programs
 #+BEGIN_SRC emacs-lisp
-  (defun refresh-proxy ()
+  (defun refresh-proxy (&optional process event)
     "Refreshes proxy settings"
     (interactive)
     (let ((el-proxy (expand-file-name (concat usb-app-dir "../App/eps/ep-proxy.exe")))
           (delete-by-moving-to-trash nil)
-          (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el"))))
+          (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el")))
+          (proc process))
+      (when process
+        (message "Proxy settings were retrieved."))
       (if (file-exists-p proxy)
           (progn
             (load-file proxy)
             (delete-file proxy))
-        (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy))
+        (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy)
+                   (not proc))
+          (message "Starting to lookup proxy information")
+          (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
+                                    el-proxy))
+          (set-process-sentinel proc 'refresh-proxy)
           (shell-command-to-string el-proxy)
           (when (file-exists-p proxy)
             (load-file proxy)
             (delete-file proxy))))
       ;; Setup Git
-      (if (and (executable-find "git")
+      (if (and process
+               (executable-find "git")
                (getenv "HTTP_PROXY"))
           (progn
             (shell-command-to-string (concat "git config --global http.proxy "
                                              (getenv "HTTP_PROXY"))))
         (shell-command-to-string (concat "git config --global --unset http.proxy")))))
+  (refresh-proxy 1)
   
-  
-  (let ((proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el"))))
-    (when (file-exists-p proxy)
-      (load-file proxy)
-      (delete-file proxy)))
 #+END_SRC
 * Add el-get support
 El-get is a very nice package management system that allows you to
@@ -1129,3 +1143,45 @@ compiled lisp file.  Delete intermediary files
    (ep-load-user user-login-name) 
    
 #+END_SRC
+* Attempt to sync background and foreground colors with startup options
+This attempts to sync color options with the startup options in EmacsPortable.App
+#+BEGIN_SRC emacs-lisp
+  (defun emacs-portable-sync-display ()
+    "Sync Emacs colors with startup options"
+    (interactive)
+    (let* ((fp (frame-parameters))
+           (bg (cdr (assoc 'background-color fp)))
+           (fg (cdr (assoc 'foreground-color fp)))
+           (font (cdr (assoc 'font fp)))
+           (font-name (if (string-match "-.*?-\\(.*?\\)-" font)
+                          (match-string 1 font)
+                        nil))
+           (font-size (if (string-match "\\(?:-.*?\\)\\{6\\}-\\([0-9]*\\)" font)
+                          (progn
+                            (/ (* 72 (string-to-number (match-string 1 font))) 96))
+                        nil)))
+      (flet ((fix (var name)
+                  (when var
+                    (goto-char (point-min))
+                    (if (not (re-search-forward (format "%s=.*" name) nil t))
+                        (progn
+                          (goto-char (point-max))
+                          (insert name "=" var "\n"))
+                      (replace-match (format "%s=%s" name var) t t)))))
+        (with-temp-buffer
+          (insert-file-contents "~ini/EmacsPortableApp.ini")
+          (fix fg "Foreground")
+          (fix bg "Background")
+          (fix font-name "Font")
+          (fix font-size "FontSize")
+          (write-file "~ini/EmacsPortableApp.ini")))))
+  
+  ;; Sync with load-theme in emacs24.
+  (defadvice load-theme (around emacs-portable-theme-sync activate)
+    "Syncs Background and Foreground colors with startup options."
+    ad-do-it
+    (emacs-portable-sync-display))
+  
+#+END_SRC
+
+

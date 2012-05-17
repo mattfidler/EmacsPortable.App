@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file was created by NSISDialogDesigner 0.9.16.0
+http://coolsoft.altervista.org/nsisdialogdesigner
+Do not edit manually!
+-->
+<Dialog Name="visuals" Title="Dialog title..." Subtitle="Dialog subtitle...">
+  <GroupBox Name="GroupBox1" Location="12, 12" Size="426, 90" Text="Emacs Display Options" TabIndex="0">
+    <ComboBox Name="ComboBox1" Location="78, 19" Size="188, 21" TabIndex="0" />
+    <Label Name="FontLabel" Location="6, 22" Size="66, 23" Text="Font Name:" TabIndex="1" />
+    <Label Name="Label1" Location="272, 22" Size="66, 23" Text="Font Size" TabIndex="1" />
+    <Label Name="Label2" Location="6, 45" Text="Foreground Color:" TabIndex="3" />
+    <Label Name="Label3" Location="203, 45" Text="Background Color:" TabIndex="3" />
+    <TextBox Name="TextBox2" Location="98, 42" Size="99, 20" TabIndex="4" />
+    <TextBox Name="TextBox3" Location="309, 42" Size="111, 20" TabIndex="5" />
+    <Number Name="Number1" Location="326, 19" Size="94, 20" TabIndex="6" />
+    <Link Name="Link1" Location="6, 65" Size="414, 23" Text="Sync EmacsPortable.App's current colors and fonts with the startup options" TabIndex="7" />
+  </GroupBox>
+  <GroupBox Name="GroupBox2" Location="12, 108" Size="232, 108" Text="Emacs Frame/Window Geometry" TabIndex="1">
+    <Label Name="Label6" Location="5, 82" Size="163, 23" Text="Right offset (X),top left corner " TabIndex="0" />
+    <Label Name="Label4" Location="6, 16" Size="163, 23" Text="Initial Frame Width (characters)" TabIndex="0" />
+    <Label Name="Label5" Location="6, 39" Size="163, 23" Text="Initial Frame Height (rows)" TabIndex="0" />
+    <Label Name="Label7" Location="6, 62" Size="163, 23" Text="Down offset (Y),top left corner " TabIndex="0" />
+    <Number Name="Number5" Location="175, 79" Size="49, 20" TabIndex="1" />
+    <Number Name="Number4" Location="175, 59" Size="49, 20" TabIndex="1" />
+    <Number Name="Number2" Location="175, 13" Size="49, 20" TabIndex="1" />
+    <Number Name="Number3" Location="175, 36" Size="49, 20" TabIndex="1" />
+  </GroupBox>
+  <GroupBox Name="GroupBox3" Location="250, 113" Size="188, 100" Text="Maximization Options" TabIndex="2">
+    <RadioButton Name="RadioButton1" Location="6, 11" Size="59, 24" Text="None" Checked="True" TabIndex="0" />
+    <RadioButton Name="RadioButton2" Location="88, 11" Size="71, 24" Text="Maximize" TabIndex="0" />
+    <RadioButton Name="RadioButton3" Location="6, 41" Size="77, 24" Text="Full Width" TabIndex="0" />
+    <RadioButton Name="RadioButton4" Location="89, 41" Size="77, 24" Text="Full Height" TabIndex="0" />
+    <CheckBox Name="CheckBox1" Location="6, 71" Size="153, 24" Text="Apply to New Frames" TabIndex="1" />
+  </GroupBox>
+</Dialog>

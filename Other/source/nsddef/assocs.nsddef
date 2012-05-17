@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file was created by NSISDialogDesigner 0.9.16.0
+http://coolsoft.altervista.org/nsisdialogdesigner
+Do not edit manually!
+-->
+<Dialog Name="assocs" Title="Dialog title..." Subtitle="Dialog subtitle...">
+  <Label Name="Label1" Location="12, 9" Size="185, 23" Text="EmacsPortable.App Registered File" TabIndex="0" />
+  <CheckBox Name="CheckBox1" Location="334, 4" Text="Associate Files" TabIndex="1" />
+  <ListBox Name="ListBox1" Location="17, 30" Size="421, 95" TabIndex="2" />
+  <Button Name="Button1" Location="17, 131" Text="New" TabIndex="3" />
+  <Button Name="Button2" Location="98, 131" Text="Save" TabIndex="4" />
+  <Button Name="Button3" Location="179, 131" Text="Delete" TabIndex="4" />
+  <Label Name="Label2" Location="334, 131" Text="Steal Associations" TabIndex="5" />
+  <ListBox Name="ListBox2" Location="334, 152" Size="104, 69" TabIndex="6" />
+  <GroupBox Name="GroupBox1" Location="17, 156" Size="311, 65" Text="File Type Details" TabIndex="7">
+    <Label Name="Label4" Location="6, 39" Size="63, 23" Text="Extensions" TabIndex="0" />
+    <Label Name="Label3" Location="6, 16" Size="63, 23" Text="Description" TabIndex="0" />
+    <TextBox Name="TextBox2" Location="75, 36" Size="224, 20" TabIndex="1" />
+    <TextBox Name="TextBox1" Location="75, 13" Size="224, 20" TabIndex="1" />
+  </GroupBox>
+</Dialog>
