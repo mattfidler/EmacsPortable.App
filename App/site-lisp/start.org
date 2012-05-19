@@ -483,7 +483,14 @@ This also attempts to speed up the recent files cleanup list by
 :ID: ff11d00d-fe0c-499f-9e35-1a3d703bf0c8
 :END:
 To use the NSIS daemon, we need to be able to start a frame on
-demand.  This is done emacsclient -a, but we need to 
+demand.  This is done emacsclient -a, but we need to advise the make
+frame functions to communicate the status of Emacs with
+EmacsPortable.App launcher (is the last frame hidden, is there a
+visible frame, etc).  Also, ido needs to set the
+`ido-default-file-method' to `selected-window' so that when switching
+to a buffer, it does not assume that buffer is in the hidden daemon
+frame.  Ido may need to be advised as well to allow `raise-frame' to
+work correctly.
 
 #+begin_src emacs-lisp
   (defadvice make-frame (around ep-daemon-new-frame activate)
@@ -532,12 +539,11 @@ demand.  This is done emacsclient -a, but we need to
                     (find-file x)))
                 arg)))))
   
-  
-  
-  
+  (setq ido-default-file-method 'selected-window)
+  (setq ido-default-buffer-method 'selected-window)
 #+end_src
 
-Which is called by the EmacsPortable launcher.
+
 
 * Start the Emacs Server
 #+BEGIN_SRC emacs-lisp

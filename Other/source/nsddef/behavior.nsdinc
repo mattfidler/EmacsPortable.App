@@ -6,22 +6,22 @@
 ; handle variables
 Var hCtl_behavior
 Var hCtl_behavior_GroupBox1
-Var hCtl_behavior_CheckBox2
-Var hCtl_behavior_CheckBox4
-Var hCtl_behavior_Label2
-Var hCtl_behavior_CheckBox1
+Var hCtl_behavior_Daemon
 Var hCtl_behavior_Label1
-Var hCtl_behavior_DropList2
-Var hCtl_behavior_DropList1
-Var hCtl_behavior_DirRequest1_Txt
-Var hCtl_behavior_DirRequest1_Btn
+Var hCtl_behavior_Label2
+Var hCtl_behavior_newFrame
+Var hCtl_behavior_Debug
+Var hCtl_behavior_StartupScript
+Var hCtl_behavior_DefaultVersion
+Var hCtl_behavior_Home_Txt
+Var hCtl_behavior_Home_Btn
 Var hCtl_behavior_Label3
-Var hCtl_behavior_CheckBox7
-Var hCtl_behavior_CheckBox8
+Var hCtl_behavior_ZipBin
+Var hCtl_behavior_Clean
 Var hCtl_behavior_GroupBox2
-Var hCtl_behavior_CheckBox3
-Var hCtl_behavior_CheckBox5
-Var hCtl_behavior_CheckBox6
+Var hCtl_behavior_editWith
+Var hCtl_behavior_orgProtocol
+Var hCtl_behavior_LiberKey
 
 
 ; dialog create function
@@ -39,72 +39,76 @@ Function fnc_behavior_Create
   ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
   Pop $hCtl_behavior_GroupBox1
   
-  ; === CheckBox2 (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 105u 34u 97u 14u "New Frame on file open"
-  Pop $hCtl_behavior_CheckBox2
-  
-  ; === CheckBox4 (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 200u 34u 84u 14u "Debug Startup (gdb)"
-  Pop $hCtl_behavior_CheckBox4
-  
-  ; === Label2 (type: Label) ===
-  ${NSD_CreateLabel} 134u 19u 52u 13u "Startup Script"
-  Pop $hCtl_behavior_Label2
-  
-  ; === CheckBox1 (type: Checkbox) ===
+  ; === Daemon (type: Checkbox) ===
   ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Dameon"
-  Pop $hCtl_behavior_CheckBox1
+  Pop $hCtl_behavior_Daemon
+  ${NSD_Check} $hCtl_behavior_Daemon
   
   ; === Label1 (type: Label) ===
   ${NSD_CreateLabel} 13u 19u 54u 13u "Default Version"
   Pop $hCtl_behavior_Label1
   
-  ; === DropList2 (type: DropList) ===
+  ; === Label2 (type: Label) ===
+  ${NSD_CreateLabel} 134u 19u 52u 13u "Startup Script"
+  Pop $hCtl_behavior_Label2
+  
+  ; === newFrame (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 105u 34u 95u 14u "New frame on file open"
+  Pop $hCtl_behavior_newFrame
+  
+  ; === Debug (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 204u 34u 84u 14u "Debug Startup (gdb)"
+  Pop $hCtl_behavior_Debug
+  
+  ; === StartupScript (type: DropList) ===
   ${NSD_CreateDropList} 190u 17u 94u 12u ""
-  Pop $hCtl_behavior_DropList2
-  SetCtlColors $hCtl_behavior_DropList2 0x000000 0xFFFFFF
+  Pop $hCtl_behavior_StartupScript
+  SetCtlColors $hCtl_behavior_StartupScript 0x000000 0xFFFFFF
   
-  ; === DropList1 (type: DropList) ===
-  ${NSD_CreateDropList} 70u 17u 51u 12u ""
-  Pop $hCtl_behavior_DropList1
-  SetCtlColors $hCtl_behavior_DropList1 0x000000 0xFFFFFF
+  ; === DefaultVersion (type: DropList) ===
+  ${NSD_CreateDropList} 70u 17u 51u 12u "one"
+  Pop $hCtl_behavior_DefaultVersion
+  SetCtlColors $hCtl_behavior_DefaultVersion 0x000000 0xFFFFFF
+  ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion "one"
+  ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion "two"
+  ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion "one"
   
-  ; === DirRequest1_Txt (type: Text) ===
+  ; === Home_Txt (type: Text) ===
   ${NSD_CreateText} 70u 65u 192u 11u ""
-  Pop $hCtl_behavior_DirRequest1_Txt
+  Pop $hCtl_behavior_Home_Txt
   
-  ; === DirRequest1_Btn (type: Button) ===
+  ; === Home_Btn (type: Button) ===
   ${NSD_CreateButton} 264u 65u 20u 11u "..."
-  Pop $hCtl_behavior_DirRequest1_Btn
-  ${NSD_OnClick} $hCtl_behavior_DirRequest1_Btn fnc_hCtl_behavior_DirRequest1_Click
+  Pop $hCtl_behavior_Home_Btn
+  ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
   
   ; === Label3 (type: Label) ===
   ${NSD_CreateLabel} 13u 65u 54u 13u "Home Directory"
   Pop $hCtl_behavior_Label3
   
-  ; === CheckBox7 (type: Checkbox) ===
+  ; === ZipBin (type: Checkbox) ===
   ${NSD_CreateCheckbox} 12u 48u 151u 14u "(Un)Zip Binaries && Run from %TEMP%"
-  Pop $hCtl_behavior_CheckBox7
+  Pop $hCtl_behavior_ZipBin
   
-  ; === CheckBox8 (type: Checkbox) ===
+  ; === Clean (type: Checkbox) ===
   ${NSD_CreateCheckbox} 167u 48u 117u 14u "Clean Residual Files (Stealth)"
-  Pop $hCtl_behavior_CheckBox8
+  Pop $hCtl_behavior_Clean
   
   ; === GroupBox2 (type: GroupBox) ===
   ${NSD_CreateGroupBox} 8u 87u 280u 26u "Integration Options"
   Pop $hCtl_behavior_GroupBox2
   
-  ; === CheckBox3 (type: Checkbox) ===
+  ; === editWith (type: Checkbox) ===
   ${NSD_CreateCheckbox} 12u 97u 89u 14u "Right-Click $\"Edit With$\""
-  Pop $hCtl_behavior_CheckBox3
+  Pop $hCtl_behavior_editWith
   
-  ; === CheckBox5 (type: Checkbox) ===
+  ; === orgProtocol (type: Checkbox) ===
   ${NSD_CreateCheckbox} 105u 97u 58u 14u "org-protocol"
-  Pop $hCtl_behavior_CheckBox5
+  Pop $hCtl_behavior_orgProtocol
   
-  ; === CheckBox6 (type: Checkbox) ===
+  ; === LiberKey (type: Checkbox) ===
   ${NSD_CreateCheckbox} 167u 97u 47u 14u "LiberKey"
-  Pop $hCtl_behavior_CheckBox6
+  Pop $hCtl_behavior_LiberKey
   
 FunctionEnd
 
@@ -116,15 +120,15 @@ Function fnc_behavior_Show
 FunctionEnd
 
 
-; onClick handler for DirRequest Button $hCtl_behavior_DirRequest1_Btn
-Function fnc_hCtl_behavior_DirRequest1_Click
+; onClick handler for DirRequest Button $hCtl_behavior_Home_Btn
+Function fnc_hCtl_behavior_Home_Click
 	Pop $R0
-	${If} $R0 == $hCtl_behavior_DirRequest1_Btn
-		${NSD_GetText} $hCtl_behavior_DirRequest1_Txt $R0
+	${If} $R0 == $hCtl_behavior_Home_Btn
+		${NSD_GetText} $hCtl_behavior_Home_Txt $R0
 		nsDialogs::SelectFolderDialog /NOUNLOAD "" "$R0"
 		Pop $R0
 		${If} "$R0" != "error"
-			${NSD_SetText} $hCtl_behavior_DirRequest1_Txt "$R0"
+			${NSD_SetText} $hCtl_behavior_Home_Txt "$R0"
 		${EndIf}
 	${EndIf}
 FunctionEnd

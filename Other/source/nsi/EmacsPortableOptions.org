@@ -16,61 +16,17 @@ This provides an interface to the Emacs Startup options
 #+END_SRC
 ** Definitions and Variables
 #+BEGIN_SRC nsis
-  Var usb
-  Var usbs
-  Var option_version
-  Var PA
   !define TEMP1 $R0 ;Temp variable
-  !define ep_version "Field 3"
-  !define ep_org "Field 4"
-  !define ep_right "Field 5"
-
-  !define ep_putty_key "Field 6"
-  !define ep_daemon "Field 7"
-  !define ep_zip    "Field 8"
-  !define ep_clean    "Field 9"
-  !define ep_liber    "Field 10"
-  !define ep_newframe "Field 11"
-  !define ep_startup  "Field 12" 
-
-  !define ep_font "Field 14"
-  !define ep_font_size "Field 16"
-  !define ep_fg "Field 18"
-  !define ep_bg "Field 20"
-  !define ep_g1 "Field 23"
-  !define ep_g2 "Field 24"
-  !define ep_g3 "Field 26"
-  !define ep_g4 "Field 27"
-  !define ep_mm "Field 30"
-  !define ep_fw "Field 31"
-  !define ep_fh "Field 32"
-  !define ep_debug "Field 33"
-  !define ep_home "Field 34"
-  !define ep_proxy_server "Field 36"
-  !define ep_proxy_port "Field 38"
-  !define ep_proxy_user "Field 40"
-  !define ep_proxy_password "Field 42"
-
-  !define as_list "3"
-  !define as_desc "11"
-  !define as_ext "10"
-  !define as_steal "12"
-
-  !define as_save  "7"
-  !define as_new "5"
-  !define as_delete "8"
-  !define as_as "1"
   
 #+END_SRC
 ** Include files
 #+BEGIN_SRC nsis
   !include "MUI2.nsh"
   !include "LogicLib.nsh"
-  !include "WinMessages.nsh"
+  !include "CommCtrl.nsh"
   !include "FileFunc.nsh"
   !include "emacsproxy.nsh"
   !include "setupEmacsData.nsh"
-  !include "emacsCall.nsh"
 #+END_SRC
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
@@ -104,29 +60,79 @@ This provides an interface to the Emacs Startup options
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
-  Page custom SetCustom ValidateCustom ": EmacsPortable Options" ;Custom page. InstallOptions gets called in SetCustom.
-  Page custom SetAssoc ValidateAssoc ": EmacsPortable Association Options"
+  Page custom fnc_behavior_Show fnc_behavior_Validate
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
+  
 #+END_SRC
 * Macros
 ** Read/Write Macros
-#+BEGIN_SRC nsis
-  !macro WR OPT EP
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${EP}" "State"
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" ${OPT} "$R0"
+#+BEGIN_SRC nsis  
+  !macro SetCheck VARIABLE OPT 
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "${OPT}"
+    ${If} $R0 == "1"
+      ${NSD_Check} ${VARIABLE}
+    ${ElseIf} ${Errors}
+      ${NSD_Check} ${VARIABLE}
+    ${Else}
+      ${NSD_UnCheck} ${VARIABLE}
+    ${EndIf}
+    ClearErrors
   !macroend
-  !define WR "!insertmacro WR"
+  !define SetCheck `!insertmacro SetCheck`
   
-  
-  !macro RW OPT EP
-    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" ${OPT}
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${EP}" "State" "$R0"
+  !macro SetUnCheck VARIABLE OPT 
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "${OPT}"
+    ${If} $R0 == "1"
+      ${NSD_Check} ${VARIABLE}
+    ${ElseIf} ${Errors}
+      ${NSD_Check} ${VARIABLE}
+    ${Else}
+      ${NSD_UnCheck} ${VARIABLE}
+    ${EndIf}
+    ClearErrors
   !macroend
+  !define SetUnCheck `!insertmacro SetUnCheck`
   
-  !define RW "!insertmacro RW"
-#+END_SRC  
+  !macro SetDir VARIABLE OPT ERR
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "${OPT}"
+    ${If} ${Errors}
+      StrCpy $R0 "${ERR}"
+    ${EndIf}
+    ${NSD_SetText} ${VARIABLE} $R0
+    
+  !macroend
+  !define SetDir `!insertmacro SetDir`
+  
+  !macro WriteCheck VARIABLE OPT
+    ${NSD_GetState} ${VARIABLE} $R0
+    ${If} $R0 == ${BST_CHECKED}
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "${OPT}" "1"
+    ${Else}
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "${OPT}" "0"
+    ${EndIf}  
+  !macroend
+  !define WriteCheck `!insertmacro WriteCheck`
+  
+  !macro WriteText VARIABLE OPT
+    ${NSD_GetText} ${VARIABLE} $R0
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+        "${OPT}" "$R0"
+  !macroEnd
+  !define WriteText `!insertmacro WriteText`
+  
+  !macro WriteCB VARIABLE OPT
+    ${NSD_CB_GetSelection} ${VARIABLE} $R0
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+        "${OPT}" "$R0"
+  !macroend
+  !define WriteCB `!insertmacro WriteCB`
+  
+  
+#+END_SRC
 ** StrSlash
 #+BEGIN_SRC nsis
   ## StringSlash
@@ -383,694 +389,329 @@ Function un.Explode
 FunctionEnd
 #+END_SRC
 * Functions
-** Get Portable Apps Directories
-#+BEGIN_SRC nsis
-  Function GetDriveVars
-    Var /GLOBAL option_home_usb
-    StrCmp $9 "c:\" findcygwin
-    StrCmp $8 "HDD" gpa
-    StrCmp $9 "a:\" spa
-    StrCmp $9 "b:\" spa
-    
-    gpa:
-      StrCmp $option_home_usb "" set_usb 0
-      IfFileExists "$9$option_home_usb" 0 is_emacs_portable
-      IfFileExists "$9$option_home_usb\.emacs" set_home 0
-      IfFileExists "$9$option_home_usb\_emacs" set_home 0
-      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_home
-      IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_home
-      IfFileExists "$9PotableApps" set_home
-      Goto findcygwin
-      
-    set_home:
-      StrCpy $PA "$9PortableApps"
-      Goto set_usb
-      
-    is_emacs_portable:
-      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_usb
-      IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_usb
-      IfFileExists "$9PortableApps" set_usb
-      Goto findcygwin
-      
-    set_usb:
-      StrCpy $usb "$9"
-      StrCpy $usbs "$9" -1
-      Goto findcygwin
-      
-    findcygwin:
-      
-    spa:    
-      Push $0
-      
-  FunctionEnd
-  
-#+END_SRC
-
 ** Callback Functions
 *** Initialization Function
 #+BEGIN_SRC nsis
   Function .onInit
-    ${setupData}
-    ${GetDrives} "FDD+HDD" "GetDriveVars"
-    var /GLOBAL versions
-    var /GLOBAL nemacs
-    var /GLOBAL lastversion
-    SetOutPath "$EXEDIR\Data\ini"
-    CopyFiles /SILENT "$EXEDIR\App\ini\ep.ini" "$EXEDIR\Data\ini\ep.ini"
-    CopyFiles /SILENT "$EXEDIR\App\ini\assoc-io.ini" "$EXEDIR\Data\ini\assoc-io.ini"
-    StrCpy $versions ""
-    StrCpy $nemacs 0
-    StrCpy $lastversion ""
-    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
-    StrCmp $versions "" 0 +4
-    ExecWait "$EXEDIR\EmacsDownload.exe"
-    ExecWait "$EXEDIR\EmacsOptions.exe"
-    Abort
-    StrCpy $option_version $lastversion
-    StrCmp $nemacs 1 +2 0
-    CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State" "$\"$lastversion$\""
-    ${SetupProxy}
-    Pop $0
-  
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" ""
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" ""
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State" ""
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State" ""
-    
-    
-    IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State" "$R0"
-    
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State" "$R0"
-    
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_user}" "State" "$R0"
-    
-    ReadIniStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteINIStr "$EXEDIR\Data\ini\ep.ini"  "${ep_proxy_password}" "State" "$R0"
-    end_proxy_init:
-      ;; Put in some selected options
-      IfFileExists "$EXEDIR\Data\ini\EmacsPortableApp.ini" 0 end_init
-      
-      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey"
-      Push $R0
-      Push "/"
-      Call StrSlash
-      Pop $R0
-      StrCpy $R1 $R0 5
-      StrCmp "$R1" "USB:\" 0 +3
-      StrCpy $R0 $R0 "" 4
-      StrCpy $R0 "$usbs$R0"
-      
-      StrCpy $R1 $R0 8
-      StrCmp "$R1" "EXEDIR:\" 0 +3
-      StrCpy $R0 $R0 "" 8
-      StrCpy $R0 "$EXEDIR\$R0"
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State" "$R0"
-      
-      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" 
-      Push $R0
-      Push "/"
-      Call StrSlash
-      Pop $R0
-      StrCpy $R1 $R0 5
-      StrCmp "$R1" "USB:\" 0 +3
-      StrCpy $R0 $R0 "" 4
-      StrCpy $R0 "$usbs$R0"
-      
-      StrCpy $R1 $R0 8
-      StrCmp "$R1" "EXEDIR:\" 0 +3
-      StrCpy $R0 $R0 "" 8
-      StrCpy $R0 "$EXEDIR\$R0"
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State" "$R0"
-      
-      StrCpy $3 "(None)"
-      FindFirst $0 $1 $EXEDIR\Data\start\*.*
-    loop_startup:
-      StrCmp $1 "" done_startup
-      StrCmp $1 "system" next_startup 
-      StrCmp $1 "shared" next_startup
-      StrCmp $1 "user" next_startup
-      StrCmp $1 ".." next_startup
-      StrCmp $1 "." next_startup
-      StrCpy $3 "$3|$1"
-    next_startup:
-      FindNext $0 $1
-      Goto loop_startup
-    done_startup:
-      FindClose $0
-      
-      WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_startup}" "ListItems" "$3"
-      ${RW} "Startup" "${ep_startup}"
-      ${RW} "OrgProtocol" "${ep_org}"
-      ${RW} "RightEdit" "${ep_right}"
-      ${RW} "Font" "${ep_font}"
-      ${RW} "FontSize" "${ep_font_size}"
-      ${RW} "Foreground" "${ep_fg}"
-      ${RW} "Background" "${ep_bg}"
-      ${RW} "Maximized" "${ep_mm}"
-      ${RW} "Fullwidth" "${ep_fw}"
-      ${RW} "Fullheight" "${ep_fh}"
-      ${RW} "Debug" "${ep_debug}"
-      ${RW} "Daemon" "${ep_daemon}"
-      ${RW} "Zip" "${ep_zip}"
-      ${RW} "Clean" "${ep_clean}"
-      ${RW} "LiberKey" "${ep_liber}"
-      ${RW} "NewFrame" "${ep_newframe}"
-    end_init:
-      ClearErrors
-    FunctionEnd  
-  
+    ClearErrors
+  FunctionEnd  
 #+END_SRC
 *** Exit Function
 #+BEGIN_SRC nsis
   Function .onGUIEnd
-    Delete "$EXEDIR\Data\ini\ep.ini"
-  FunctionEnd
-  
-#+END_SRC
-
-** Figure out what Emacs versions are present with SetValues function
-#+BEGIN_SRC nsis
-  Function SetValues
-    IntOp $nemacs $nemacs + 1
-    StrCmp $lastversion "" +2
-    CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$lastversion.exe"
-    StrLen $R1 "$EXEDIR\App\emacs-"
-    StrLen $R2 $R9
-    IntOp $R2 $R1 - $R2
-    StrCpy $R0 $R9 "" $R2
-    StrCpy $versions "$versions|$R0"
-    StrCpy $lastversion $R0
-    StrCpy $R0 $versions "" 1
-    WriteIniStr "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "ListItems" "$R0" 
-    Push $0
-  FunctionEnd
-#+END_SRC
-
-** Display the InstallOptions dialog
-#+BEGIN_SRC nsis
-  LangString FIRST_TITLE ${LANG_ENGLISH} "EmacsPortable.App Options"
-  LangString FIRST_SUBTITLE ${LANG_ENGLISH} "Startup Options and Proxy Settings"
-  Function SetCustom
-    !insertmacro MUI_HEADER_TEXT $(FIRST_TITLE) $(FIRST_SUBTITLE)
-    ## Now Setup the 
-    Push ${TEMP1}
-    
-    InstallOptions::dialog "$EXEDIR\Data\ini\ep.ini"
-    Pop ${TEMP1}
-    
-    Pop ${TEMP1}
-    
-  FunctionEnd
-#+END_SRC
-
-
-** Write the startup options to EmacsPortable.ini
-#+BEGIN_SRC nsis
-  ;;    
-  Function ValidateCustom
-    ;
-    ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 2" "State"
-    ;  StrCmp ${TEMP1} 1 done
-    
-    ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "${ep_version}" "State"
-    ;  StrCmp ${TEMP1} 1 done
-    
-    ;  ReadINIStr ${TEMP1} "$PLUGINSDIR\test.ini" "Field 4" "State"
-    ;  StrCmp ${TEMP1} 1 done
-    ;    MessageBox MB_ICONEXCLAMATION|MB_OK "You must select at least one install option!"
-    ;    Abort
-    
-    ;  done:
-  
-    ReadIniStr $7 "$EXEDIR\Data\ini\ep.ini" "${ep_version}" "State"
-  
-    ;; Home Directory
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_home}" "State"
-    
-    ;; Now replace $EXEDIR with EXEDIR:
-    StrLen $R1 $EXEDIR
-    StrCpy $R2 $R0 $R1
-    StrCmp $EXEDIR $R2 0 +3
-    StrCpy $R0 $R0 "" $R1
-    StrCpy $R0 "EXEDIR:$R0"
-    
-    ;; Now replace $USBS
-    
-    StrLen $R1 $usbs
-    StrCpy $R2 $R0 $R1
-    StrCmp $usbs $R2 0 +3
-    StrCpy $R0 $R0 "" $R1
-    StrCpy $R0 "USB:$R0"
-    
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Home" "$R0"
-    ;; Putty Key
-    
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_putty_key}" "State"
-    
-    ;; Now replace $EXEDIR with EXEDIR:
-    StrLen $R1 $EXEDIR
-    StrCpy $R2 $R0 $R1
-    StrCmp $EXEDIR $R2 0 +3
-    StrCpy $R0 $R0 "" $R1
-    StrCpy $R0 "EXEDIR:$R0"
-    
-    ;; Now replace $USBS
-    
-    StrLen $R1 $usbs
-    StrCpy $R2 $R0 $R1
-    StrCmp $usbs $R2 0 +3
-    StrCpy $R0 $R0 "" $R1
-    StrCpy $R0 "USB:$R0"
-    
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "PuttyKey" "$R0"
-    
-    ; Geometry
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g1}" "State"
-    StrCpy $R1 "$R0"
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g2}" "State"
-    StrCpy $R1 "$R1x$R0"
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g3}" "State"
-    StrCpy $R1 "$R1+$R0"
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_g4}" "State"
-    StrCpy $R1 "$R1+$R0"
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" "$R1"
-    
-    
-    ${WR} "Version" "${ep_version}"
-    ${WR} "OrgProtocol" "${ep_org}"
-    ${WR} "Startup" "${ep_startup}"
-    ${WR} "RightEdit" "${ep_right}"
-    ${WR} "Font" "${ep_font}"
-    ${WR} "FontSize" "${ep_font_size}"
-    ${WR} "Foreground" "${ep_fg}"
-    ${WR} "Background" "${ep_bg}"
-    ${WR} "Maximized" "${ep_mm}"
-    ${WR} "Fullwidth" "${ep_fw}"
-    ${WR} "Fullheight" "${ep_fh}"
-    ${WR} "Debug" "${ep_debug}"
-    ${WR} "Daemon" "${ep_daemon}"
-    ${WR} "Zip" "${ep_zip}"
-    ${WR} "Clean" "${ep_clean}"
-    ${WR} "LiberKey" "${ep_liber}"
-    StrCmp "$R0" "1" +3
-    IfFileExists "$EXEDIR\App\eps\ep-rm-liberkey.exe" +2
-    Exec "$EXEDIR\App\eps\ep-rm-liberkey.exe"
-  
-    ${WR} "NewFrame" "${ep_newframe}"
-    
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_server}" "State"
-    StrCmp $R0 "" skip_proxy
-    blowfish::encrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server" "$R0"
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_port}" "State"
-    blowfish::encrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port" "$R0"
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_user}" "State"
-    blowfish::encrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User" "$R0"
-    ReadINIStr $R0 "$EXEDIR\Data\ini\ep.ini" "${ep_proxy_password}" "State"
-    blowfish::encrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password" "$R0"
-    skip_proxy:
-      
-      ClearErrors
-  FunctionEnd  
-  
-#+END_SRC
-
-** Association InstallOptions dialog
-*** Startup
-#+BEGIN_SRC nsis
-  LangString SECOND_SUBTITLE ${LANG_ENGLISH} "EmacsPortable.App File Associations"
-  Function SetAssoc
-    !insertmacro MUI_HEADER_TEXT $(FIRST_TITLE) $(SECOND_SUBTITLE)
-    Var /GLOBAL pinned_assoc
-    Var /GLOBAL removed_assoc
-    StrCpy $pinned_assoc ""
-    StrCpy $removed_assoc ""
-    
-    ;Display the InstallOptions dialog
-    
-    ; First Populate the Fields
-  
-    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
     ClearErrors
-    WriteIniStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_as}" "State" "$R0"
-    
-    Call GetFileTypes
-    WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" "$R4"
-    
-    Call FillOutFileTypes
-    
-    Push ${TEMP1}
-    
-    InstallOptions::dialog "$EXEDIR\Data\ini\assoc-io.ini"
-    Pop ${TEMP1}
-    
-    Pop ${TEMP1}
-    
   FunctionEnd
   
-  Function GetFileTypes
-    EnumINI::Section "$EXEDIR\App\ini\assoc.ini" "assoc"
-    Pop $R0
-    StrCpy $R3 "" 
-    StrCpy $R4 ""
-    StrCmp $R0 "error" done_assoc
-    loop_assoc:
-      IntCmp $R0 "0" done_assoc done_assoc 0
-      Pop $R1
-      ReadINIStr $R2 "$EXEDIR\App\ini\assoc.ini" "assoc" "$R1"
-      StrCmp $R3 "" 0 +3
-      StrCpy $R3 "$R1 ($R2)"
-      Goto +2
-      StrCpy $R3 "$R1 ($R2)|$R3"
-      StrCpy $R4 "$R1 ($R2)"
-      IntOp $R0 $R0 - 1
-      Goto loop_assoc
-    done_assoc:
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "ListItems" "$R3"
-      ClearErrors
-  FunctionEnd
-  
-  Function FillOutFileTypes
-    Var /GLOBAL lastDesc
-    Var /GLOBAL lastExt
-    var /GLOBAL lastSteal
-    ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
-    StrCmp "$R0" "" end
-    StrCpy $R0 $R0 -1
-    StrCpy $R1 -1
-    loop_find:
-      StrCpy $R2 $R0 1 $R1
-      IntOp $R1 $R1 - 1
-      StrCmp $R2 "(" loop_end loop_find
-    loop_end:
-      StrLen $R2 $R0
-      IntOp $R1 $R1 + $R2
-      StrCpy $R1 $R0 $R1
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State" $R1
-      ReadIniStr $R0 "$EXEDIR\App\ini\assoc.ini" "assoc" "$R1"
-      StrCpy $lastDesc $R1
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" $R0
-      StrCpy $lastExt $R0
-      StrCpy $R3 ""
-      StrCpy $R4 "" 
-      ${Explode}  $0  "," "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        ReadIniStr $R5 "$EXEDIR\App\ini\assoc.ini" "primary" "$2"
-        ClearErrors
-        StrCmp $R5 "1" 0 +5
-        StrCmp $R4 "" 0 +3
-        StrCpy $R4 "$2"
-        Goto +2
-        StrCpy $R4 "$2|$R4"
-  
-        StrCmp $R3 "" 0 +3
-        StrCpy $R3 "$2"
-        Goto +2
-        StrCpy $R3 "$2|$R3"
-      ${Next}
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" $R4
-      StrCpy $lastSteal $R4
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" $R3
+#+END_SRC
+** Convert File Name Function
+This converts USB:/ and EXEDIR:/ to the appropriate values
+#+BEGIN_SRC nsis
+  Function ConvertToFile
+    ;; $0= File
+    ;; $1 = Temp
+    ;; $R0 = File with backslashes.
+    Push $0
+    Exch
+    Pop $0
+    Push $1
+    Push $R0
+    ${StrSlash} "$0" "/"
+    StrCpy $1 $R0 5
+    StrCmp "$1" "USB:\" home_usb home_exe
+    home_usb:
+    home_exe:
+      StrCpy $1 $R0 8
+      StrCmp "$1" "EXEDIR:\" 0 end
+      StrCpy $R0 $R0 "" 8
+      StrCpy $R0 "$EXEDIR\$R0"
     end:
+      Push $R0
+      Exch
+      Pop $R0
+      Exch
+      Pop $1
+      Exch
+      Pop $0
+  FunctionEnd
+  
+  !macro ConvertToFile V F
+    Push ${F}
+    Call ConvertToFile
+    Pop ${V}
+  !macroend
+  
+  !define ConvertToFile `!insertmacro ConvertToFile`
+  
+  Function ConvertToAlias
+    ;; $0= File
+    ;; $1 = Temp
+    ;; $2 = Temp
+    ;; $3 = Temp
+    ;; $R0 = File with backslashes.
+    Push $0
+    Exch
+    Pop $0
+    Push $1
+    Push $2
+    Push $3
+    Push $R0
+    ${StrSlash} "$0" "/"
+    GetFullPathName $1 "$EXEDIR"
+    StrLen $2 $1
+    StrCpy $3 $R0 $2
+    StrCmp $1 $3 replace_exedir
+    GetFullPathName /SHORT $1 "$EXEDIR"
+    StrLen $2 $1
+    StrCpy $3 $R0 $2
+    StrCmp $1 $3 replace_exedir
+    Goto end
+    replace_exedir:
+      StrCpy $R0 $R0 "" $2
+      StrCpy $R0 "EXEDIR:$R0" 
+    end:
+      Push $R0
+      Exch
+      Pop $R0
+      Exch
+      Pop $3
+      Exch
+      Pop $2
+      Exch
+      Pop $1
+      Exch
+      Pop $0 
+  FunctionEnd
+  
+  !macro ConvertToAlias V F
+    Push ${F}
+    Call ConvertToAlias
+    Pop ${V}
+  !macroend
+  
+  !define ConvertToAlias `!insertmacro ConvertToAlias`
+#+END_SRC
+
+* Pages
+** Behavior
+*** Dialog Definitions
+#+BEGIN_SRC nsis
+  ; ========================================================
+  ; This file was generated by NSISDialogDesigner 0.9.16.0
+  ; http://coolsoft.altervista.org/nsisdialogdesigner
+  ; ========================================================
+  
+  ; handle variables
+  Var hCtl_behavior
+  Var hCtl_behavior_GroupBox1
+  Var hCtl_behavior_newFrame
+  Var hCtl_behavior_Debug
+  Var hCtl_behavior_Label2
+  Var hCtl_behavior_Daemon
+  Var hCtl_behavior_Label1
+  Var hCtl_behavior_StartupScript
+  Var hCtl_behavior_DefaultVersion
+  Var hCtl_behavior_Home_Txt
+  Var hCtl_behavior_Home_Btn
+  Var hCtl_behavior_Label3
+  Var hCtl_behavior_ZipBin
+  Var hCtl_behavior_Clean
+  Var hCtl_behavior_GroupBox2
+  Var hCtl_behavior_editWith
+  Var hCtl_behavior_orgProtocol
+  Var hCtl_behavior_LiberKey
+  
+  
+  ; dialog create function
+  Function fnc_behavior_Create
+    
+    ; === behavior (type: Dialog) ===
+    nsDialogs::Create 1018
+    Pop $hCtl_behavior
+    ${If} $hCtl_behavior == error
+      Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "EmacsPortable.App Behavior" "This allows the user to change the startup options, home directory, and what EmacsPortable.App integrates with."
+    
+    ; === Label1 (type: Label) ===
+    ${NSD_CreateLabel} 13u 19u 54u 13u "Default Version"
+    Pop $hCtl_behavior_Label1
+    
+    ; === DefaultVersion (type: DropList) ===
+    ${NSD_CreateDropList} 70u 17u 51u 12u ""
+    Pop $hCtl_behavior_DefaultVersion
+    SetCtlColors $hCtl_behavior_DefaultVersion 0x000000 0xFFFFFF
+  
+    ReadIniStr $3 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
+    ClearErrors
+    StrCpy $4 ""
+    
+    FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+    loop_emacs:
+      StrCmp $1 "" done_emacs
+      StrCpy $1 $1 "" 6
+      StrCpy $2 $1
+      StrCmp $2 $3 0 +2
+      StrCpy $4 $2
+      ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion $1
+      FindNext $0 $1
+      Goto loop_emacs
+    done_emacs:
+      FindClose $0
+      StrCmp $4 "" 0 +2
+      StrCpy $4 $2
+      ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $4
+      
+      ; === Label2 (type: Label) ===
+      ${NSD_CreateLabel} 134u 19u 52u 13u "Startup Script"
+      Pop $hCtl_behavior_Label2
+      
+      ; === StartupScript (type: DropList) ===
+      ${NSD_CreateDropList} 190u 17u 94u 12u ""
+      Pop $hCtl_behavior_StartupScript
+      SetCtlColors $hCtl_behavior_StartupScript 0x000000 0xFFFFFF
+  
+      ReadIniStr $3 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Startup"
       ClearErrors
+      StrCpy $4 ""
+      
+      FindFirst $0 $1 $EXEDIR\Data\start\*.*
+    loop_start:
+      StrCmp $1 "" done_start
+      StrCmp $1 "shared" next_start
+      StrCmp $1 "system" next_start
+      StrCmp $1 "user" next_start
+      StrCmp $1 "." next_start
+      StrCmp $1 ".." next_start
+      StrCpy $2 $1
+      StrCmp $2 $3 0 +2
+      StrCpy $4 $2
+      ${NSD_CB_AddString} $hCtl_behavior_StartupScript $1
+    next_start:
+      FindNext $0 $1
+      Goto loop_start
+    done_start:
+      FindClose $0
+      StrCmp $4 "" 0 +2
+      StrCpy $4 $2
+      ${NSD_CB_SelectString} $hCtl_behavior_StartupScript $4
+      
+      
+      
+      ; === GroupBox1 (type: GroupBox) ===
+      ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
+      Pop $hCtl_behavior_GroupBox1
+      
+      ; === newFrame (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 105u 34u 93u 14u "New Frame on file open"
+      Pop $hCtl_behavior_newFrame
+      ${SetUnCheck} $hCtl_behavior_newFrame "NewFrame"
+      
+      ; === Debug (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 200u 34u 84u 14u "Debug Startup (gdb)"
+      Pop $hCtl_behavior_Debug
+      ${SetUnCheck} $hCtl_behavior_Debug "Debug"
+      
+      ; === Daemon (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Daemon"
+      Pop $hCtl_behavior_Daemon
+      ${SetCheck} $hCtl_behavior_Daemon "Daemon"
+      
+      ; === Home_Txt (type: Text) ===
+      ${NSD_CreateText} 70u 65u 192u 11u ""
+      Pop $hCtl_behavior_Home_Txt
+      ${SetDir} $hCtl_behavior_Home_Txt "Home" "EXEDIR:/Data/Home"
+  
+      ; === Label3 (type: Label) ===
+      ${NSD_CreateLabel} 13u 65u 54u 13u "Home Directory"
+      Pop $hCtl_behavior_Label3
+      
+      ; === Home_Btn (type: Button) ===
+      ${NSD_CreateButton} 264u 65u 20u 11u "..."
+      Pop $hCtl_behavior_Home_Btn
+      ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
+      
+      ; === ZipBin (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 12u 48u 151u 14u "(Un)Zip Binaries && Run from %TEMP%"
+      Pop $hCtl_behavior_ZipBin
+      ${SetUnCheck} $hCtl_behavior_ZipBin "Zip"
+      
+      ; === Clean (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 167u 48u 117u 14u "Clean Residual Files (Stealth)"
+      Pop $hCtl_behavior_Clean
+      ${SetCheck} $hCtl_behavior_Clean "Clean"
+      
+      
+      ; === GroupBox2 (type: GroupBox) ===
+      ${NSD_CreateGroupBox} 8u 87u 280u 26u "Integration Options"
+      Pop $hCtl_behavior_GroupBox2
+      
+      ; === editWith (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 12u 97u 89u 14u "Right-Click $\"Edit With$\""
+      Pop $hCtl_behavior_editWith
+      ${SetCheck} $hCtl_behavior_editWith "RightEdit"
+      
+      ; === orgProtocol (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 105u 97u 58u 14u "org-protocol"
+      Pop $hCtl_behavior_orgProtocol
+      ${SetCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
+      
+      ; === LiberKey (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 167u 97u 47u 14u "LiberKey"
+      Pop $hCtl_behavior_LiberKey
+      ${SetUnCheck} $hCtl_behavior_LiberKey "LiberKey"
+      
+  FunctionEnd
+  
+  
+  ; dialog show function
+  Function fnc_behavior_Show
+    Call fnc_behavior_Create
+    nsDialogs::Show $hCtl_behavior
+  FunctionEnd
+  
+  
+  ; onClick handler for DirRequest Button $hCtl_behavior_Home_Btn
+  Function fnc_hCtl_behavior_Home_Click
+    Pop $R0
+    ${If} $R0 == $hCtl_behavior_Home_Btn
+      ${NSD_GetText} $hCtl_behavior_Home_Txt $R0
+      ${ConvertToFile} $R0 $R0
+      nsDialogs::SelectFolderDialog /NOUNLOAD "" "$R0"
+      Pop $R0
+      ${If} "$R0" != "error"
+        ${ConvertToAlias} $R0 $R0
+        ${NSD_SetText} $hCtl_behavior_Home_Txt "$R0"
+      ${EndIf}
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
 
-*** Validation
+*** Validation Function
 #+BEGIN_SRC nsis
-  Function ValidateAssoc
-    Var /GLOBAL new_button
-    ReadINIStr $0 "$EXEDIR\Data\ini\assoc-io.ini" "Settings" "State"
-    StrCmp $0 0 validate  ; Next button?
-    StrCmp "$0" "${as_list}" change_list ;Change in list?
-    StrCmp "$0" "${as_save}" save_changes ;Save Changes
-    StrCmp "$0" "${as_new}" new ; New Association
-    StrCmp "$0" "${as_delete}" del ; Delete Association
-    StrCmp "$0" "${as_as}" as ; Associate Files has changed.
-    Abort ; Return to the page
-    as:
-      Call RemoveAssoc
-      ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_as}" "State"
-      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc" "$R0"
-      Abort
-    del:
-      Call ClearSteal
-      Call ClearAssoc
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State" ""
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "HWND"
-      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
-      
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" ""
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "HWND"
-      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
-      
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" ""
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" ""
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" ""
-      Call RemoveAssoc
-      DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$lastDesc" 
-      Call GetFileTypes
-      
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_save}" "HWND"
-      EnableWindow $R1 0
-      Call UpdateTop
-      Abort
-    new:
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_save}" "HWND"
-      EnableWindow $R1 1      
-      Call ClearSteal
-      Call ClearAssoc
-      
-      StrCpy $new_button "1"
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State" ""
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "HWND"
-      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
-      
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State" ""
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "HWND"
-      SendMessage $R1 ${WM_SETTEXT} 1 'STR:'
-      
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State" ""
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems" ""
-      WriteINIStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" ""
-      
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_delete}" "HWND"
-      EnableWindow $R1 0
-      Call UpdateTop
-      Abort
-    save_changes:
-      Call ClearSteal
-      Call ClearAssoc
-      Call SaveAssoc
-      Call GetFileTypes
-      Call FillOutFileTypes
-      StrCmp $new_button "1" 0 +3
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_delete}" "HWND"
-      EnableWindow $R1 1
-      StrCpy $new_button ""
-      Call UpdateTop
-      Call UpdateBottom
-      ## Now update Listboxes
-      Abort
-    change_list:
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_save}" "HWND"
-      EnableWindow $R1 1
-      Call ClearSteal
-      Call FillOutFileTypes
-      Call UpdateBottom
-      Abort
-    validate:
-      ; This is the function to validate.
-      ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_as}" "State"
-      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc" "$R0"
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
-      StrCmp "$R0" "" end
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State"
-      StrCmp $lastSteal $R0 0 saveassoc
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State"
-      StrCmp $lastExt $R0 saveassoc
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State"
-      StrCmp $lastDesc $R0 saveassoc
-    saveassoc:
-      Call SaveAssoc
-    end:
-      Call RestoreAssoc
+  Function fnc_behavior_Validate
+    ## Save Data.
+    ${WriteCheck} $hCtl_behavior_newFrame "NewFrame"
+    ${WriteCheck} $hCtl_behavior_Debug "Debug"
+    ${WriteCheck} $hCtl_behavior_Daemon "Daemon"
+    ${WriteCheck} $hCtl_behavior_ZipBin "Zip"
+    ${WriteCheck} $hCtl_behavior_Clean "Clean"
+    ${WriteCheck} $hCtl_behavior_editWith "RightEdit"
+    ${WriteCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
+    ${WriteCheck} $hCtl_behavior_LiberKey "LiberKey"
+    
+    ${WriteText} $hCtl_behavior_Home_Txt "Home"
+
+    ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
+    ${WriteCB} $hCtl_behavior_StartupScript "Startup"
   FunctionEnd
   
-  Function RestoreAssoc
-      StrCmp $removed_assoc "1" 0 end
-      IfFileExists "$EXEDIR\App\eps\ep-liberkey.exe" 0 +2
-      Exec "$EXEDIR\App\eps\ep-liberkey.exe"
-      
-      IfFileExists "$EXEDIR\App\eps\ep-assoc.exe" 0 +3
-      ExecWait "$EXEDIR\App\eps\ep-assoc.exe"
-      
-      StrCmp $pinned_assoc "1" 0 +7
-      IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +3
-      CopyFiles /SILENT "$TEMP\ep\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
-      Delete "$TEMP\ep\rm-ep-assoc.exe"
-      IfFileExists "$TEMP\rm-ep-assoc.exe" 0 +3
-      CopyFiles /SILENT "$TEMP\rm-ep-assoc.exe" "$EXEDIR\App\eps\rm-ep-assoc.exe"
-      Delete "$TEMP\rm-ep-assoc.exe"
-      end:
-        ClearErrors
-    FunctionEnd
-    
-    Function ClearAssoc
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "ListItems"
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "HWND"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        SendMessage $R1 ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
-        SendMessage $R1 ${LB_DELETESTRING} $3 0
-      ${Next}
-    FunctionEnd
-    
-    Function ClearSteal
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems"
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "HWND"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        SendMessage $R1 ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
-        SendMessage $R1 ${LB_DELETESTRING} $3 0
-      ${Next}
-    FunctionEnd
-    
-    Function UpdateTop
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "ListItems"
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "HWND"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        SendMessage $R1 ${LB_ADDSTRING} 0 "STR:$2"
-      ${Next}
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State"
-      StrCmp "$R0" "" +2
-      SendMessage $R1 ${LB_SELECTSTRING} -1 "STR:$R0"
-    FunctionEnd
-    
-    
-    Function UpdateBottom
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State"
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "HWND"
-      SendMessage $R1 ${WM_SETTEXT} 1 'STR:$R0'
-      
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State"
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "HWND"
-      SendMessage $R1 ${WM_SETTEXT} 1 'STR:$R0'
-      
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems"
-      ReadINIStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "HWND"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        SendMessage $R1 ${LB_ADDSTRING} 0 "STR:$2"
-      ${Next}
-      ReadINIStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        SendMessage $R1 ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
-        StrCmp "$3" "-1" +2
-        SendMessage $R1 ${LB_SETSEL} 1 $3
-      ${Next}
-    FunctionEnd
-    
-    Function SaveAssoc
-      ## Write Description/Extension Information.
-      ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_desc}" "State"
-      ReadIniStr $R1 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_ext}" "State"
-      ${StrReplace} $R1 "." "" $R1
-      ${StrReplace} $R1 " " "" $R1
-      ${StrReplace} $R1 ";" "," $R1
-      ${StrReplace} $R1 "|" "," $R1
-      WriteIniStr "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_list}" "State" "$R0 ($R1)"
-      StrCmp $new_button "1" +3
-      StrCmp "$R0" "$lastDesc" +2
-      Call RemoveAssoc
-      DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$lastDesc"
-      WriteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$R0" "$R1"
-      
-      ## Steal Associations?
-      ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "ListItems"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        WriteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$2" "0"
-      ${Next}
-      
-      ReadIniStr $R0 "$EXEDIR\Data\ini\assoc-io.ini" "Field ${as_steal}" "State"
-      ${Explode}  $0  "|" "$R0"
-      ${For} $1 1 $0
-        Pop $2
-        WriteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$2" "1"
-      ${Next}
-    FunctionEnd
-    
-    Function RemoveAssoc
-      StrCmp $removed_assoc "1" end
-      IfFileExists "$EXEDIR\App\eps\rm-ep-liberkey.exe" 0 +2
-      Exec "$EXEDIR\App\eps\rm-ep-liberkey.exe"
-      
-      IfFileExists "$EXEDIR\App\eps\rm-ep-assoc.exe" 0 +3
-      Exec "$EXEDIR\App\eps\rm-ep-assoc.exe"
-      StrCpy $pinned_assoc "1"    
-      
-      IfFileExists "$TEMP\ep\rm-ep-assoc.exe" 0 +2
-      Exec "$TEMP\ep\rm-ep-assoc.exe"
-      StrCpy $removed_assoc "1"
-      end:
-        ClearErrors
-    FunctionEnd
-    
 #+END_SRC
+
 * Obligatory Section
 #+BEGIN_SRC nsis
   Section "Components" 
     ;Get Install Options dialog user input
-    StrCmp $called_emacs "1" +2 0
-    Call AddEmacsPath
-    StrCmp $found_emacs "" end 0
-    StrCpy $R0 "$EXEDIR\App\MacOS\build-plist.el"
-    Push $R0
-    Push "/"
-    Call StrSlash
-    Pop $R0
-    ExecDos::exec "$found_emacs\emacs.exe -Q --batch -l $R0 --eval $\"(build-app-info)$\""
-    Call CleanEmacsZip
-    end:
       ClearErrors
   SectionEnd
 #+END_SRC  

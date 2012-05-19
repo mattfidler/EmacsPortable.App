@@ -88,7 +88,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   !include "setupEmacsData.nsh"
 #+END_SRC
 
-
 * Macros/Functions
 ** File Time Differences
 
@@ -452,39 +451,13 @@ FunctionEnd
     StrCpy $option_version $R1
     Push $0
   FunctionEnd
+  
   Function parseParameters
-    emacs_start:
-      StrCmp "$EXEFILE" "EmacsPortableApp.exe" emacs_ver_from_ini emacs_ver_from_exe
-    emacs_ver_from_exe:
-      StrLen $R2 $EXEFILE
-      IntOp $R2 17 - $R2
-      StrCpy $R0 $EXEFILE "" $R2
-      StrLen $R2 $R0
-      IntOp $R2 $R2 - 4
-      StrCpy $option_version $R0 $R2
-      IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs.exe +4
-      IfFileExists $EXEDIR\App\emacs-$option_version\bin\emacs-$option_version.exe +3
-      IfFileExists $EXEDIR\App\emacs-$option_version\bare-bin.zip +2
-      Goto emacs_ver_from_ini
-      Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$option_version'
-      Abort
-    emacs_ver_from_ini:
-      IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 emacs_ver
-      ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
-      FindProcDLL::FindProc "emacs-$option_version.exe"
-      StrCmp $R0 "1" ver_found_ini
-      ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
-    ver_found_ini:
-      IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 emacs_ver_skip
-      ${FileTimeDiff} $0 "$EXEDIR\EmacsPortableApp.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe" 3
-      IntCmp $0 0 emacs_ver_skip emacs_ver_skip 0
-      Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
-      CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$option_version.exe"
-      Goto emacs_ver_skip
-    emacs_ver:
-      ExecWait $EXEDIR\EmacsOptions.exe
-      Goto emacs_start
-    emacs_ver_skip:
+    ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
+    FindProcDLL::FindProc "emacs-$option_version.exe"
+    StrCmp $R0 "1" already_running
+    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+    already_running:
       
       ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
       
@@ -503,31 +476,73 @@ FunctionEnd
       ${ReadINIStrWithDefault} $option_background $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
       ${ReadINIStrWithDefault} $option_foreground $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
       ${ReadINIStrWithDefault} $option_daemon $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
+      
       StrCmp "1" $option_daemon 0 +2
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
       
       ${GetOptions} $cmdLineParams '/VERSION=' $R0
-      IfErrors +2 0
+      IfErrors read_cmd_line_ver 0
       StrCpy $option_version $R0
+      ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""
+      StrCpy $cmdLineParams $0
+    read_cmd_line_ver:
+      ClearErrors
+      StrCpy $option_emacs "emacs-$option_version.exe"
+      IfFileExists "$EXEDIR\App\emacs-$option_version\lisp" emacs_ver_done
+  
+      IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 +2
+      Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
       
+      FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+    loop_ver:
+      StrCmp $1 "" done_ver
+      StrCpy $1 $1 "" 6
+      StrCpy $2 $1
+      FindNext $0 $1
+      Goto loop_ver
+    done_ver:
+      FindClose $0
+      MessageBox MB_YESNO|MB_ICONEXCLAMATION "Emacs $option_version not found!$\n$\n Run emacs $2 instead?" IDYES set_new_ver IDNO abort_run
+    set_new_ver:
+      ## Save known version string if it is not saved correctly.
+      ReadIniStr $1 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
+      ClearErrors
+      StrCmp $1 "" +2
+      StrCmp $1 $option_version 0 +2
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version" $2
+      
+      StrCpy $option_version $2
       StrCpy $option_emacs "emacs-$option_version.exe"
       
+      Goto emacs_ver_done
+    abort_run:
+      Abort
+    emacs_ver_done:
+      ClearErrors
       
       ${GetOptions} $cmdLineParams '/DEBUG' $R0
-      IfErrors +3 0
+      IfErrors no_debug_cmd_line
       StrCpy $option_debug " --debug-init"
-      Goto +7
-      IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini 0 +5
-      ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
-      StrCmp $option_debug "1" 0 +3
-      StrCpy $option_debug " --debug-init"
-      Goto +2
+      Goto emacs_debug_done
+    no_debug_cmd_line:
+      ClearErrors
+      IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini read_debug_ini_file
       StrCpy $option_debug ""
+      Goto emacs_debug_done
+    read_debug_ini_file:
+      ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
+      StrCmp $option_debug "1" 0 no_debugging
+      StrCpy $option_debug " --debug-init"
+      Goto emacs_debug_done
+    no_debugging:
+      StrCpy $option_debug ""
+    emacs_debug_done:
+      ClearErrors
       
       ${GetOptions} $cmdLineParams '/Q' $R0
       IfErrors +2 0
       StrCpy $option_q " -Q"
-      
+      ClearErrors
       
       
       ${GetOptions} $cmdLineParams '/DOS' $R0
@@ -535,7 +550,7 @@ FunctionEnd
       StrCpy $option_dos " -nw"
       StrCpy $option_emacs "emacs-$option_version-dos.exe"
       StrCpy $option_emacsclient "emacsclient.exe"
-      
+      ClearErrors
       
       
       ;; Now take out all known parameters
@@ -545,8 +560,6 @@ FunctionEnd
       ${StrReplace} $cmdLineParams "/DOS" ""
       StrCpy $cmdLineParams $0
       ${StrReplace} $cmdLineParams "/DEBUG" ""
-      StrCpy $cmdLineParams $0
-      ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""
       StrCpy $cmdLineParams $0
       
       ${Trim} $cmdLineParams
@@ -954,14 +967,14 @@ FunctionEnd
 
 ** Setup Emacs Specific Environment Variables
 #+BEGIN_SRC nsis
-Function SetupDirs
-  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\App\emacs-$option_version\etc").r0'
-  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\App\emacs-$option_version\etc").r0'
-  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\App\emacs-$option_version\lisp;$EXEDIR\App\site-lisp").r0'
-  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\App\emacs-$option_version\info").r0'
-  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\Other\").r0'
-FunctionEnd
-!define SetupDirs "Call SetupDirs"
+  Function SetupDirs
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\App\emacs-$option_version\etc").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\App\emacs-$option_version\etc").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\App\site-lisp;$EXEDIR\App\emacs-$option_version\lisp").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\App\emacs-$option_version\info").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\Other\").r0'
+  FunctionEnd
+  !define SetupDirs "Call SetupDirs"
 #+END_SRC
 * Setup Files
 ** Copy Dlls to the correct position

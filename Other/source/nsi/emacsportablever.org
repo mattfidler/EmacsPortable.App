@@ -30,10 +30,6 @@ many times.
     StrLen $R2 $R0
     IntOp $R2 $R2 - 4
     StrCpy $R7 $R0 $R2
-    IfFileExists $EXEDIR\App\emacs-$R7\bin\emacs.exe +4
-    IfFileExists $EXEDIR\App\emacs-$R7\bin\emacs-$R7.exe +3
-    IfFileExists $EXEDIR\App\emacs-$R7\bare-bin.zip +2
-    Goto +2
     Exec '"$EXEDIR\EmacsPortableApp.exe" /VERSION=$R7 $cmdLineParams'
     Goto end
     exe:
@@ -41,5 +37,7 @@ many times.
       ReadINIStr $R0 "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
       Exec '"$R0\EmacsPortableApp.exe" $cmdLineParams'
     end:
+      ClearErrors
   SectionEnd
+  
 #+END_SRC
