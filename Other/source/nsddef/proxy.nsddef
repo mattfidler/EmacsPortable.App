@@ -7,19 +7,19 @@ Do not edit manually!
 <Dialog Name="proxy" Title="Dialog title..." Subtitle="Dialog subtitle...">
   <GroupBox Name="GroupBox1" Location="12, 12" Size="426, 118" Text="Proxy Settings" TabIndex="1">
     <TextBox Name="TextBox1" Location="108, 16" Size="149, 20" TabIndex="0" />
-    <Label Name="Label2" Location="272, 19" Size="61, 23" Text="Proxy Port" TabIndex="1" />
     <Label Name="Label1" Location="6, 16" Size="70, 23" Text="Proxy Server" TabIndex="1" />
+    <Label Name="Label2" Location="272, 19" Size="61, 23" Text="Proxy Port" TabIndex="1" />
     <TextBox Name="TextBox2" Location="339, 13" Size="81, 20" TabIndex="2" />
     <Label Name="Label4" Location="6, 71" Size="102, 23" Text="Confirm Password" TabIndex="3" />
     <Label Name="Label3" Location="6, 45" Size="57, 23" Text="Password" TabIndex="3" />
-    <Password Name="Password2" Location="108, 68" Size="312, 20" TabIndex="4" />
     <Password Name="Password1" Location="108, 42" Size="312, 20" TabIndex="4" />
-    <Label Name="Label5" Location="108, 94" Size="312, 21" Text="Note: Proxy settings are different" TabIndex="5" />
+    <Password Name="Password2" Location="108, 68" Size="312, 20" TabIndex="4" />
+    <Label Name="Label5" Location="108, 91" Size="312, 21" Text="Note: Proxy settings are different" TabIndex="5" />
   </GroupBox>
   <GroupBox Name="GroupBox2" Location="12, 136" Size="426, 80" Text="Putty Integration" TabIndex="2">
     <FileRequest Name="FileRequest1" Location="108, 19" Size="312, 20" TabIndex="0" />
     <Label Name="Label6" Location="6, 24" Text="Putty Key to Load:" TabIndex="1" />
+    <CheckBox Name="CheckBox1" Location="6, 50" Size="175, 24" Text="Apply Proxy Settings to Putty" Checked="True" TabIndex="2" />
     <CheckBox Name="CheckBox2" Location="187, 50" Size="233, 24" Text="Prefer Launching PuttyPortable" TabIndex="2" />
-    <CheckBox Name="CheckBox1" Location="6, 50" Size="175, 24" Text="Apply Proxy Settings to Putty" Checked="True" ForeColor="ControlText" TabIndex="2" />
   </GroupBox>
 </Dialog>

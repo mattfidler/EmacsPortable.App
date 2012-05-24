@@ -7,20 +7,20 @@
 Var hCtl_proxy
 Var hCtl_proxy_GroupBox1
 Var hCtl_proxy_TextBox1
-Var hCtl_proxy_Label2
 Var hCtl_proxy_Label1
+Var hCtl_proxy_Label2
 Var hCtl_proxy_TextBox2
 Var hCtl_proxy_Label4
 Var hCtl_proxy_Label3
-Var hCtl_proxy_Password2
 Var hCtl_proxy_Password1
+Var hCtl_proxy_Password2
 Var hCtl_proxy_Label5
 Var hCtl_proxy_GroupBox2
 Var hCtl_proxy_FileRequest1_Txt
 Var hCtl_proxy_FileRequest1_Btn
 Var hCtl_proxy_Label6
-Var hCtl_proxy_CheckBox2
 Var hCtl_proxy_CheckBox1
+Var hCtl_proxy_CheckBox2
 
 
 ; dialog create function
@@ -42,13 +42,13 @@ Function fnc_proxy_Create
   ${NSD_CreateText} 79u 16u 98u 11u ""
   Pop $hCtl_proxy_TextBox1
   
-  ; === Label2 (type: Label) ===
-  ${NSD_CreateLabel} 186u 17u 40u 13u "Proxy Port"
-  Pop $hCtl_proxy_Label2
-  
   ; === Label1 (type: Label) ===
   ${NSD_CreateLabel} 12u 16u 46u 13u "Proxy Server"
   Pop $hCtl_proxy_Label1
+  
+  ; === Label2 (type: Label) ===
+  ${NSD_CreateLabel} 186u 17u 40u 13u "Proxy Port"
+  Pop $hCtl_proxy_Label2
   
   ; === TextBox2 (type: Text) ===
   ${NSD_CreateText} 230u 14u 53u 11u ""
@@ -62,16 +62,16 @@ Function fnc_proxy_Create
   ${NSD_CreateLabel} 12u 32u 37u 13u "Password"
   Pop $hCtl_proxy_Label3
   
-  ; === Password2 (type: Password) ===
-  ${NSD_CreatePassword} 79u 45u 205u 11u ""
-  Pop $hCtl_proxy_Password2
-  
   ; === Password1 (type: Password) ===
   ${NSD_CreatePassword} 79u 30u 205u 11u ""
   Pop $hCtl_proxy_Password1
   
+  ; === Password2 (type: Password) ===
+  ${NSD_CreatePassword} 79u 45u 205u 11u ""
+  Pop $hCtl_proxy_Password2
+  
   ; === Label5 (type: Label) ===
-  ${NSD_CreateLabel} 79u 60u 205u 12u "Note: Proxy settings are different"
+  ${NSD_CreateLabel} 79u 58u 205u 12u "Note: Proxy settings are different"
   Pop $hCtl_proxy_Label5
   
   ; === GroupBox2 (type: GroupBox) ===
@@ -91,14 +91,14 @@ Function fnc_proxy_Create
   ${NSD_CreateLabel} 12u 90u 66u 13u "Putty Key to Load:"
   Pop $hCtl_proxy_Label6
   
-  ; === CheckBox2 (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
-  Pop $hCtl_proxy_CheckBox2
-  
   ; === CheckBox1 (type: Checkbox) ===
   ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
   Pop $hCtl_proxy_CheckBox1
   ${NSD_Check} $hCtl_proxy_CheckBox1
+  
+  ; === CheckBox2 (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
+  Pop $hCtl_proxy_CheckBox2
   
 FunctionEnd
 

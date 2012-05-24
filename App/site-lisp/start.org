@@ -544,7 +544,6 @@ work correctly.
 #+end_src
 
 
-
 * Start the Emacs Server
 #+BEGIN_SRC emacs-lisp
     ;; Start server and load-bar.
@@ -1015,6 +1014,50 @@ Start the appropriate startup script
          (file-exists-p (expand-file-name "epshell.el"
                                           (expand-file-name "site-lisp" usb-app-dir))))
     (load (concat (expand-file-name "site-lisp" usb-app-dir) "/epshell")))
+#+END_SRC
+
+* Load Emacs Full-Screen support
+** Under Windows
+https://bitbucket.org/phromo/w32-fullscreen/downloads
+#+BEGIN_SRC emacs-lisp
+  (when (and
+         (eq system-type 'windows-nt)
+         (file-exists-p (expand-file-name "w32-fullscreen.el"
+                                          (expand-file-name "site-lisp" usb-app-dir)))
+         (file-exists-p (expand-file-name "w32toggletitle.exe"
+                                          (expand-file-name "site-lisp" usb-app-dir))))
+    (setq w32-fullscreen-toggletitle-cmd (expand-file-name "w32toggletitle.exe"
+                                                           (expand-file-name "site-lisp" usb-app-dir)))
+    (load (concat (expand-file-name "site-lisp" usb-app-dir) "/w32-fullscreen"))
+    (global-set-key [f11] 'w32-fullscreen))
+  
+  (when (file-exists-p (expand-file-name "maxframe.el"
+                                         (expand-file-name "site-lisp" usb-app-dir)))
+    (load (concat (expand-file-name "site-lisp" usb-app-dir) "/maxframe")))
+  
+  (add-hook 'after-make-frame-functions 'ep-maximize-frame)
+  (defvar ep-maximize-frame-cached nil)
+  (defvar ep-maximize-frame-cache nil)
+  (defun ep-maximize-frame (frame)
+    "Maximizes frame, when selected in EmacsPortableApp.ini"
+    (interactive (list (selected-frame)))
+    (when (or (and ep-maximize-frame-cached ep-maximize-frame-cache)
+              (and (not ep-maximize-frame-cached)
+                   (with-temp-buffer
+                     (insert-file-contents "~ini/EmacsPortableApp.ini")
+                     (goto-char (point-min))
+                     (setq ep-maximize-frame-cached t)
+                     (setq ep-maximize-frame-cache
+                           (re-search-forward "^[ \t]*[Mm]ax[Aa]pply[Nn]ew[ \t]*=[ \t]*1[ \t]*$" nil t))
+                     (symbol-value 'ep-maximize-frame-cache))))
+      (cond
+       ((fboundp 'maximize-frame)
+        (maximize-frame))
+       ((eq system-type 'windows-nt)
+        (select-frame frame)
+        (w32-send-sys-command #xf030))
+       (t))))
+  
 #+END_SRC
 
 * Load System, User, and Shared Initialization files
