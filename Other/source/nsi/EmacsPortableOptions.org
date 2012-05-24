@@ -23,11 +23,58 @@ This provides an interface to the Emacs Startup options
 #+BEGIN_SRC nsis
   !include "MUI2.nsh"
   !include "LogicLib.nsh"
-  !include "CommCtrl.nsh"
   !include "FileFunc.nsh"
   !include "emacsproxy.nsh"
   !include "setupEmacsData.nsh"
+  !include "CommCtrl.nsh"
 #+END_SRC
+** nsDialogs Hacks
+*** Sorted DropList
+See
+http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_control
+#+BEGIN_SRC nsis
+/*
+nsDialogs_createDroplistSorted.nsh
+Header file for creating a sorted droplist control.
+ 
+Usage:
+  ${NSD_CreateDroplistSorted} left top width height ""
+  Creates the sorted droplist at the location specified.
+*/
+ 
+!ifndef NSDIALOGS_createDroplistSorted_INCLUDED
+	!define NSDIALOGS_createDroplistSorted_INCLUDED
+	!verbose push
+	!verbose 3
+ 
+	!include WinMessages.nsh
+ 
+	!define __NSD_DropListSorted_CLASS COMBOBOX
+	!define __NSD_DropListSorted_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${WS_CLIPCHILDREN}|${CBS_AUTOHSCROLL}|${CBS_HASSTRINGS}|${CBS_DROPDOWNLIST}|${CBS_SORT}
+	!define __NSD_DropListSorted_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
+ 
+	!insertmacro __NSD_DefineControl DropListSorted
+ 
+	!verbose pop
+!endif
+#+END_SRC
+*** Sorted ComboBox (if possible)
+#+BEGIN_SRC nsis
+  !ifndef NSDIALOGS_createComboBoxSorted_INCLUDED
+    !define NSDIALOGS_createComboBoxSorted_INCLUDED
+    !verbose push
+    !verbose 3
+    
+    !include WinMessages.nsh
+    !define __NSD_ComboBoxSorted_CLASS COMBOBOX
+    !define __NSD_ComboBoxSorted_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${WS_CLIPCHILDREN}|${CBS_AUTOHSCROLL}|${CBS_HASSTRINGS}|${CBS_DROPDOWN}|${CBS_SORT}
+    !define __NSD_ComboBoxSorted_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
+    !insertmacro __NSD_DefineControl ComboBoxSorted
+    !verbose pop
+  !endif
+  
+#+END_SRC
+
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
   Name "EmacsPortable.App Options"
@@ -60,6 +107,7 @@ This provides an interface to the Emacs Startup options
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
+  Page custom fnc_visuals_Show fnc_visuals_Validate
   Page custom fnc_behavior_Show fnc_behavior_Validate
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
@@ -87,7 +135,7 @@ This provides an interface to the Emacs Startup options
     ${If} $R0 == "1"
       ${NSD_Check} ${VARIABLE}
     ${ElseIf} ${Errors}
-      ${NSD_Check} ${VARIABLE}
+      ${NSD_UnCheck} ${VARIABLE}
     ${Else}
       ${NSD_UnCheck} ${VARIABLE}
     ${EndIf}
@@ -95,6 +143,10 @@ This provides an interface to the Emacs Startup options
   !macroend
   !define SetUnCheck `!insertmacro SetUnCheck`
   
+  !macro SetUnRadio  VARIABLE OPT
+    
+  !macroend
+  !define SetUnRadio `!insertmacro SetUnRadio`
   !macro SetDir VARIABLE OPT ERR
     ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "${OPT}"
     ${If} ${Errors}
@@ -104,6 +156,7 @@ This provides an interface to the Emacs Startup options
     
   !macroend
   !define SetDir `!insertmacro SetDir`
+  !define SetText `!insertmacro SetDir`
   
   !macro WriteCheck VARIABLE OPT
     ${NSD_GetState} ${VARIABLE} $R0
@@ -237,156 +290,156 @@ FunctionEnd
 ** Explode
 From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
-!define Explode "!insertmacro Explode"
- 
-!macro  Explode Length  Separator   String
-    Push    `${Separator}`
-    Push    `${String}`
-    Call    Explode
-    Pop     `${Length}`
-!macroend
-
-!define unExplode "!insertmacro unExplode"
- 
-!macro  unExplode Length  Separator   String
-    Push    `${Separator}`
-    Push    `${String}`
-    Call    un.Explode
-    Pop     `${Length}`
-!macroend
- 
-Function Explode
-  ; Initialize variables
-  Var /GLOBAL explString
-  Var /GLOBAL explSeparator
-  Var /GLOBAL explStrLen
-  Var /GLOBAL explSepLen
-  Var /GLOBAL explOffset
-  Var /GLOBAL explTmp
-  Var /GLOBAL explTmp2
-  Var /GLOBAL explTmp3
-  Var /GLOBAL explArrCount
- 
-  ; Get input from user
-  Pop $explString
-  Pop $explSeparator
- 
-  ; Calculates initial values
-  StrLen $explStrLen $explString
-  StrLen $explSepLen $explSeparator
-  StrCpy $explArrCount 1
- 
-  ${If}   $explStrLen <= 1          ;   If we got a single character
-  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
-    Push    $explString             ;   then we return initial string with no change
-    Push    1                       ;   and set array's length to 1
-    Return
-  ${EndIf}
- 
-  ; Set offset to the last symbol of the string
-  StrCpy $explOffset $explStrLen
-  IntOp  $explOffset $explOffset - 1
- 
-  ; Clear temp string to exclude the possibility of appearance of occasional data
-  StrCpy $explTmp   ""
-  StrCpy $explTmp2  ""
-  StrCpy $explTmp3  ""
- 
-  ; Loop until the offset becomes negative
-  ${Do}
-    ;   If offset becomes negative, it is time to leave the function
-    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
- 
-    ;   Remove everything before and after the searched part ("TempStr")
-    StrCpy $explTmp $explString $explSepLen $explOffset
- 
-    ${If} $explTmp == $explSeparator
-        ;   Calculating offset to start copy from
-        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
-        StrCpy  $explTmp3 $explString "" $explTmp2
- 
-        Push    $explTmp3                           ;   Throwing array item to the stack
-        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
- 
-        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
-        StrLen  $explStrLen $explString
+  !define Explode "!insertmacro Explode"
+   
+  !macro  Explode Length  Separator   String
+      Push    `${Separator}`
+      Push    `${String}`
+      Call    Explode
+      Pop     `${Length}`
+  !macroend
+  
+  !define unExplode "!insertmacro unExplode"
+   
+  !macro  unExplode Length  Separator   String
+      Push    `${Separator}`
+      Push    `${String}`
+      Call    un.Explode
+      Pop     `${Length}`
+  !macroend
+   
+  Function Explode
+    ; Initialize variables
+    Var /GLOBAL explString
+    Var /GLOBAL explSeparator
+    Var /GLOBAL explStrLen
+    Var /GLOBAL explSepLen
+    Var /GLOBAL explOffset
+    Var /GLOBAL explTmp
+    Var /GLOBAL explTmp2
+    Var /GLOBAL explTmp3
+    Var /GLOBAL explArrCount
+   
+    ; Get input from user
+    Pop $explString
+    Pop $explSeparator
+   
+    ; Calculates initial values
+    StrLen $explStrLen $explString
+    StrLen $explSepLen $explSeparator
+    StrCpy $explArrCount 1
+   
+    ${If}   $explStrLen <= 1          ;   If we got a single character
+    ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+      Push    $explString             ;   then we return initial string with no change
+      Push    1                       ;   and set array's length to 1
+      Return
     ${EndIf}
- 
-    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
-                                                ;   copying the rest of the string
-        ${If} $explSeparator == ""              ;   Fix for the empty separator
-            IntOp   $explArrCount   $explArrCount - 1
-        ${Else}
-            Push    $explString
-        ${EndIf}
+   
+    ; Set offset to the last symbol of the string
+    StrCpy $explOffset $explStrLen
+    IntOp  $explOffset $explOffset - 1
+   
+    ; Clear temp string to exclude the possibility of appearance of occasional data
+    StrCpy $explTmp   ""
+    StrCpy $explTmp2  ""
+    StrCpy $explTmp3  ""
+   
+    ; Loop until the offset becomes negative
+    ${Do}
+      ;   If offset becomes negative, it is time to leave the function
+      ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+      
+      ;   Remove everything before and after the searched part ("TempStr")
+      StrCpy $explTmp $explString $explSepLen $explOffset
+      
+      ${If} $explTmp == $explSeparator
+          ;   Calculating offset to start copy from
+          IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+          StrCpy  $explTmp3 $explString "" $explTmp2
+          
+          Push    $explTmp3                           ;   Throwing array item to the stack
+          IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+          
+          StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+          StrLen  $explStrLen $explString
+      ${EndIf}
+   
+      ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                  ;   copying the rest of the string
+          ${If} $explSeparator == ""              ;   Fix for the empty separator
+              IntOp   $explArrCount   $explArrCount - 1
+          ${Else}
+              Push    $explString
+          ${EndIf}
+      ${EndIf}
+   
+      IntOp   $explOffset $explOffset - 1
+    ${Loop}
+   
+    Push $explArrCount
+  FunctionEnd
+  Function un.Explode
+    ; Initialize variables
+    ; Get input from user
+    Pop $explString
+    Pop $explSeparator
+   
+    ; Calculates initial values
+    StrLen $explStrLen $explString
+    StrLen $explSepLen $explSeparator
+    StrCpy $explArrCount 1
+   
+    ${If}   $explStrLen <= 1          ;   If we got a single character
+    ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+      Push    $explString             ;   then we return initial string with no change
+      Push    1                       ;   and set array's length to 1
+      Return
     ${EndIf}
- 
-    IntOp   $explOffset $explOffset - 1
-  ${Loop}
- 
-  Push $explArrCount
-FunctionEnd
-Function un.Explode
-  ; Initialize variables
-  ; Get input from user
-  Pop $explString
-  Pop $explSeparator
- 
-  ; Calculates initial values
-  StrLen $explStrLen $explString
-  StrLen $explSepLen $explSeparator
-  StrCpy $explArrCount 1
- 
-  ${If}   $explStrLen <= 1          ;   If we got a single character
-  ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
-    Push    $explString             ;   then we return initial string with no change
-    Push    1                       ;   and set array's length to 1
-    Return
-  ${EndIf}
- 
-  ; Set offset to the last symbol of the string
-  StrCpy $explOffset $explStrLen
-  IntOp  $explOffset $explOffset - 1
- 
-  ; Clear temp string to exclude the possibility of appearance of occasional data
-  StrCpy $explTmp   ""
-  StrCpy $explTmp2  ""
-  StrCpy $explTmp3  ""
- 
-  ; Loop until the offset becomes negative
-  ${Do}
-    ;   If offset becomes negative, it is time to leave the function
-    ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
- 
-    ;   Remove everything before and after the searched part ("TempStr")
-    StrCpy $explTmp $explString $explSepLen $explOffset
- 
-    ${If} $explTmp == $explSeparator
-        ;   Calculating offset to start copy from
-        IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
-        StrCpy  $explTmp3 $explString "" $explTmp2
- 
-        Push    $explTmp3                           ;   Throwing array item to the stack
-        IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
- 
-        StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
-        StrLen  $explStrLen $explString
-    ${EndIf}
- 
-    ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
-                                                ;   copying the rest of the string
-        ${If} $explSeparator == ""              ;   Fix for the empty separator
-            IntOp   $explArrCount   $explArrCount - 1
-        ${Else}
-            Push    $explString
-        ${EndIf}
-    ${EndIf}
- 
-    IntOp   $explOffset $explOffset - 1
-  ${Loop}
- 
-  Push $explArrCount
-FunctionEnd
+   
+    ; Set offset to the last symbol of the string
+    StrCpy $explOffset $explStrLen
+    IntOp  $explOffset $explOffset - 1
+   
+    ; Clear temp string to exclude the possibility of appearance of occasional data
+    StrCpy $explTmp   ""
+    StrCpy $explTmp2  ""
+    StrCpy $explTmp3  ""
+   
+    ; Loop until the offset becomes negative
+    ${Do}
+      ;   If offset becomes negative, it is time to leave the function
+      ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+   
+      ;   Remove everything before and after the searched part ("TempStr")
+      StrCpy $explTmp $explString $explSepLen $explOffset
+   
+      ${If} $explTmp == $explSeparator
+          ;   Calculating offset to start copy from
+          IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+          StrCpy  $explTmp3 $explString "" $explTmp2
+   
+          Push    $explTmp3                           ;   Throwing array item to the stack
+          IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+   
+          StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+          StrLen  $explStrLen $explString
+      ${EndIf}
+   
+      ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                  ;   copying the rest of the string
+          ${If} $explSeparator == ""              ;   Fix for the empty separator
+              IntOp   $explArrCount   $explArrCount - 1
+          ${Else}
+              Push    $explString
+          ${EndIf}
+      ${EndIf}
+   
+      IntOp   $explOffset $explOffset - 1
+    ${Loop}
+   
+    Push $explArrCount
+  FunctionEnd
 #+END_SRC
 * Functions
 ** Callback Functions
@@ -537,7 +590,7 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     Pop $hCtl_behavior_Label1
     
     ; === DefaultVersion (type: DropList) ===
-    ${NSD_CreateDropList} 70u 17u 51u 12u ""
+    ${NSD_CreateDropListSorted} 70u 17u 51u 12u ""
     Pop $hCtl_behavior_DefaultVersion
     SetCtlColors $hCtl_behavior_DefaultVersion 0x000000 0xFFFFFF
   
@@ -566,7 +619,7 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
       Pop $hCtl_behavior_Label2
       
       ; === StartupScript (type: DropList) ===
-      ${NSD_CreateDropList} 190u 17u 94u 12u ""
+      ${NSD_CreateDropListSorted} 190u 17u 94u 12u ""
       Pop $hCtl_behavior_StartupScript
       SetCtlColors $hCtl_behavior_StartupScript 0x000000 0xFFFFFF
   
@@ -594,9 +647,7 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
       StrCmp $4 "" 0 +2
       StrCpy $4 $2
       ${NSD_CB_SelectString} $hCtl_behavior_StartupScript $4
-      
-      
-      
+
       ; === GroupBox1 (type: GroupBox) ===
       ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
       Pop $hCtl_behavior_GroupBox1
@@ -704,6 +755,305 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
 
     ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
     ${WriteCB} $hCtl_behavior_StartupScript "Startup"
+  FunctionEnd
+  
+#+END_SRC
+
+** Visuals
+*** Dialog Definitions
+#+BEGIN_SRC nsis
+  ; ========================================================
+  ; This file was generated by NSISDialogDesigner 0.9.16.0
+  ; http://coolsoft.altervista.org/nsisdialogdesigner
+  ; ========================================================
+  
+  ; handle variables
+  Var hCtl_visuals
+  Var hCtl_visuals_GroupBox1
+  Var hCtl_visuals_FontName
+  Var hCtl_visuals_Label1
+  Var hCtl_visuals_FontLabel
+  Var hCtl_visuals_Label2
+  Var hCtl_visuals_Label3
+  Var hCtl_visuals_fg
+  Var hCtl_visuals_bg
+  Var hCtl_visuals_FontSize
+  Var hCtl_visuals_sync
+  Var hCtl_visuals_GroupBox2
+  Var hCtl_visuals_Label5
+  Var hCtl_visuals_Label7
+  Var hCtl_visuals_Label4
+  Var hCtl_visuals_Label6
+  Var hCtl_visuals_gh
+  Var hCtl_visuals_gw
+  Var hCtl_visuals_gx
+  Var hCtl_visuals_gy
+  Var hCtl_visuals_GroupBox3
+  Var hCtl_visuals_mn
+  Var hCtl_visuals_max
+  Var hCtl_visuals_mw
+  Var hCtl_visuals_mh
+  Var hCtl_visuals_mnf
+  
+  
+  ; dialog create function
+  Function fnc_visuals_Create
+    
+    ; === visuals (type: Dialog) ===
+    nsDialogs::Create 1018
+    Pop $hCtl_visuals
+    ${If} $hCtl_visuals == error
+      Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "EmacsPortable.App Visual Options" "Sets the initial foreground, background, font, and positioning options of EmacsPortable.App"
+    
+    ; === GroupBox1 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 7u 280u 51u "Emacs Display Options"
+    Pop $hCtl_visuals_GroupBox1
+    
+    ; === FontName (type: ComboBox) ===
+    ${NSD_CreateComboBoxSorted} 59u 17u 123u 12u ""
+    Pop $hCtl_visuals_FontName
+    SetCtlColors $hCtl_visuals_FontName 0x000000 0xFFFFFF
+    Call SetFontOptions
+    
+    ${NSD_CB_SelectString} $hCtl_visuals_FontName $3
+    
+    ; === Label1 (type: Label) ===
+    ${NSD_CreateLabel} 186u 19u 32u 13u "Size"
+    Pop $hCtl_visuals_Label1
+    
+    ; === FontLabel (type: Label) ===
+    ${NSD_CreateLabel} 12u 19u 43u 13u "Font Name:"
+    Pop $hCtl_visuals_FontLabel
+    
+    ; === Label2 (type: Label) ===
+    ${NSD_CreateLabel} 12u 32u 66u 13u "Foreground Color:"
+    Pop $hCtl_visuals_Label2
+    
+    ; === Label3 (type: Label) ===
+    ${NSD_CreateLabel} 152u 32u 66u 13u "Background Color:"
+    Pop $hCtl_visuals_Label3
+    
+    ; === fg (type: Text) ===
+    ${NSD_CreateText} 81u 30u 56u 11u ""
+    Pop $hCtl_visuals_fg
+    ${SetText} $hCtl_visuals_fg "Foreground" ""
+    
+    ; === bg (type: Text) ===
+    ${NSD_CreateText} 222u 30u 62u 11u "" 
+    Pop $hCtl_visuals_bg
+    ${SetText} $hCtl_visuals_bg "Background" ""
+    
+    ; === FontSize (type: Number) ===
+    ${NSD_CreateNumber} 222u 17u 62u 11u ""
+    Pop $hCtl_visuals_FontSize
+    ${SetText} $hCtl_visuals_FontSize "FontSize" "12"
+    
+    ; === sync (type: Link) ===
+    ${NSD_CreateLink} 12u 43u 272u 13u "Sync EmacsPortable.App's current colors and fonts with the startup options"
+    Pop $hCtl_visuals_sync
+    ${NSD_OnClick} $hCtl_visuals_sync SyncColor
+    
+    ; === GroupBox2 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 61u 152u 61u "Emacs Frame/Window Geometry"
+    Pop $hCtl_visuals_GroupBox2
+    
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry"
+    
+    StrCpy $R2 ""
+    StrCpy $R3 ""
+    StrCpy $R4 ""
+    StrCpy $R5 ""
+    
+    ${Explode} $R1 "x" "$R0"
+    
+    ${If} $R1 == 2
+      Pop $R2
+      Pop $R3
+      ${Explode} $R4 "+" $R3
+      ${If} $R4 == 3
+        Pop $R3
+        Pop $R4
+        Pop $R5
+      ${Else}
+        StrCpy $R4 ""
+      ${EndIf}
+    ${Else}
+      ${Explode} $R1 "X" "$R0"
+      ${If} $R1 == 2
+        Pop $R2
+        Pop $R3
+        ${Explode} $R4 "+" $R3
+        ${If} $R4 == 3
+          Pop $R5
+          Pop $R3
+          Pop $R4
+        ${Else}
+          StrCpy $R4 ""
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    
+    ; === Label5 (type: Label) ===
+    ${NSD_CreateLabel} 12u 83u 107u 13u "Initial Frame Height (rows)"
+    Pop $hCtl_visuals_Label5
+    
+    ; === Label7 (type: Label) ===
+    ${NSD_CreateLabel} 12u 109u 107u 13u "Down offset (Y),top left corner "
+    Pop $hCtl_visuals_Label7
+    
+    ; === Label4 (type: Label) ===
+    ${NSD_CreateLabel} 12u 70u 107u 13u "Initial Frame Width (characters)"
+    Pop $hCtl_visuals_Label4
+    
+    ; === Label6 (type: Label) ===
+    ${NSD_CreateLabel} 12u 96u 107u 13u "Right offset (X),top left corner "
+    Pop $hCtl_visuals_Label6
+    
+    ; === gh (type: Number) ===
+    ${NSD_CreateNumber} 123u 81u 32u 11u ""
+    Pop $hCtl_visuals_gh
+    ${NSD_SetText} $hCtl_visuals_gh $R3
+    
+    ; === gw (type: Number) ===
+    ${NSD_CreateNumber} 123u 68u 32u 11u ""
+    Pop $hCtl_visuals_gw
+    ${NSD_SetText} $hCtl_visuals_gw $R2
+    
+    ; === gx (type: Number) ===
+    ${NSD_CreateNumber} 123u 94u 32u 11u ""
+    Pop $hCtl_visuals_gx
+    ${NSD_SetText} $hCtl_visuals_gx $R4
+    
+    ; === gy (type: Number) ===
+    ${NSD_CreateNumber} 123u 107u 32u 11u ""
+    Pop $hCtl_visuals_gy
+    ${NSD_SetText} $hCtl_visuals_gy $R5
+    
+    ; === GroupBox3 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 164u 61u 123u 61u "Maximization Options"
+    Pop $hCtl_visuals_GroupBox3
+    
+    ; === mn (type: RadioButton) ===
+    ${NSD_CreateRadioButton} 168u 70u 39u 14u "None"
+    Pop $hCtl_visuals_mn
+  
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Max"
+    ${If} $R0 == "0"
+    ${OrIf} ${Errors}
+      ClearErrors
+      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Fullwidth"
+      ${If} $R0 == "0"
+      ${OrIf} ${Errors}
+        ClearErrors
+        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Fullheight"
+        ${If} $R0 == "0"
+        ${OrIf} ${Errors}
+          ClearErrors
+          ${NSD_Check} $hCtl_visuals_mn 
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    ClearErrors
+    
+    ; === mm (type: RadioButton) ===
+    ${NSD_CreateRadioButton} 222u 70u 47u 14u "Maximize"
+    Pop $hCtl_visuals_max
+    ${SetUnCheck} $hCtl_visuals_max "Max"
+    
+    ; === mw (type: RadioButton) ===
+    ${NSD_CreateRadioButton} 168u 87u 51u 14u "Full Width"
+    Pop $hCtl_visuals_mw
+    ${SetUnCheck} $hCtl_visuals_mw "Fullwidth"
+    
+    ; === mh (type: RadioButton) ===
+    ${NSD_CreateRadioButton} 223u 87u 51u 14u "Full Height"
+    Pop $hCtl_visuals_mh
+    ${SetUnCheck} $hCtl_visuals_mh "Fullheight"
+    
+    ; === mnf (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 168u 104u 100u 14u "Apply to New Frames"
+    Pop $hCtl_visuals_mnf
+    ${SetUnCheck} $hCtl_visuals_mnf "MaxApplyNew"
+    ClearErrors
+    
+  FunctionEnd
+  
+  ; dialog show function
+  Function fnc_visuals_Show
+    Call fnc_visuals_Create
+    nsDialogs::Show $hCtl_visuals
+  FunctionEnd
+  
+#+END_SRC
+
+*** Support Functions
+#+BEGIN_SRC nsis
+  Function SetFontOptions
+    ReadIniStr $3 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Font"
+    ClearErrors
+    StrCpy $4 $3
+    IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 no_fonts
+    EnumIni::Section "$EXEDIR\App\ini\fonts.ini" "fonts1"
+    pop $R0
+    StrCmp $R0 "error" no_fonts
+    loop_fonts:
+      IntCmp $R0 "0" no_fonts no_fonts 0
+      Pop $R1
+      StrCmp "$3" "$R1" 0 +2
+      StrCpy "$3" ""
+      ${NSD_CB_AddString} $hCtl_visuals_FontName $R1
+    no_install:
+      IntOp $R0 $R0 - 1
+      Goto loop_fonts
+    no_fonts:
+      StrCmp "$3" "" clear
+      ${NSD_CB_AddString} $hCtl_visuals_FontName $3
+    clear:
+      ${NSD_CB_SelectString} $hCtl_visuals_FontName $4
+      ClearErrors
+  FunctionEnd
+  
+  Function SyncColor
+    ExecWait `"$EXEDIR\EmacsPortableApp.exe" /COLORSYNC`
+    ${SetText} $hCtl_visuals_FontSize "FontSize" "12"
+    ${SetText} $hCtl_visuals_bg "Background" ""
+    ${SetText} $hCtl_visuals_fg "Foreground" ""
+    SendMessage $hCtl_visuals_FontName ${CB_RESETCONTENT} $0 $0
+    Call SetFontOptions
+  FunctionEnd
+  
+#+END_SRC
+
+*** Validation Function
+#+BEGIN_SRC nsis
+  Function fnc_visuals_Validate
+    ${WriteCheck} $hCtl_visuals_max "Max"
+    ${WriteCheck} $hCtl_visuals_mw "Fullwidth"
+    ${WriteCheck} $hCtl_visuals_mh "Fullheight"
+    ${WriteCheck} $hCtl_visuals_mnf "MaxApplyNew"
+    
+    ${WriteText} $hCtl_visuals_FontSize "FontSize"
+    ${WriteText} $hCtl_visuals_bg "Background"
+    ${WriteText} $hCtl_visuals_fg "Foreground"
+  
+    ${WriteCB} $hCtl_visuals_FontName "Font"
+    
+    ${NSD_GetText} $hCtl_visuals_gh $R3
+    ${NSD_GetText} $hCtl_visuals_gw $R2
+    ${NSD_GetText} $hCtl_visuals_gx $R4
+    ${NSD_GetText} $hCtl_visuals_gy $R5
+    StrCpy $R0 ""
+    ${If} $R2 != ""
+    ${AndIf} $R3 != ""
+      StrCpy $R0 "$R2x$R3"
+      ${If} $R4 != ""
+      ${AndIf} $R5 != ""
+        StrCpy $R0 "$R0+$R4+$R5"
+      ${EndIf}
+    ${EndIf}
+    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" $R0
   FunctionEnd
   
 #+END_SRC

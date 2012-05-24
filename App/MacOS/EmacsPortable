@@ -25,7 +25,7 @@ GEOMETRY=`cat $EPINI | egrep "[Gg]eometry *= *" | tr -d '\15' | cut -f 2 -d "="`
 FOREGROUND=`cat $EPINI | egrep "[Ff]oreground *= *" | tr -d '\15' | cut -f 2 -d "="`
 BACKGROUND=`cat $EPINI | egrep "[Bb]ackground *= *" | tr -d '\15' | cut -f 2 -d "="`
 
-MAXIMIZED=`cat $EPINI | egrep "[Mm]aximized *= *" | tr -d '\15' | cut -f 2 -d "="`
+MAXIMIZED=`cat $EPINI | egrep "[Mm]ax *= *" | tr -d '\15' | cut -f 2 -d "="`
 
 FULLWIDTH=`cat $EPINI | egrep "[Ff]ull[Ww]idth *= *" | tr -d '\15' | cut -f 2 -d "="`
 

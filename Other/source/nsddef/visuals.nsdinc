@@ -6,30 +6,30 @@
 ; handle variables
 Var hCtl_visuals
 Var hCtl_visuals_GroupBox1
-Var hCtl_visuals_ComboBox1
+Var hCtl_visuals_FontName
 Var hCtl_visuals_FontLabel
 Var hCtl_visuals_Label1
 Var hCtl_visuals_Label2
 Var hCtl_visuals_Label3
-Var hCtl_visuals_TextBox2
-Var hCtl_visuals_TextBox3
-Var hCtl_visuals_Number1
-Var hCtl_visuals_Link1
+Var hCtl_visuals_fg
+Var hCtl_visuals_bg
+Var hCtl_visuals_FontSize
+Var hCtl_visuals_sync
 Var hCtl_visuals_GroupBox2
 Var hCtl_visuals_Label6
 Var hCtl_visuals_Label4
 Var hCtl_visuals_Label5
 Var hCtl_visuals_Label7
-Var hCtl_visuals_Number5
-Var hCtl_visuals_Number4
-Var hCtl_visuals_Number2
-Var hCtl_visuals_Number3
-Var hCtl_visuals_GroupBox3
-Var hCtl_visuals_RadioButton1
-Var hCtl_visuals_RadioButton2
-Var hCtl_visuals_RadioButton3
-Var hCtl_visuals_RadioButton4
-Var hCtl_visuals_CheckBox1
+Var hCtl_visuals_gy
+Var hCtl_visuals_gx
+Var hCtl_visuals_gw
+Var hCtl_visuals_gh
+Var hCtl_visuals_none
+Var hCtl_visuals_mn
+Var hCtl_visuals_mm
+Var hCtl_visuals_mw
+Var hCtl_visuals_mh
+Var hCtl_visuals_mnf
 
 
 ; dialog create function
@@ -47,17 +47,17 @@ Function fnc_visuals_Create
   ${NSD_CreateGroupBox} 8u 7u 280u 51u "Emacs Display Options"
   Pop $hCtl_visuals_GroupBox1
   
-  ; === ComboBox1 (type: ComboBox) ===
+  ; === FontName (type: ComboBox) ===
   ${NSD_CreateComboBox} 59u 17u 123u 12u ""
-  Pop $hCtl_visuals_ComboBox1
-  SetCtlColors $hCtl_visuals_ComboBox1 0x000000 0xFFFFFF
+  Pop $hCtl_visuals_FontName
+  SetCtlColors $hCtl_visuals_FontName 0x000000 0xFFFFFF
   
   ; === FontLabel (type: Label) ===
   ${NSD_CreateLabel} 12u 19u 43u 13u "Font Name:"
   Pop $hCtl_visuals_FontLabel
   
   ; === Label1 (type: Label) ===
-  ${NSD_CreateLabel} 186u 19u 43u 13u "Font Size"
+  ${NSD_CreateLabel} 186u 19u 32u 13u "Size"
   Pop $hCtl_visuals_Label1
   
   ; === Label2 (type: Label) ===
@@ -65,31 +65,32 @@ Function fnc_visuals_Create
   Pop $hCtl_visuals_Label2
   
   ; === Label3 (type: Label) ===
-  ${NSD_CreateLabel} 141u 32u 66u 13u "Background Color:"
+  ${NSD_CreateLabel} 152u 32u 66u 13u "Background Color:"
   Pop $hCtl_visuals_Label3
   
-  ; === TextBox2 (type: Text) ===
-  ${NSD_CreateText} 72u 30u 65u 11u ""
-  Pop $hCtl_visuals_TextBox2
+  ; === fg (type: Text) ===
+  ${NSD_CreateText} 81u 30u 56u 11u ""
+  Pop $hCtl_visuals_fg
   
-  ; === TextBox3 (type: Text) ===
-  ${NSD_CreateText} 211u 30u 73u 11u ""
-  Pop $hCtl_visuals_TextBox3
+  ; === bg (type: Text) ===
+  ${NSD_CreateText} 222u 30u 62u 11u ""
+  Pop $hCtl_visuals_bg
   
-  ; === Number1 (type: Number) ===
+  ; === FontSize (type: Number) ===
   ${NSD_CreateNumber} 222u 17u 62u 11u ""
-  Pop $hCtl_visuals_Number1
+  Pop $hCtl_visuals_FontSize
   
-  ; === Link1 (type: Link) ===
+  ; === sync (type: Link) ===
   ${NSD_CreateLink} 12u 43u 272u 13u "Sync EmacsPortable.App's current colors and fonts with the startup options"
-  Pop $hCtl_visuals_Link1
+  Pop $hCtl_visuals_sync
+  ${NSD_OnClick} $hCtl_visuals_sync SyncColor
   
   ; === GroupBox2 (type: GroupBox) ===
   ${NSD_CreateGroupBox} 8u 61u 152u 61u "Emacs Frame/Window Geometry"
   Pop $hCtl_visuals_GroupBox2
   
   ; === Label6 (type: Label) ===
-  ${NSD_CreateLabel} 11u 107u 107u 13u "Right offset (X),top left corner "
+  ${NSD_CreateLabel} 12u 96u 107u 13u "Right offset (X),top left corner "
   Pop $hCtl_visuals_Label6
   
   ; === Label4 (type: Label) ===
@@ -101,50 +102,50 @@ Function fnc_visuals_Create
   Pop $hCtl_visuals_Label5
   
   ; === Label7 (type: Label) ===
-  ${NSD_CreateLabel} 12u 96u 107u 13u "Down offset (Y),top left corner "
+  ${NSD_CreateLabel} 12u 109u 107u 13u "Down offset (Y),top left corner "
   Pop $hCtl_visuals_Label7
   
-  ; === Number5 (type: Number) ===
-  ${NSD_CreateNumber} 123u 105u 32u 11u ""
-  Pop $hCtl_visuals_Number5
+  ; === gy (type: Number) ===
+  ${NSD_CreateNumber} 123u 107u 32u 11u ""
+  Pop $hCtl_visuals_gy
   
-  ; === Number4 (type: Number) ===
+  ; === gx (type: Number) ===
   ${NSD_CreateNumber} 123u 94u 32u 11u ""
-  Pop $hCtl_visuals_Number4
+  Pop $hCtl_visuals_gx
   
-  ; === Number2 (type: Number) ===
+  ; === gw (type: Number) ===
   ${NSD_CreateNumber} 123u 68u 32u 11u ""
-  Pop $hCtl_visuals_Number2
+  Pop $hCtl_visuals_gw
   
-  ; === Number3 (type: Number) ===
+  ; === gh (type: Number) ===
   ${NSD_CreateNumber} 123u 81u 32u 11u ""
-  Pop $hCtl_visuals_Number3
+  Pop $hCtl_visuals_gh
   
-  ; === GroupBox3 (type: GroupBox) ===
-  ${NSD_CreateGroupBox} 164u 64u 123u 56u "Maximization Options"
-  Pop $hCtl_visuals_GroupBox3
+  ; === none (type: GroupBox) ===
+  ${NSD_CreateGroupBox} 164u 61u 123u 61u "Maximization Options"
+  Pop $hCtl_visuals_none
   
-  ; === RadioButton1 (type: RadioButton) ===
-  ${NSD_CreateRadioButton} 168u 70u 39u 14u "None"
-  Pop $hCtl_visuals_RadioButton1
-  ${NSD_AddStyle} $hCtl_visuals_RadioButton1 ${WS_GROUP}
-  ${NSD_Check} $hCtl_visuals_RadioButton1
+  ; === mn (type: RadioButton) ===
+  ${NSD_CreateRadioButton} 168u 67u 39u 14u "None"
+  Pop $hCtl_visuals_mn
+  ${NSD_AddStyle} $hCtl_visuals_mn ${WS_GROUP}
+  ${NSD_Check} $hCtl_visuals_mn
   
-  ; === RadioButton2 (type: RadioButton) ===
-  ${NSD_CreateRadioButton} 222u 70u 47u 14u "Maximize"
-  Pop $hCtl_visuals_RadioButton2
+  ; === mm (type: RadioButton) ===
+  ${NSD_CreateRadioButton} 222u 67u 47u 14u "Maximize"
+  Pop $hCtl_visuals_mm
   
-  ; === RadioButton3 (type: RadioButton) ===
-  ${NSD_CreateRadioButton} 168u 87u 51u 14u "Full Width"
-  Pop $hCtl_visuals_RadioButton3
+  ; === mw (type: RadioButton) ===
+  ${NSD_CreateRadioButton} 168u 84u 51u 14u "Full Width"
+  Pop $hCtl_visuals_mw
   
-  ; === RadioButton4 (type: RadioButton) ===
-  ${NSD_CreateRadioButton} 223u 87u 51u 14u "Full Height"
-  Pop $hCtl_visuals_RadioButton4
+  ; === mh (type: RadioButton) ===
+  ${NSD_CreateRadioButton} 223u 84u 51u 14u "Full Height"
+  Pop $hCtl_visuals_mh
   
-  ; === CheckBox1 (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 168u 104u 100u 14u "Apply to New Frames"
-  Pop $hCtl_visuals_CheckBox1
+  ; === mnf (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 168u 101u 100u 14u "Apply to New Frames"
+  Pop $hCtl_visuals_mnf
   
 FunctionEnd
 

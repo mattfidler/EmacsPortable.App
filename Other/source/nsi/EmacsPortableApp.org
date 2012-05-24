@@ -62,6 +62,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_background
   var option_foreground
   var option_daemon
+  var option_colorsync
   
   var option_font
   var option_font_size
@@ -405,6 +406,7 @@ FunctionEnd
     IfErrors +3 0
     MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-OR-FILENAME]...$\n$\n\
         /?$\t$\tShow this help$\n\
+        /COLORSYNC$\t$\tSync the fonts and display colors with the startup options$\n\
         /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
         /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
         /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
@@ -430,7 +432,8 @@ FunctionEnd
     StrCpy $option_version "24.0"
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
-    
+    StrCpy $option_colorsync ""    
+
     StrCpy $option_emacsclient "emacsclient.exe"
     
     ; Parse Parameters
@@ -461,7 +464,7 @@ FunctionEnd
       
       ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
       
-      ${ReadINIStrWithDefault} $option_maximized $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Maximized" $option_maximized
+      ${ReadINIStrWithDefault} $option_maximized $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Max" $option_maximized 
       
       ${ReadINIStrWithDefault} $option_fullwidth $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
       
@@ -519,7 +522,13 @@ FunctionEnd
       Abort
     emacs_ver_done:
       ClearErrors
-      
+  
+      StrCpy $option_colorsync ""
+      ${GetOptions} $cmdLineParams '/COLORSYNC' $R0
+      IfErrors no_colorsync
+      StrCpy $option_colorsync "1"
+    no_colorsync:
+      ClearErrors
       ${GetOptions} $cmdLineParams '/DEBUG' $R0
       IfErrors no_debug_cmd_line
       StrCpy $option_debug " --debug-init"
@@ -561,7 +570,8 @@ FunctionEnd
       StrCpy $cmdLineParams $0
       ${StrReplace} $cmdLineParams "/DEBUG" ""
       StrCpy $cmdLineParams $0
-      
+      ${StrReplace} $cmdLineParams "/COLORSYNC" ""
+      StrCpy $cmdLineParams $0
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
       
@@ -1320,6 +1330,7 @@ Now Finalize Putty Proxy settings
 #+BEGIN_SRC nsis
   !macro emacsclient_setup
     ${SetupDirs}
+    StrCmp "" $option_colorync 0 colorsync
     StrCmp "" $option_dos setupwin_client setupdos_client
     setupdos_client:
       StrCmp $cmdLineParams "" +3
@@ -1337,6 +1348,9 @@ Now Finalize Putty Proxy settings
       IfFileExists "$TEMP\ep\hidden-$option_version" 0 +2
       StrCpy $R9 " -c"
       StrCpy $emacs `"$emacs\$option_emacsclient" $R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
+      Goto end_client
+    colorsync:
+      StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
     end_client:
       ClearErrors
   !macroend
@@ -1361,65 +1375,76 @@ Now Finalize Putty Proxy settings
 
 * Main Script
 #+BEGIN_SRC nsis
-   Section "Main" sec_mainN
-     StrCpy "$emacs" "$EXEDIR\App\emacs-$option_version\bin"
-     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
-     StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
-     FindProcDLL::FindProc "$option_emacs"
-     StrCmp $R0 "1" start_emacsclient start_emacs
-     start_emacs:
-       ${emacs_setup}
-       WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version" "1"
-       StrCmp "" $option_dos 0 start_emacs_dos
-       StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
-       
-     start_emacs_gdb:
-       Push $TEMP
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$EXEDIR\App\eps\run2.exe $emacs"
-       Pop $R0
-       Goto loop
-     start_emacs_regular:
-       Push $TEMP
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$EXEDIR\App\eps\run.exe $emacs"
-       Pop $R0                  
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
-       Goto loop
-     start_emacs_dos:
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-       Exec "$EXEDIR\App\eps\run2.exe $emacs"
-       Goto end
-     loop:
-       StrCmp "1" $option_daemon 0 end
-       StrCmp "" $option_q 0 end
-       StrCpy $cnt 300
-       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +2 0
-       CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
-           "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe"
-       Exec "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe $option_version"
-     look_for_running_emacs:
-       FindProcDLL::FindProc "emacs-$option_version.exe"
-       StrCmp "$R0" "1" found_running_emacs
-       FindProcDLL::FindProc "emacs-$option_version-dos.exe"
-       StrCmp "$R0" "1" found_running_emacs 
-       Sleep 1000 # Wait 1 seconds for emacs process to start.
-       Goto look_for_running_emacs
-     found_running_emacs:
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-       IfFileExists "$TEMP\ep\ep-rm.exe" end 0
-       writeUninstaller "$TEMP\ep\ep-rm.exe"
-       Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\ep-rm.exe"
-       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
-       Goto end
-     start_emacsclient:
-       ${emacsclient_setup}
-       Exec "$EXEDIR\App\eps\run.exe $emacs"
-     end:
-       #
-   SectionEnd
-   
+  Section "Main" sec_mainN
+    StrCpy "$emacs" "$EXEDIR\App\emacs-$option_version\bin"
+    IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
+    StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
+    FindProcDLL::FindProc "$option_emacs"
+    StrCmp $R0 "1" start_emacsclient start_emacs
+    start_emacs:
+      ${emacs_setup}
+      WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version" "1"
+      StrCmp "" $option_dos 0 start_emacs_dos
+      StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
+      
+    start_emacs_gdb:
+      Push $TEMP
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+      Exec "$EXEDIR\App\eps\run2.exe $emacs"
+      Pop $R0
+      Goto loop
+    start_emacs_regular:
+      Push $TEMP
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+      Exec "$EXEDIR\App\eps\run.exe $emacs"
+      Pop $R0                  
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
+      Goto loop
+    start_emacs_dos:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+      Exec "$EXEDIR\App\eps\run2.exe $emacs"
+      Goto end
+    loop:
+      StrCmp "1" $option_daemon 0 end
+      StrCmp "" $option_q 0 end
+      StrCpy $cnt 300
+      IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +2 0
+      CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
+          "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe"
+      Exec "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe $option_version"
+    look_for_running_emacs:
+      FindProcDLL::FindProc "emacs-$option_version.exe"
+      StrCmp "$R0" "1" found_running_emacs
+      FindProcDLL::FindProc "emacs-$option_version-dos.exe"
+      StrCmp "$R0" "1" found_running_emacs 
+      Sleep 1000 # Wait 1 seconds for emacs process to start.
+      Goto look_for_running_emacs
+    found_running_emacs:
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
+      IfFileExists "$TEMP\ep\ep-rm.exe" end 0
+      writeUninstaller "$TEMP\ep\ep-rm.exe"
+      Exec "$EXEDIR\App\eps\run.exe $TEMP\ep\ep-rm.exe"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
+      Goto end
+    start_emacsclient:
+      StrCmp $option_debug "" 0 no_debug
+      StrCmp $option_q "" 0 start_emacs
+      ${emacsclient_setup}
+      ${If} $option_colorsync == ""
+        Exec "$EXEDIR\App\eps\run.exe $emacs"
+      ${Else}
+        HideWindow
+        ExecWait "$emacs"
+      ${EndIf}
+      Goto end
+    no_debug:
+      HideWindow
+      MessageBox MB_OK|MB_ICONSTOP "EmacsPortable.App already running, cannot debug the startup."
+    end:
+      #
+  SectionEnd
+  
 #+END_SRC
 * Uninstall section
 This removes registry settings, fonts and other settings.
