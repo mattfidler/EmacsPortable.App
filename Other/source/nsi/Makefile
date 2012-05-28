@@ -1,9 +1,15 @@
 download_extras=EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
-emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh
+emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh EmacsEnv.nsh ../../../App/eps/run.exe
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/run.exe
+
+../../../App/eps/run.exe: emacsportablerun.nsi
+	$(MAKENSIS) EmacsEnv.nsi
+
+emacsportablerun.nsi: emacsportablerun.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsportablerun.org)"
 
 ../../../App/eps/download-unix.exe: EmacsUnix.nsi unix-download.ini
 	$(MAKENSIS) EmacsUnix.nsi
@@ -14,10 +20,7 @@ unix-download.ini: emacsdownload-gw32.nsi emacsdownload-ezwin.nsi
 EmacsUnix.nsi: emacsUnix.org emacsdownload-gw32.nsi emacsdownload-ezwin.nsi EmacsDownloadShared.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsUnix.org)"
 
-../../../App/eps/ep-env.exe: EmacsEnv.nsi
-	$(MAKENSIS) EmacsEnv.nsi
-
-EmacsEnv.nsi: EmacsEnv.org
+EmacsEnv.nsh: EmacsEnv.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsEnv.org)"
 
 ../../../App/eps/EmacsDoc.exe: EmacsDoc.nsi

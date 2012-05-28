@@ -1,40 +1,8 @@
 #+TITLE: Environment Setup
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsEnv.nsi
+#+PROPERTY: tangle EmacsEnv.nsh
 * Introduction
-This sets up the Emacs Path and environment.  Currently a
-work-in-progress.  Not high priority. 
-* Launcher Properties
-** Setup Options
-I want:
- - user level execution
- - CRC check
- - Good compression
-#+BEGIN_SRC nsis
-  CRCCheck On
-  RequestExecutionLevel user
-  ; Best Compression
-  SetCompress Auto
-  SetCompressor /SOLID lzma
-  SetCompressorDictSize 32
-  SetDatablockOptimize On
-  Caption "Loading EmacsPortable.App"
-  Subcaption 3 " "
-  XPStyle on
-  OutFile "..\..\..\App\eps\ep-env.exe"
-  Icon "..\img\ico\appicon.ico"
-  UninstallIcon "..\img\ico\trash_empty.ico"
-  var path_ini
-  var path_cache
-  var drives
-  var EPEXE
-#+END_SRC
-** User Interface
-EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis :tangle no
-  AutoCloseWindow true
-  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
-#+END_SRC
+This sets up the Emacs Path and environment.  
 * Find Environment Information
 ** Get Directory MD5
 #+BEGIN_SRC nsis
@@ -67,6 +35,8 @@ EmacsPortable.App uses the loading bar to startup emacs.
       
       md5dll::GetMD5String "$3"
       Exch
+      Pop $3
+      Exch
       Pop $2
       Exch
       Pop $1
@@ -75,67 +45,262 @@ EmacsPortable.App uses the loading bar to startup emacs.
   FunctionEnd
   
 #+END_SRC
-
-
-** Get Path and Directory Information
+** Get Computer Name
+Adapted from http://nsis.sourceforge.net/Your_Computer_Name
+#+BEGIN_SRC nsis
+  Function GetComputerName
+    Push $0
+    Push $1
+    ReadRegStr $0 HKLM "System\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+    StrCmp $0 "" win9x
+    StrCpy $1 $0 4 3
+    Goto done
+    win9x:
+      ReadRegStr $0 HKLM "System\CurrentControlSet\Control\ComputerName\ComputerName" "ComputerName"
+      StrCpy $1 $0 4 3
+    done:
+      Push $0
+      Exch
+      Pop $1
+      Exch
+      Pop $0
+      ClearErrors
+  FunctionEnd
+  
+  !macro GetComputerName VAR
+    Call GetComputerName
+    Pop ${Var}
+  !macroEnd
+  !define GetComputerName `!insertmacro GetComputerName`
+  
+#+END_SRC
 
 ** Get Drive Variables
 #+BEGIN_SRC nsis
-  Function GetDriveVars
+  Var globalMD5
+  
+  Function GetPortable
     ; $9    "drive letter"  (a:\ c:\ ...)
     ; $8    "drive type"    (FDD HDD ...)
-  
-    ReadIniStr $R0 "$path_ini" "search.portable" "$9"
-    ClearErrors
-    StrCmp "$9" "1" 0 search_local
-    ## Now look for each portable Directory.
+    DetailPrint "Checking Drive $9 ($EPEXE\App\ini\paths.ini)"
+    StrCpy $globalMD5 ""
+    ${GetMD5} "$9" $R3 
+    DetailPrint "MD5: $R3"
+    ReadIniStr $R4 "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5"
+    ${If} $R4 == "$R3"
+      ReadIniStr $R0 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
+      ${If} "$R0" != "$9"
+        ${RIF} "$EPEXE\Data\ini\portable-cache.ini" "$R0" "$9"
+      ${EndIf}
+      StrCpy $globalMD5 "1"
+      StrCpy "$R8" "StopGetDrives"
+      Goto done_portable
+    ${EndIf}
+    DeleteIniSec "$EPEXE\Data\ini\portable-cache.ini" "portable"
+    WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5" "$R3"
+    WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive" "$9"
     
-    search_local:
+    
+    ## Now look for each portable Directory.
+    StrCpy $R8 ""
+    EnumINI::Section "$EPEXE\App\ini\paths.ini" "portable.dirs"
+    Pop $R0
+    StrCmp $R0 "error" done_portable
+    loop_portable:
+      IntCmp $R0 "0" done_portable done_portable 0
+      Pop $R1
+      ReadINIStr $R2 "$EPEXE\App\ini\paths.ini" "portable.dirs" "$R1"
+      DetailPrint "Check $9$R1 ($R2)"
+      Call AddPortable
+      Pop $R9
+      ${If} $R9 != ""
+        StrCpy $R8 "$R9"
+      ${EndIf}
+    next_portable:
+      IntOp $R0 $R0 - 1
+      Goto loop_portable
       
+    done_portable:
+    search_local:
+      Push $R8
       ;Push $var    ; If $var="StopGetDrives" Then exit from function
   FunctionEnd
   
-#+END_SRC
-
-* Main
-#+BEGIN_SRC nsis
-  !macro shouldsearch DRIVE
-    ReadIniStr $R0 $path_ini "search.portable" "${DRIVE}"
-    ClearErrors
-    StrCmp "$R0" "1" 0 +3
-    StrCpy $drives "${DRIVE}+"
-    Goto +5
-    ReadIniStr $R0 $path_ini "search.local" "${DRIVE}"
-    ClearErrors
-    StrCmp "$R0" "1" 0 +2
-    StrCpy $drives "${DRIVE}+"
+  !macro AddIt WHAT CACHE PATHS
+    Function Add${WHAT}
+      ## Searches for ${WHAT} Appliactions to add to the directory
+      ; $9 -- Drive Letter
+      ; $R1 -- ${WHAT} Directories
+      DetailPrint "Checking $9$R1"
+      IfFileExists "$9$R1" 0 not_found
+      ${GetMD5} "$9$R1" $R3 
+      DetailPrint "MD5: $R3"
+      ReadIniStr $R4 "${CACHE}" "$R1" "MD5"
+      StrCmp $R4 $R3 done
+      DeleteIniSec "${CACHE}" "$R1"
+      WriteIniStr "${CACHE}" "$R1" "MD5" "$R3"
+      WriteIniStr "${CACHE}" "$R1" "Drive" "$9"
+      EnumINI::Section "${PATHS}" "${WHAT}"
+      Pop $R3
+      StrCmp $R3 "error" done_${WHAT}
+      loop_${WHAT}:
+        IntCmp $R3 "0" done_${WHAT} done_${WHAT} 0    
+        Pop $R4
+        ReadINIStr $R5 "${PATHS}" "${WHAT}" "$R4"
+        DetailPrint "Checking $9$R1\$R5"
+        IfFileExists "$9$R1\$R5" 0 next_${WHAT}
+        ReadIniStr $R6 "${CACHE}" "$R1" "PATH"
+        ClearErrors
+        GetFullPathName /SHORT $R7 "$9$R1\$R5"
+        ${If} $R6 == ""
+          StrCpy "$R6" "$R7"
+        ${Else}
+          StrCpy "$R6" "$R6;$R7"
+        ${EndIf}
+        WriteIniStr "${CACHE}" "$R1" "PATH" "$R6"
+        EnumINI::Section "${PATHS}" "${WHAT}.$R4.path"
+        Pop $R5
+        StrCmp $R5 "error" done_env
+      loop_env:
+        IntCmp $R5 "0" done_env done_env 0
+        Pop $R6
+        ReadIniStr $R7 "${PATHS}" "${WHAT}.$R4.path" "$R6"
+        GetFullPathName /SHORT $R7 "$9$R1\$R7"
+        WriteIniStr "${CACHE}" "$R1" "$R6" "$R7"
+        IntOp $R5 $R5 - 1
+        Goto loop_env
+      done_env:
+        EnumINI::Section "${PATHS}" "${WHAT}.$R4.set"
+        Pop $R5
+        StrCmp $R5 "error" done_set
+      loop_set:
+        IntCmp $R5 "0" done_set done_set 0
+        Pop $R6
+        ReadIniStr $R7 "${PATHS}" "${WHAT}.$R4.set" "$R6"
+        WriteIniStr "${CACHE}" "$R1" "$R6" "$R7"
+        IntOp $R5 $R5 - 1
+        Goto loop_set
+      done_set:
+        
+      next_${WHAT}:
+        IntOp $R3 $R3 - 1
+        Goto loop_${WHAT}
+      done_${WHAT}:
+        Push "StopGetDrives"
+        Goto done
+      not_found:
+        Push ""
+        DetailPrint "Not found, Delete cache $R1"
+        DeleteIniSec "${CACHE}" "$R1"
+      done:
+        ClearErrors
+    FunctionEnd
   !macroend
-  Section "Main" sec_main
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
-    Goto +2
-    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-
-    StrCpy $path_ini "$EPEXE\App\ini\paths.ini"
-    StrCpy $drives ""
+  
+  Function GetExedir
+    GetFullPathName /SHORT $R1  $EPEXE
+    StrCpy $9 $R1 3
+    StrCpy $R1 "$R1" "" 3
+    ReadIniStr $R2 "$EPEXE\Data\ini\exedir-cache.ini" "$R1" "Drive"
+    ${If} $R2 != ""
+    ${AndIf} "$R2" != "$9"
+      ${RIF} "$EPEXE\Data\ini\exedir-cache.ini" "$R2" "$9" 
+    ${EndIf}
+    Call AddExedir
+  FunctionEnd
+  
+  Function GetLocaldir
+    ${GetComputerName} $0
+    DetailPrint "Computer Name: $0"
+  
+    GetFullPathName /SHORT $R1  $PROGRAMFILES
+    StrCpy $9 $R1 3
+    StrCpy $R1 "$R1" "" 3
+    Call AddLocal
     
-    !insertmacro shouldsearch "FDD"
-    !insertmacro shouldsearch "HDD"
-    !insertmacro shouldsearch "CDROM"
-    !insertmacro shouldsearch "NET"
-    !insertmacro shouldsearch "RAM"
-    StrCmp $drives "" end
-    StrCpy $drives $drives -1 ; drop last 
-    ${GetDrives} "$drives" "GetDriveVars"
-    end:
-      ClearErrors
-  SectionEnd
+    GetFullPathName /SHORT $R1  $PROGRAMFILES32
+    StrCpy $9 $R1 3
+    StrCpy $R1 "$R1" "" 3
+    Call AddLocal
+    
+    GetFullPathName /SHORT $R1  $PROGRAMFILES64
+    StrCpy $9 $R1 3
+    StrCpy $R1 "$R1" "" 3
+    Call AddLocal
+
+  FunctionEnd
+  
+  
+  !insertmacro AddIt "portable" "$EPEXE\Data\ini\portable-cache.ini" "$EPEXE\App\ini\paths.ini"
+  !insertmacro AddIt "exedir" "$EPEXE\Data\ini\exedir-cache.ini" "$EPEXE\App\ini\paths.ini"
+  !insertmacro AddIt "local" "$EPEXE\Data\ini\$0-cache.ini" "$EPEXE\App\ini\paths.ini"
   
 #+END_SRC
-* Uninstall
-#+BEGIN_SRC nsis :tangle no
-  Section "Uninstall" sec_uninstall
-    SetAutoClose true
-    Delete "$TEMP\ep\rm-ep-font.exe"
-  SectionEnd
-#+END_SRC nsis
+
+** Load Cache
+#+BEGIN_SRC nsis
+  
+  Function LoadCache
+    Pop $0
+    EnumINI::SectionNames "$0"
+    Pop $R0
+    StrCmp $R0 "error" done_cache
+    loop_cache:
+      IntCmp $R0 "0" done_cache done_cache 0
+      Pop $R1
+      StrCmp $R1 "portable" next_cache
+      StrCmp $globalMD5 "" skip_md5
+      ReadIniStr $9 "$0" "$R1" "Drive"
+      Call AddPortable
+    skip_md5:
+      EnumINI::Section "$0" "$R1"
+      Pop $R2
+      StrCmp "$R2" "error" next_cache
+    loop_env:
+      IntCmp $R2 "0" next_cache next_cache 0
+      Pop $R3
+      ReadIniStr $R4 "$0" "$R1" "$R3"
+      ${If} $R3 == "PATH"
+        DetailPrint "Path Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R4;$3").r2'
+      ${ElseIf} $R3 != "Drive"
+      ${AndIf} $R3 != "MD5"
+        DetailPrint "Env: $R3=$R4"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R4").r2'
+      ${EndIf}
+    next_env:
+      IntOp $R2 $R2 - 1
+      Goto loop_env
+    next_cache:
+      IntOp $R0 $R0 - 1
+      Goto loop_cache
+    done_cache:
+      ClearErrors
+  FunctionEnd
+  !macro LoadCache CACHE
+    Push "${CACHE}"
+    Call LoadCache
+  !macroend
+  
+  !define LoadPortable `!insertmacro LoadCache "$EPEXE\Data\ini\portable-cache.ini"`
+  !define LoadExedir `!insertmacro LoadCache "$EPEXE\Data\ini\exedir-cache.ini"`
+  !define LoadLocal `!insertmacro LoadCache "$EPEXE\Data\ini\$0-cache.ini"`
+  
+#+END_SRC
+
+** Setup Environment
+
+#+BEGIN_SRC nsis
+  !macro SetEnv
+    ${GetDrives} "FDD+HDD" "GetPortable"
+    Call GetExedir
+    Call GetLocaldir
+    ${LoadPortable}
+    ${LoadExedir}
+    ${GetComputerName} $0
+    ${LoadLocal}
+  !macroend
+  !define SetEnv `!insertmacro SetEnv`
+  
+#+END_SRC

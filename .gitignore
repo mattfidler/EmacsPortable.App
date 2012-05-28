@@ -135,3 +135,5 @@ Readme.org_archive
 /Other/source/nsi/unix-download-ezw.ini
 /Other/source/nsi/unix-download-gw32.ini
 /Other/source/nsi/unix-download.ini
+/Other/source/nsi/EmacsEnv.nsh
+/Other/source/nsi/emacsportablerun.nsi

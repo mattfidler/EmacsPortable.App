@@ -257,7 +257,7 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
   FunctionEnd 
 #+END_SRC
 
-* Main                          #
+* Main 
 #+BEGIN_SRC nsis
 Section "Main" sec_main
     HideWindow

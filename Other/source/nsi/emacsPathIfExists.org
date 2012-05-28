@@ -2,27 +2,16 @@
 #+AUTHOR: Matthew L. Fidler
 #+PROPERTY: tangle emacsPathIfExists.nsh
 * Intro
-Add to path if directory exists macro that tries to overcome the
-${NSIS_MAX_STRLEN} when the Path is lonegr than ${NSIS_MAX_STRLEN}...
-
-This is done by calling emacs from autohotkey and setting the
-PATH there.
+Changed NSIS compiler to support larger strings.
 ** Path If Exist
 #+BEGIN_SRC nsis
 Var npath
 !macro _PathIfExist ARG1 GOTO
-  DetailPrint "Checking ${ARG1}"
-  Push $0
-  GetFullPathName /SHORT $0 "${ARG1}" 
-  IfFileExists "$0" +3
-  Pop $0
-  Goto +6
-  IntOp $npath $npath + 1
-  WriteINIStr "$TEMP\ep\ep-env.ini" "path" "$npath" "$0"
-  DetailPrint "Add $0 to Path"
-  Pop $0
-  Goto ${GOTO}
-
+DetailPrint "Checking for ${ARG1}"
+  StrCpy $9 ""
+  IfFileExists "${ARG1}" 0 +4
+  System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r0, ${NSIS_MAX_STRLEN}).r1'
+  System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "${ARG1};$0").r3'StrCpy $9 "1"
 !macroend
 
 !define PathIfExist '!insertmacro "_PathIfExist"'
