@@ -17,6 +17,7 @@ This provides an interface to the Emacs Startup options
 ** Definitions and Variables
 #+BEGIN_SRC nsis
   !define TEMP1 $R0 ;Temp variable
+  Var EPEXE 
   
 #+END_SRC
 ** Include files
@@ -27,6 +28,9 @@ This provides an interface to the Emacs Startup options
   !include "emacsproxy.nsh"
   !include "setupEmacsData.nsh"
   !include "CommCtrl.nsh"
+  !include "StrRep.nsh"
+  !include "RepInFile.nsh"
+  !include "emacsEnv.nsh"
 #+END_SRC
 ** nsDialogs Hacks
 *** Sorted DropList
@@ -107,9 +111,9 @@ Usage:
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
-  Page custom fnc_proxy_Show
-  Page custom fnc_visuals_Show fnc_visuals_Validate
+  Page custom fnc_proxy_Show fnc_proxy_Validate
   Page custom fnc_behavior_Show fnc_behavior_Validate
+  Page custom fnc_visuals_Show fnc_visuals_Validate
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
@@ -187,107 +191,6 @@ Usage:
   
   
 #+END_SRC
-** StrSlash
-#+BEGIN_SRC nsis
-  ## StringSlash
-  !macro _StrSlash FILENAME SLASH
-    Push "${FILENAME}"
-    Push "${SLASH}"
-    Call StrSlash
-    Pop $R0
-  !macroend
-  !define StrSlash `!insertmacro _StrSlash`
-  ; Push $filenamestring (e.g. 'c:\this\and\that\filename.htm')
-  ; Push "\"
-  ; Call StrSlash
-  ; Pop $R0
-  ; ;Now $R0 contains 'c:/this/and/that/filename.htm'
-  Function StrSlash
-    Exch $R3 ; $R3 = needle ("\" or "/")
-    Exch
-    Exch $R1 ; $R1 = String to replacement in (haystack)
-    Push $R2 ; Replaced haystack
-    Push $R4 ; $R4 = not $R3 ("/" or "\")
-    Push $R6
-    Push $R7 ; Scratch reg
-    StrCpy $R2 ""
-    StrLen $R6 $R1
-    StrCpy $R4 "\"
-    StrCmp $R3 "/" loop
-    StrCpy $R4 "/"
-    
-    loop:
-      StrCpy $R7 $R1 1
-      StrCpy $R1 $R1 $R6 1
-      StrCmp $R7 $R3 found
-      StrCpy $R2 "$R2$R7"
-      StrCmp $R1 "" done loop
-      
-    found:
-      StrCpy $R2 "$R2$R4"
-      StrCmp $R1 "" done loop
-      
-    done:
-      StrCpy $R3 $R2
-      Pop $R7
-      Pop $R6
-      Pop $R4
-      Pop $R2
-      Pop $R1
-      Exch $R3
-  FunctionEnd
-#+END_SRC
-** Replace in String
-This came from [[http://nsis.sourceforge.net/Another_String_Replace_%28and_Slash/BackSlash_Converter%29][here]]
-#+BEGIN_SRC nsis
-!macro _StrReplaceConstructor ORIGINAL_STRING TO_REPLACE REPLACE_BY VAR
-  Push "${ORIGINAL_STRING}"
-  Push "${TO_REPLACE}"
-  Push "${REPLACE_BY}"
-  Call StrRep
-  Pop ${VAR}
-!macroend
-
-
-Function StrRep
-  Exch $R4 ; $R4 = Replacement String
-  Exch
-  Exch $R3 ; $R3 = String to replace (needle)
-  Exch 2
-  Exch $R1 ; $R1 = String to do replacement in (haystack)
-  Push $R2 ; Replaced haystack
-  Push $R5 ; Len (needle)
-  Push $R6 ; len (haystack)
-  Push $R7 ; Scratch reg
-  StrCpy $R2 ""
-  StrLen $R5 $R3
-  StrLen $R6 $R1
-  loop:
-    StrCpy $R7 $R1 $R5
-    StrCmp $R7 $R3 found
-    StrCpy $R7 $R1 1 ; - optimization can be removed if U know len needle=1
-    StrCpy $R2 "$R2$R7"
-    StrCpy $R1 $R1 $R6 1
-    StrCmp $R1 "" done loop
-  found:
-    StrCpy $R2 "$R2$R4"
-    StrCpy $R1 $R1 $R6 $R5
-    StrCmp $R1 "" done loop
-  done:
-    StrCpy $R3 $R2
-    Pop $R7
-    Pop $R6
-    Pop $R5
-    Pop $R2
-    Pop $R1
-    Pop $R4
-    Exch $R3
-FunctionEnd
-
-!define StrReplace '!insertmacro "_StrReplaceConstructor"'
-
-#+END_SRC
-
 ** Explode
 From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
@@ -447,6 +350,7 @@ From http://nsis.sourceforge.net/Explode
 *** Initialization Function
 #+BEGIN_SRC nsis
   Function .onInit
+    StrCpy $EPEXE $EXEDIR
     ClearErrors
   FunctionEnd  
 #+END_SRC
@@ -473,6 +377,11 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     StrCpy $1 $R0 5
     StrCmp "$1" "USB:\" home_usb home_exe
     home_usb:
+      Push $R0
+      ${SetEnv}
+      Pop $R0
+      StrCpy $R0 $R0 "" 5
+      StrCpy $R0 "$usb$R0"
     home_exe:
       StrCpy $1 $R0 8
       StrCmp "$1" "EXEDIR:\" 0 end
@@ -518,11 +427,20 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     StrLen $2 $1
     StrCpy $3 $R0 $2
     StrCmp $1 $3 replace_exedir
-    Goto end
+    Goto usb
     replace_exedir:
       StrCpy $R0 $R0 "" $2
       StrCpy $R0 "EXEDIR:$R0" 
+    usb:
+      Push $R0
+      ${SetEnv}
+      Pop $R0
+      StrCpy $1 $R0 3
+      StrCmp $1 $usb 0 end
+      StrCpy $R0 $R0 "" 3
+      StrCpy $R0 "USB:\$R0"
     end:
+      
       Push $R0
       Exch
       Pop $R0
@@ -543,6 +461,7 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
   !macroend
   
   !define ConvertToAlias `!insertmacro ConvertToAlias`
+  
 #+END_SRC
 
 * Pages
@@ -1071,39 +990,50 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
   Var hCtl_proxy
   Var hCtl_proxy_GroupBox1
   Var hCtl_proxy_server
+  Var hCtl_proxy_UserName
   Var hCtl_proxy_Label1
   Var hCtl_proxy_Label2
   Var hCtl_proxy_port
-  Var hCtl_proxy_Label4
   Var hCtl_proxy_Label3
+  Var hCtl_proxy_Label5
+  Var hCtl_proxy_Label4
   Var hCtl_proxy_Password1
   Var hCtl_proxy_Password2
-  Var hCtl_proxy_Label5
   Var hCtl_proxy_GroupBox2
   Var hCtl_proxy_FileRequest1_Txt
   Var hCtl_proxy_FileRequest1_Btn
   Var hCtl_proxy_Label6
-  Var hCtl_proxy_CheckBox1
-  Var hCtl_proxy_CheckBox2
+  Var hCtl_proxy_putty_portable
+  Var hCtl_proxy_putty
   
   
   ; dialog create function
   Function fnc_proxy_Create
+    ${If} $PROXY_IDE == ""
+      StrCpy $7 "$EXEDIR"
+      ${SetupProxy}
+      Pop $0
+    ${EndIf}
     ; === proxy (type: Dialog) ===
     nsDialogs::Create 1018
     Pop $hCtl_proxy
     ${If} $hCtl_proxy == error
       Abort
     ${EndIf}
-    !insertmacro MUI_HEADER_TEXT "Proxy Settings" "Sets EmacsPortable.App Proxy Settings. These settings should be different for different networks. "
+    
+    !insertmacro MUI_HEADER_TEXT "Proxy Settings" "This sets the proxy setings for the current network ($PROXY_IDE)"
     
     ; === GroupBox1 (type: GroupBox) ===
-    ${NSD_CreateGroupBox} 8u 7u 280u 66u "Proxy Settings"
+    ${NSD_CreateGroupBox} 8u 7u 280u 71u "Proxy Settings ($PROXY_IDE)"
     Pop $hCtl_proxy_GroupBox1
     
-    ; === server (type: Text) ===
+    ; === TextBox1 (type: Text) ===
     ${NSD_CreateText} 79u 16u 98u 11u ""
     Pop $hCtl_proxy_server
+    
+    ; === UserName (type: Text) ===
+    ${NSD_CreateText} 79u 30u 205u 11u ""
+    Pop $hCtl_proxy_UserName
     
     ; === Label1 (type: Label) ===
     ${NSD_CreateLabel} 12u 16u 46u 13u "Proxy Server"
@@ -1113,40 +1043,40 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     ${NSD_CreateLabel} 186u 17u 40u 13u "Proxy Port"
     Pop $hCtl_proxy_Label2
     
-    ; === port (type: Text) ===
+    ; === TextBox2 (type: Text) ===
     ${NSD_CreateText} 230u 14u 53u 11u ""
     Pop $hCtl_proxy_port
     
-    ; === Label4 (type: Label) ===
-    ${NSD_CreateLabel} 12u 47u 67u 13u "Confirm Password"
-    Pop $hCtl_proxy_Label4
-    
     ; === Label3 (type: Label) ===
-    ${NSD_CreateLabel} 12u 32u 37u 13u "Password"
+    ${NSD_CreateLabel} 12u 47u 37u 13u "Password"
     Pop $hCtl_proxy_Label3
     
+    ; === Label5 (type: Label) ===
+    ${NSD_CreateLabel} 12u 32u 53u 13u "User Name"
+    Pop $hCtl_proxy_Label5
+    
+    ; === Label4 (type: Label) ===
+    ${NSD_CreateLabel} 12u 61u 67u 13u "Confirm Password"
+    Pop $hCtl_proxy_Label4
+    
     ; === Password1 (type: Password) ===
-    ${NSD_CreatePassword} 79u 30u 205u 11u ""
+    ${NSD_CreatePassword} 79u 45u 205u 11u ""
     Pop $hCtl_proxy_Password1
     
     ; === Password2 (type: Password) ===
-    ${NSD_CreatePassword} 79u 45u 205u 11u ""
+    ${NSD_CreatePassword} 79u 60u 205u 11u ""
     Pop $hCtl_proxy_Password2
     
-    ; === Label5 (type: Label) ===
-    ${NSD_CreateLabel} 79u 60u 205u 12u "Note: Proxy settings are different"
-    Pop $hCtl_proxy_Label5
-    
     ; === GroupBox2 (type: GroupBox) ===
-    ${NSD_CreateGroupBox} 8u 77u 280u 45u "Putty Integration"
+    ${NSD_CreateGroupBox} 8u 81u 280u 41u "Putty Integration"
     Pop $hCtl_proxy_GroupBox2
     
     ; === FileRequest1_Txt (type: Text) ===
-    ${NSD_CreateText} 79u 87u 184u 11u ""
+    ${NSD_CreateText} 79u 90u 184u 11u ""
     Pop $hCtl_proxy_FileRequest1_Txt
     
     ; === FileRequest1_Btn (type: Button) ===
-    ${NSD_CreateButton} 264u 87u 20u 11u "..."
+    ${NSD_CreateButton} 264u 90u 20u 11u "..."
     Pop $hCtl_proxy_FileRequest1_Btn
     ${NSD_OnClick} $hCtl_proxy_FileRequest1_Btn fnc_hCtl_proxy_FileRequest1_Click
     
@@ -1154,22 +1084,23 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     ${NSD_CreateLabel} 12u 90u 66u 13u "Putty Key to Load:"
     Pop $hCtl_proxy_Label6
     
-    ; === CheckBox1 (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
-    Pop $hCtl_proxy_CheckBox1
-    ${NSD_Check} $hCtl_proxy_CheckBox1
-    
     ; === CheckBox2 (type: Checkbox) ===
     ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
-    Pop $hCtl_proxy_CheckBox2
+    Pop $hCtl_proxy_putty_portable
+    
+    ; === CheckBox1 (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
+    Pop $hCtl_proxy_putty
+    
   
-    ${SetupProxy}
-    Pop $0
-    IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
+    ${NSD_SetText} $hCtl_proxy_Password1 $R0
+    ${NSD_SetText} $hCtl_proxy_Password2 $R0
+    
+    ${SetCheck} $hCtl_proxy_putty "ApplyPutty"
+    ${SetCheck} $hCtl_proxy_putty_portable "PuttyPortable"
+  
+    ${SetDir} $hCtl_proxy_FileRequest1_Txt "PuttyKey" ""
+    
     IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
     
     ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
@@ -1184,6 +1115,16 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     Pop $R0
     ${NSD_SetText} $hCtl_proxy_port $R0
     
+    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    ${NSD_SetText} $hCtl_proxy_UserName $R0
+    
+    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
     end_proxy_init:
       ClearErrors
   FunctionEnd
@@ -1201,15 +1142,30 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     Pop $R0
     ${If} $R0 == $hCtl_proxy_FileRequest1_Btn
       ${NSD_GetText} $hCtl_proxy_FileRequest1_Txt $R0
+      ${ConvertToFile} $R0 $R0
       nsDialogs::SelectFileDialog open "$R0" ""
       Pop $R0
       ${If} "$R0" != "error"
+        ${ConvertToAlias} $R0 $R0
         ${NSD_SetText} $hCtl_proxy_FileRequest1_Txt "$R0"
       ${EndIf}
     ${EndIf}
   FunctionEnd
   
 #+END_SRC
+
+*** Validation Function
+#+BEGIN_SRC nsis
+  Function fnc_proxy_Validate
+
+    ${WriteCheck} $hCtl_proxy_putty "ApplyPutty"
+    ${WriteCheck} $hCtl_proxy_putty_portable "PuttyPortable"
+
+    ${WriteText} $hCtl_proxy_FileRequest1_Txt "PuttyKey"
+  FunctionEnd
+  
+#+END_SRC
+
 
 * Obligatory Section
 #+BEGIN_SRC nsis

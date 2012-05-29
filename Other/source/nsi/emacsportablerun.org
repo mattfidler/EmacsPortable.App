@@ -45,7 +45,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Section "Main" sec_main
     HideWindow
     ${GetParameters} $cmdLineParams
-	MessageBox MB_OK "$cmdLineParams" 
     execDos::exec '$cmdLineParams'
   SectionEnd
 #+END_SRC

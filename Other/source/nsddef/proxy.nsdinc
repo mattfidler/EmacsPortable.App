@@ -7,20 +7,21 @@
 Var hCtl_proxy
 Var hCtl_proxy_GroupBox1
 Var hCtl_proxy_TextBox1
+Var hCtl_proxy_UserName
 Var hCtl_proxy_Label1
 Var hCtl_proxy_Label2
 Var hCtl_proxy_TextBox2
-Var hCtl_proxy_Label4
 Var hCtl_proxy_Label3
+Var hCtl_proxy_Label5
+Var hCtl_proxy_Label4
 Var hCtl_proxy_Password1
 Var hCtl_proxy_Password2
-Var hCtl_proxy_Label5
 Var hCtl_proxy_GroupBox2
 Var hCtl_proxy_FileRequest1_Txt
 Var hCtl_proxy_FileRequest1_Btn
 Var hCtl_proxy_Label6
-Var hCtl_proxy_CheckBox1
 Var hCtl_proxy_CheckBox2
+Var hCtl_proxy_CheckBox1
 
 
 ; dialog create function
@@ -35,12 +36,16 @@ Function fnc_proxy_Create
   !insertmacro MUI_HEADER_TEXT "Dialog title..." "Dialog subtitle..."
   
   ; === GroupBox1 (type: GroupBox) ===
-  ${NSD_CreateGroupBox} 8u 7u 280u 66u "Proxy Settings"
+  ${NSD_CreateGroupBox} 8u 7u 280u 71u "Proxy Settings"
   Pop $hCtl_proxy_GroupBox1
   
   ; === TextBox1 (type: Text) ===
   ${NSD_CreateText} 79u 16u 98u 11u ""
   Pop $hCtl_proxy_TextBox1
+  
+  ; === UserName (type: Text) ===
+  ${NSD_CreateText} 79u 30u 205u 11u ""
+  Pop $hCtl_proxy_UserName
   
   ; === Label1 (type: Label) ===
   ${NSD_CreateLabel} 12u 16u 46u 13u "Proxy Server"
@@ -54,36 +59,36 @@ Function fnc_proxy_Create
   ${NSD_CreateText} 230u 14u 53u 11u ""
   Pop $hCtl_proxy_TextBox2
   
-  ; === Label4 (type: Label) ===
-  ${NSD_CreateLabel} 12u 47u 67u 13u "Confirm Password"
-  Pop $hCtl_proxy_Label4
-  
   ; === Label3 (type: Label) ===
-  ${NSD_CreateLabel} 12u 32u 37u 13u "Password"
+  ${NSD_CreateLabel} 12u 47u 37u 13u "Password"
   Pop $hCtl_proxy_Label3
   
+  ; === Label5 (type: Label) ===
+  ${NSD_CreateLabel} 12u 32u 53u 13u "User Name"
+  Pop $hCtl_proxy_Label5
+  
+  ; === Label4 (type: Label) ===
+  ${NSD_CreateLabel} 12u 61u 67u 13u "Confirm Password"
+  Pop $hCtl_proxy_Label4
+  
   ; === Password1 (type: Password) ===
-  ${NSD_CreatePassword} 79u 30u 205u 11u ""
+  ${NSD_CreatePassword} 79u 45u 205u 11u ""
   Pop $hCtl_proxy_Password1
   
   ; === Password2 (type: Password) ===
-  ${NSD_CreatePassword} 79u 45u 205u 11u ""
+  ${NSD_CreatePassword} 79u 60u 205u 11u ""
   Pop $hCtl_proxy_Password2
   
-  ; === Label5 (type: Label) ===
-  ${NSD_CreateLabel} 79u 58u 205u 12u "Note: Proxy settings are different"
-  Pop $hCtl_proxy_Label5
-  
   ; === GroupBox2 (type: GroupBox) ===
-  ${NSD_CreateGroupBox} 8u 77u 280u 45u "Putty Integration"
+  ${NSD_CreateGroupBox} 8u 81u 280u 41u "Putty Integration"
   Pop $hCtl_proxy_GroupBox2
   
   ; === FileRequest1_Txt (type: Text) ===
-  ${NSD_CreateText} 79u 87u 184u 11u ""
+  ${NSD_CreateText} 79u 90u 184u 11u ""
   Pop $hCtl_proxy_FileRequest1_Txt
   
   ; === FileRequest1_Btn (type: Button) ===
-  ${NSD_CreateButton} 264u 87u 20u 11u "..."
+  ${NSD_CreateButton} 264u 90u 20u 11u "..."
   Pop $hCtl_proxy_FileRequest1_Btn
   ${NSD_OnClick} $hCtl_proxy_FileRequest1_Btn fnc_hCtl_proxy_FileRequest1_Click
   
@@ -91,14 +96,14 @@ Function fnc_proxy_Create
   ${NSD_CreateLabel} 12u 90u 66u 13u "Putty Key to Load:"
   Pop $hCtl_proxy_Label6
   
+  ; === CheckBox2 (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
+  Pop $hCtl_proxy_CheckBox2
+  
   ; === CheckBox1 (type: Checkbox) ===
   ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
   Pop $hCtl_proxy_CheckBox1
   ${NSD_Check} $hCtl_proxy_CheckBox1
-  
-  ; === CheckBox2 (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
-  Pop $hCtl_proxy_CheckBox2
   
 FunctionEnd
 

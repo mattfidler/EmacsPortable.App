@@ -5,9 +5,9 @@
 
 !define StrRep "!insertmacro StrRep"
 !macro StrRep output string old new
-  Push "${string}"
-  Push "${old}"
-  Push "${new}"
+  Push '${string}'
+  Push '${old}'
+  Push '${new}'
   !ifdef __UNINSTALL__
     Call un.StrRep
     !else

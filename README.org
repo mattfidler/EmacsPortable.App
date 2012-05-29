@@ -623,3 +623,4 @@ Icons came from various places:
 ** TODO Add XML to the NSIS downloads
 ** TODO Add Large String support to the NSIS compiler.
 ** TODO Add md5 to the NSIS downloads
+** TODO Add NotifyPlugin to the downloads.

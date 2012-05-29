@@ -4,6 +4,62 @@
 * Introduction
 This sets up the Emacs Path and environment.  
 * Find Environment Information
+** Variables
+#+BEGIN_SRC nsis
+ Var usb
+ Var usbs
+#+END_SRC
+** StrSlash
+#+BEGIN_SRC nsis
+  ## StringSlash
+  !macro _StrSlash FILENAME SLASH
+    Push "${FILENAME}"
+    Push "${SLASH}"
+    Call StrSlashFn
+    Pop $R0
+  !macroend
+  !define StrSlash `!insertmacro _StrSlash`
+  ; Push $filenamestring (e.g. 'c:\this\and\that\filename.htm')
+  ; Push "\"
+  ; Call StrSlash
+  ; Pop $R0
+  ; ;Now $R0 contains 'c:/this/and/that/filename.htm'
+  Function StrSlashFn
+    Exch $R3 ; $R3 = needle ("\" or "/")
+    Exch
+    Exch $R1 ; $R1 = String to replacement in (haystack)
+    Push $R2 ; Replaced haystack
+    Push $R4 ; $R4 = not $R3 ("/" or "\")
+    Push $R6
+    Push $R7 ; Scratch reg
+    StrCpy $R2 ""
+    StrLen $R6 $R1
+    StrCpy $R4 "\"
+    StrCmp $R3 "/" loop
+    StrCpy $R4 "/"
+    
+    loop:
+      StrCpy $R7 $R1 1
+      StrCpy $R1 $R1 $R6 1
+      StrCmp $R7 $R3 found
+      StrCpy $R2 "$R2$R7"
+      StrCmp $R1 "" done loop
+      
+    found:
+      StrCpy $R2 "$R2$R4"
+      StrCmp $R1 "" done loop
+      
+    done:
+      StrCpy $R3 $R2
+      Pop $R7
+      Pop $R6
+      Pop $R4
+      Pop $R2
+      Pop $R1
+      Exch $R3
+  FunctionEnd
+#+END_SRC
+
 ** Get Directory MD5
 #+BEGIN_SRC nsis
   !macro GetMD5 DIR OUTPUTVAR
@@ -11,6 +67,8 @@ This sets up the Emacs Path and environment.
     Call GetMD5
     Pop ${OUTPUTVAR}
   !macroend
+  var GetMD5EP
+  var GetMD5PT
   !define GetMD5 `!insertmacro GetMD5`
   Function GetMD5
     ## Gets the MD5 of the directory
@@ -32,8 +90,13 @@ This sets up the Emacs Path and environment.
       Goto loop
     done:
       FindClose $0
-      
-      md5dll::GetMD5String "$3"
+      StrCmp $GetMD5EP "" 0 +3
+      md5dll::GetMD5File "$EPEXE\EmacsPortableApp.exe"
+      Pop $GetMD5EP
+      StrCmp $GetMD5PT "" 0 +3
+      md5dll::GetMD5File "$EPEXE\App\ini\paths.ini"
+      Pop $GetMD5PT
+      md5dll::GetMD5String "$GetMD5EP$GetMD5PT$3"
       Exch
       Pop $3
       Exch
@@ -112,7 +175,6 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       ReadINIStr $R2 "$EPEXE\App\ini\paths.ini" "portable.dirs" "$R1"
       DetailPrint "Check $9$R1 ($R2)"
       Call AddPortable
-      Pop $R9
       ${If} $R9 != ""
         StrCpy $R8 "$R9"
       ${EndIf}
@@ -122,6 +184,17 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       
     done_portable:
     search_local:
+      ${If} $R8 == "StopGetDrives"
+        Push $0
+        Push $R0
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPTXT", "EmacsPortable@$9").r0'
+        ${StrSlash} "$9" "\"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPUSB", "$R0").r0'
+        StrCpy $usb "$9"
+        StrCpy $usbs "$9" -1
+        Pop $R0
+        Pop $0
+      ${EndIf}
       Push $R8
       ;Push $var    ; If $var="StopGetDrives" Then exit from function
   FunctionEnd
@@ -186,10 +259,55 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         IntOp $R3 $R3 - 1
         Goto loop_${WHAT}
       done_${WHAT}:
-        Push "StopGetDrives"
+        EnumINI::Section "${PATHS}" "${WHAT}.man"
+        Pop $R3
+        StrCmp "$R3" "error" done_man_${WHAT}
+      loop_man_${WHAT}:
+        IntCmp $R3 "0" done_man_${WHAT} done_man_${WHAT} 0
+        Pop $R4
+        ReadINIStr $R5 "${PATHS}" "${WHAT}.man" "$R4"
+        DetailPrint "Checking $9$R1\$R5"
+        IfFileExists "$9$R1\$R5" 0 next_man_${WHAT}
+        ReadIniStr $R6 "${CACHE}" "$R1" "MANPATH"
+        ClearErrors
+        GetFullPathName /SHORT $R7 "$9$R1\$R5"
+        ${If} $R6 == ""
+          StrCpy "$R6" "$R7"
+        ${Else}
+          StrCpy "$R6" "$R6;$R7"
+        ${EndIf}
+        WriteIniStr "${CACHE}" "$R1" "MANPATH" "$R6"
+      next_man_${WHAT}:
+        IntOp $R3 $R3 - 1
+        Goto loop_man_${WHAT}
+      done_man_${WHAT}:
+  
+        EnumINI::Section "${PATHS}" "${WHAT}.info"
+        Pop $R3
+        StrCmp "$R3" "error" done_info_${WHAT}
+      loop_info_${WHAT}:
+        IntCmp $R3 "0" done_info_${WHAT} done_info_${WHAT} 0
+        Pop $R4
+        ReadINIStr $R5 "${PATHS}" "${WHAT}.info" "$R4"
+        DetailPrint "Checking $9$R1\$R5"
+        IfFileExists "$9$R1\$R5" 0 next_info_${WHAT}
+        ReadIniStr $R6 "${CACHE}" "$R1" "INFOPATH"
+        ClearErrors
+        GetFullPathName /SHORT $R7 "$9$R1\$R5"
+        ${If} $R6 == ""
+          StrCpy "$R6" "$R7"
+        ${Else}
+          StrCpy "$R6" "$R6;$R7"
+        ${EndIf}
+        WriteIniStr "${CACHE}" "$R1" "INFOPATH" "$R6"
+      next_info_${WHAT}:
+        IntOp $R3 $R3 - 1
+        Goto loop_info_${WHAT}
+      done_info_${WHAT}:
+        StrCpy $R9 "StopGetDrives"
         Goto done
       not_found:
-        Push ""
+        StrCpy $R9 ""
         DetailPrint "Not found, Delete cache $R1"
         DeleteIniSec "${CACHE}" "$R1"
       done:
@@ -227,7 +345,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     StrCpy $9 $R1 3
     StrCpy $R1 "$R1" "" 3
     Call AddLocal
-
+  
   FunctionEnd
   
   
@@ -264,6 +382,14 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         DetailPrint "Path Add: $R4"
         System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R4;$3").r2'
+      ${ElseIf} $R3 == "MANPATH"
+        DetailPrint "Path Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("MANPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MANPATH", "$R4;$3").r2'
+      ${ElseIf} $R3 == "INFOPATH"
+        DetailPrint "Path Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("INFOPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$R4;$3").r2'
       ${ElseIf} $R3 != "Drive"
       ${AndIf} $R3 != "MD5"
         DetailPrint "Env: $R3=$R4"
@@ -293,13 +419,15 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
 
 #+BEGIN_SRC nsis
   !macro SetEnv
-    ${GetDrives} "FDD+HDD" "GetPortable"
-    Call GetExedir
-    Call GetLocaldir
-    ${LoadPortable}
-    ${LoadExedir}
-    ${GetComputerName} $0
-    ${LoadLocal}
+    ${If} $usb == ""
+      ${GetDrives} "FDD+HDD" "GetPortable"
+      Call GetExedir
+      Call GetLocaldir
+      ${LoadPortable}
+      ${LoadExedir}
+      ${GetComputerName} $0
+      ${LoadLocal}
+    ${EndIf}
   !macroend
   !define SetEnv `!insertmacro SetEnv`
   

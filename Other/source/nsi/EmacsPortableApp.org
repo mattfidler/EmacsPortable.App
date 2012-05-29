@@ -24,7 +24,7 @@ UninstallIcon "..\img\ico\trash_empty.ico"
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis :tangle no
+#+BEGIN_SRC nsis
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -32,8 +32,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
 ** Variables
 #+BEGIN_SRC nsis
   Var home
-  Var usb
-  Var usbs
   Var mount
   Var cygwin
   Var msys
@@ -142,59 +140,6 @@ Function _Trim_
     Exch $R1
 FunctionEnd
 #+END_SRC
-
-
-** StrSlash
-#+BEGIN_SRC nsis
-  ## StringSlash
-  !macro _StrSlash FILENAME SLASH
-    Push "${FILENAME}"
-    Push "${SLASH}"
-    Call StrSlashFn
-    Pop $R0
-  !macroend
-  !define StrSlash `!insertmacro _StrSlash`
-  ; Push $filenamestring (e.g. 'c:\this\and\that\filename.htm')
-  ; Push "\"
-  ; Call StrSlash
-  ; Pop $R0
-  ; ;Now $R0 contains 'c:/this/and/that/filename.htm'
-  Function StrSlashFn
-    Exch $R3 ; $R3 = needle ("\" or "/")
-    Exch
-    Exch $R1 ; $R1 = String to replacement in (haystack)
-    Push $R2 ; Replaced haystack
-    Push $R4 ; $R4 = not $R3 ("/" or "\")
-    Push $R6
-    Push $R7 ; Scratch reg
-    StrCpy $R2 ""
-    StrLen $R6 $R1
-    StrCpy $R4 "\"
-    StrCmp $R3 "/" loop
-    StrCpy $R4 "/"
-    
-    loop:
-      StrCpy $R7 $R1 1
-      StrCpy $R1 $R1 $R6 1
-      StrCmp $R7 $R3 found
-      StrCpy $R2 "$R2$R7"
-      StrCmp $R1 "" done loop
-      
-    found:
-      StrCpy $R2 "$R2$R4"
-      StrCmp $R1 "" done loop
-      
-    done:
-      StrCpy $R3 $R2
-      Pop $R7
-      Pop $R6
-      Pop $R4
-      Pop $R2
-      Pop $R1
-      Exch $R3
-  FunctionEnd
-#+END_SRC
-
 ** Split at Equals
 #+BEGIN_SRC nsis
 ## Split Equals
@@ -312,14 +257,14 @@ FunctionEnd
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
     StrCpy $option_colorsync ""    
-
+  
     StrCpy $option_emacsclient "emacsclient.exe"
-    
     ; Parse Parameters
     Push $R0
     Call parseParameters
     Pop $R0
   FunctionEnd
+  
 #+END_SRC
 ** Parse Parameters
 #+BEGIN_SRC nsis
@@ -365,13 +310,12 @@ FunctionEnd
       ${GetOptions} $cmdLineParams '/VERSION=' $R0
       IfErrors read_cmd_line_ver 0
       StrCpy $option_version $R0
-      ${StrReplace} $cmdLineParams "/VERSION=$option_version" ""
-      StrCpy $cmdLineParams $0
+      ${StrRep} $cmdLineParams $cmdLineParams "/VERSION=$option_version" ""
     read_cmd_line_ver:
       ClearErrors
       StrCpy $option_emacs "emacs-$option_version.exe"
       IfFileExists "$EXEDIR\App\emacs-$option_version\lisp" emacs_ver_done
-  
+      
       IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 +2
       Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
       
@@ -401,7 +345,7 @@ FunctionEnd
       Abort
     emacs_ver_done:
       ClearErrors
-
+  
       ${GetOptions} $cmdLineParams '/COLORSYNC' $R0
       IfErrors no_colorsync
       StrCpy $option_colorsync "1"
@@ -442,16 +386,15 @@ FunctionEnd
       
       ;; Now take out all known parameters
       
-      ${StrReplace} $cmdLineParams "/Q" ""
-      StrCpy $cmdLineParams $0
-      ${StrReplace} $cmdLineParams "/DOS" ""
-      StrCpy $cmdLineParams $0
-      ${StrReplace} $cmdLineParams "/DEBUG" ""
-      StrCpy $cmdLineParams $0
-      ${StrReplace} $cmdLineParams "/COLORSYNC" ""
-      StrCpy $cmdLineParams $0
+      ${StrRep} $cmdLineParams $cmdLineParams "/Q" ""
+      ${StrRep} $cmdLineParams $cmdLineParams "/DOS" ""
+      ${StrRep} $cmdLineParams $cmdLineParams "/DEBUG" ""
+
+      ${StrRep} $cmdLineParams $cmdLineParams "/COLORSYNC" ""
+
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
+
       
       StrCmp "" $option_dos setupwin setupdos
     setupdos:
@@ -463,12 +406,8 @@ FunctionEnd
       ## Change protocol spaces to %20
       StrCpy $0 $cmdLineParams 15
       StrCmp $0 "$\"org-protocol:/" 0 final
-      ${StrReplace} $cmdLineParams " " "%20"
-      StrCpy $cmdLineParams $0
-      ## Change " to """"
+      ${StrRep} $cmdLineParams $cmdLineParams " " "%20"
     final:
-      ##${StrReplace} $cmdLineParams "$\"" "$\"$\"$\"$\""
-      StrCpy $cmdLineParams $0
       DetailPrint "Removed stale server files"
       ClearErrors
   FunctionEnd
@@ -509,11 +448,6 @@ FunctionEnd
       Goto findcygwin
       
     set_usb:
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPTXT", "EmacsPortable@$9").r0'
-      ${StrSlash} "$9" "\"
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPUSB", "$R0").r0'
-      StrCpy $usb "$9"
-      StrCpy $usbs "$9" -1
       Goto findcygwin
       
     findcygwin:
@@ -987,6 +921,7 @@ FunctionEnd
     start_emacs_regular:
       Push $TEMP
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+      ##${StrRep} "$emacs" "$emacs" '"' '""'
       Exec "$TEMP\ep\run.exe $emacs"
       Pop $R0                  
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
@@ -1023,6 +958,7 @@ FunctionEnd
       StrCmp $option_q "" 0 start_emacs
       ${emacsclient_setup}
       ${If} $option_colorsync == ""
+        ##${StrRep} $emacs $emacs '"' '""'
         Exec "$TEMP\ep\run.exe $emacs"
       ${Else}
         HideWindow
@@ -1032,9 +968,11 @@ FunctionEnd
     no_debug:
       HideWindow
       MessageBox MB_OK|MB_ICONSTOP "EmacsPortable.App already running, cannot debug the startup."
+      Goto end
     cant_sync:
       HideWindow
       MessageBox MB_OK|MB_ICONSTOP "EmacsPortable.App not running, cannot sync colors and fonts."
+      Goto end
     end:
       #
   SectionEnd
@@ -1053,9 +991,10 @@ This removes registry settings, fonts and other settings.
     ;; Wait for EmacsPortableApp.exe to stop
     wait_for_emacsportable_launcher_stop:
       FindProcDLL::FindProc "EmacsPortableApp.exe"
-      StrCmp "$R0" "1" 0 look_for_running_emacs
+      StrCmp "$R0" "1" 0 start_notify_plugin
       Sleep 1000
       Goto wait_for_emacsportable_launcher_stop
+    start_notify_plugin:
     look_for_running_emacs:
       StrCpy $nver 0
       EnumINI::Section "$TEMP\ep\ep-reg.ini" "run"
@@ -1085,6 +1024,8 @@ This removes registry settings, fonts and other settings.
     done:
       SetOutPath "$TEMP\ep"
       ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+      IfFileExists "$TEMP\ep\rm-ep-proxy.exe" 0 +2
+      ExecWait "$TEMP\ep\rm-ep-proxy.exe"
       EnumINI::Section "$EPEXE\App\ini\plugins.ini" "plugins"
       Pop $R0
       StrCmp $R0 "error" done_plugins
@@ -1102,6 +1043,9 @@ This removes registry settings, fonts and other settings.
       Delete "$TEMP\ep\ep-env.ini"
       Delete "$TEMP\ep\ep-ip2.ini"
       Delete "$TEMP\ep\ep.ini"
+      Delete "$TEMP\ep\hidden-*"
+      Delete "$TEMP\ep\run.exe"
+      Delete "$TEMP\ep\ep-ip*.txt"
       ReadIniStr $R2 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Clean"
       ClearErrors
       StrCmp $R2 "1" 0 +2
