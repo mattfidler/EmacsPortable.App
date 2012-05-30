@@ -20,6 +20,21 @@ many times.
   RequestExecutionLevel user
   !include "FileFunc.nsh"
   
+  Function FindEp
+    IfFileExists "$9$R0\EmacsPortableApp.exe" found not_found
+    found:
+      Exec '"$9$R0\EmacsPortableApp.exe" $cmdLineParams'
+      WriteINIStr "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR" "$9$R0"
+      Push "StopGetDrives"
+      Goto end
+    not_found:
+      Push ""
+      Goto end
+    end:
+      ClearErrors
+  FunctionEnd
+  
+  
   Section
     Var /GLOBAL cmdLineParams
     ${GetParameters} $cmdLineParams
@@ -35,7 +50,12 @@ many times.
     exe:
       IfFileExists "$EXEDIR\ep.ini" 0 end
       ReadINIStr $R0 "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+      IfFileExists "$R0\EmacsPortableApp.exe" 0 find_ep
       Exec '"$R0\EmacsPortableApp.exe" $cmdLineParams'
+      Goto end
+    find_ep:
+      StrCpy $R0 $R0 "" 3
+      ${GetDrives} "FDD+HDD" "FindEp"
     end:
       ClearErrors
   SectionEnd
