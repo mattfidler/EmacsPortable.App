@@ -83,7 +83,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   !include "blowfish.nsh"
   !include "logiclib.nsh"
   !include "WinMessages.nsh"
-  !include "emacspathifexists.nsh"
   !include "setupEmacsData.nsh"
   !include "StrRep.nsh"
   !include "RepInFile.nsh"

@@ -952,7 +952,6 @@ the implementation
           (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
                                     el-proxy))
           (set-process-sentinel proc 'refresh-proxy)
-          (shell-command-to-string el-proxy)
           (when (file-exists-p proxy)
             (load-file proxy)
             (delete-file proxy))))

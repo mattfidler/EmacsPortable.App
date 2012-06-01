@@ -5,6 +5,11 @@ This is to create a portable shortcut to a EmacsPortable.App /VERSION
 so that the larger EmacsPortableApp.exe doesn't need to be copied as
 many times.
 
+Also supports linking to the running EmacsPortableApp under liberkey.
+The drive may change so ep.ini may be outdated.  To test this bug try
+http://www.online-tech-tips.com/computer-tips/how-to-change-the-drive-letter-in-windows-xp-for-an-external-usb-stick-or-hard-drive/
+
+
 #+BEGIN_SRC nsis
   SetCompress Auto
   SetCompressor /SOLID lzma

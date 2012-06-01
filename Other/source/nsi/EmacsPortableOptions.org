@@ -31,6 +31,7 @@ This provides an interface to the Emacs Startup options
   !include "StrRep.nsh"
   !include "RepInFile.nsh"
   !include "emacsEnv.nsh"
+  
 #+END_SRC
 ** nsDialogs Hacks
 *** Sorted DropList
@@ -158,7 +159,7 @@ Usage:
       StrCpy $R0 "${ERR}"
     ${EndIf}
     ${NSD_SetText} ${VARIABLE} $R0
-
+    
   !macroend
   !define SetDir `!insertmacro SetDir`
   !define SetText `!insertmacro SetDir`
@@ -188,6 +189,24 @@ Usage:
         "${OPT}" "$R0"
   !macroend
   !define WriteCB `!insertmacro WriteCB`
+  
+  !macro ReadProxy VARIABLE OPT
+    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "${OPT}"
+    blowfish::decrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    ${NSD_SetText} ${VARIABLE} $R0
+  !macroend
+  !define ReadProxy `!insertmacro ReadProxy`
+  
+  !macro WriteProxy VARIABLE OPT
+    ${NSD_GetText} ${VARIABLE} $R0
+    blowfish::encrypt $R0 "$PROXY_ID"
+    Pop $R0
+    Pop $R0
+    WriteINIStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "${OPT}" "$R0"
+  !macroend
+  !define WriteProxy `!insertmacro WriteProxy`
   
   
 #+END_SRC
@@ -361,109 +380,6 @@ From http://nsis.sourceforge.net/Explode
   FunctionEnd
   
 #+END_SRC
-** Convert File Name Function
-This converts USB:/ and EXEDIR:/ to the appropriate values
-#+BEGIN_SRC nsis
-  Function ConvertToFile
-    ;; $0= File
-    ;; $1 = Temp
-    ;; $R0 = File with backslashes.
-    Push $0
-    Exch
-    Pop $0
-    Push $1
-    Push $R0
-    ${StrSlash} "$0" "/"
-    StrCpy $1 $R0 5
-    StrCmp "$1" "USB:\" home_usb home_exe
-    home_usb:
-      Push $R0
-      ${SetEnv}
-      Pop $R0
-      StrCpy $R0 $R0 "" 5
-      StrCpy $R0 "$usb$R0"
-    home_exe:
-      StrCpy $1 $R0 8
-      StrCmp "$1" "EXEDIR:\" 0 end
-      StrCpy $R0 $R0 "" 8
-      StrCpy $R0 "$EXEDIR\$R0"
-    end:
-      Push $R0
-      Exch
-      Pop $R0
-      Exch
-      Pop $1
-      Exch
-      Pop $0
-  FunctionEnd
-  
-  !macro ConvertToFile V F
-    Push ${F}
-    Call ConvertToFile
-    Pop ${V}
-  !macroend
-  
-  !define ConvertToFile `!insertmacro ConvertToFile`
-  
-  Function ConvertToAlias
-    ;; $0= File
-    ;; $1 = Temp
-    ;; $2 = Temp
-    ;; $3 = Temp
-    ;; $R0 = File with backslashes.
-    Push $0
-    Exch
-    Pop $0
-    Push $1
-    Push $2
-    Push $3
-    Push $R0
-    ${StrSlash} "$0" "/"
-    GetFullPathName $1 "$EXEDIR"
-    StrLen $2 $1
-    StrCpy $3 $R0 $2
-    StrCmp $1 $3 replace_exedir
-    GetFullPathName /SHORT $1 "$EXEDIR"
-    StrLen $2 $1
-    StrCpy $3 $R0 $2
-    StrCmp $1 $3 replace_exedir
-    Goto usb
-    replace_exedir:
-      StrCpy $R0 $R0 "" $2
-      StrCpy $R0 "EXEDIR:$R0" 
-    usb:
-      Push $R0
-      ${SetEnv}
-      Pop $R0
-      StrCpy $1 $R0 3
-      StrCmp $1 $usb 0 end
-      StrCpy $R0 $R0 "" 3
-      StrCpy $R0 "USB:\$R0"
-    end:
-      
-      Push $R0
-      Exch
-      Pop $R0
-      Exch
-      Pop $3
-      Exch
-      Pop $2
-      Exch
-      Pop $1
-      Exch
-      Pop $0 
-  FunctionEnd
-  
-  !macro ConvertToAlias V F
-    Push ${F}
-    Call ConvertToAlias
-    Pop ${V}
-  !macroend
-  
-  !define ConvertToAlias `!insertmacro ConvertToAlias`
-  
-#+END_SRC
-
 * Pages
 ** Behavior
 *** Dialog Definitions
@@ -1092,39 +1008,18 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
     Pop $hCtl_proxy_putty
     
-  
-    ${NSD_SetText} $hCtl_proxy_Password1 $R0
-    ${NSD_SetText} $hCtl_proxy_Password2 $R0
-    
     ${SetCheck} $hCtl_proxy_putty "ApplyPutty"
     ${SetCheck} $hCtl_proxy_putty_portable "PuttyPortable"
-  
+    
     ${SetDir} $hCtl_proxy_FileRequest1_Txt "PuttyKey" ""
     
     IfFileExists "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" 0 end_proxy_init
+    ${ReadProxy} $hCtl_proxy_server "Server"
+    ${ReadProxy} $hCtl_proxy_port "Port"
+    ${ReadProxy} $hCtl_proxy_UserName "User"
+    ${ReadProxy} $hCtl_proxy_Password1 "Password"
+    ${NSD_SetText} $hCtl_proxy_Password2 $R0
     
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    ${NSD_SetText} $hCtl_proxy_server $R0
-    
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    ${NSD_SetText} $hCtl_proxy_port $R0
-    
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
-    ${NSD_SetText} $hCtl_proxy_UserName $R0
-    
-    ReadINIStr $R0 "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-    blowfish::decrypt $R0 "$PROXY_ID"
-    Pop $R0
-    Pop $R0
     end_proxy_init:
       ClearErrors
   FunctionEnd
@@ -1157,11 +1052,16 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
 *** Validation Function
 #+BEGIN_SRC nsis
   Function fnc_proxy_Validate
-
+  
     ${WriteCheck} $hCtl_proxy_putty "ApplyPutty"
     ${WriteCheck} $hCtl_proxy_putty_portable "PuttyPortable"
-
+  
     ${WriteText} $hCtl_proxy_FileRequest1_Txt "PuttyKey"
+  
+    ${WriteProxy} $hCtl_proxy_server "Server"
+    ${WriteProxy} $hCtl_proxy_port "Port"
+    ${WriteProxy} $hCtl_proxy_UserName "User"
+    ${WriteProxy} $hCtl_proxy_Password1 "Password"
   FunctionEnd
   
 #+END_SRC

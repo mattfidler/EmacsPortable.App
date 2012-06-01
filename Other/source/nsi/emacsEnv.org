@@ -59,7 +59,6 @@ This sets up the Emacs Path and environment.
       Exch $R3
   FunctionEnd
 #+END_SRC
-
 ** Get Directory MD5
 #+BEGIN_SRC nsis
   !macro GetMD5 DIR OUTPUTVAR
@@ -430,5 +429,115 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     ${EndIf}
   !macroend
   !define SetEnv `!insertmacro SetEnv`
+  
+#+END_SRC
+
+** Convert File Name Function
+This converts USB:/ and EXEDIR:/ to the appropriate values
+#+BEGIN_SRC nsis
+  Function ConvertToFile
+    ;; $0= File
+    ;; $1 = Temp
+    ;; $R0 = File with backslashes.
+    Push $0
+    Exch
+    Pop $0
+    Push $1
+    Push $R0
+    ${StrSlash} "$0" "/"
+    StrCpy $1 $R0 5
+    StrCmp "$1" "USB:\" home_usb home_exe
+    home_usb:
+      StrCpy $R0 $R0 "" 5
+      IfFileExists "$EPEXE\Data\ini\portable-cache.ini" 0 not_found
+      ReadIniStr $R1 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
+      IfFileExists "$R1$R0" 0 not_found
+      StrCpy "$usb" "$R1"
+      Goto change_file
+    not_found:
+      Push $R0
+      ${SetEnv}
+      Pop $R0
+    change_file:
+      StrCpy $R0 "$usb$R0"
+    home_exe:
+      StrCpy $1 $R0 8
+      StrCmp "$1" "EXEDIR:\" 0 end
+      StrCpy $R0 $R0 "" 8
+      StrCpy $R0 "$EXEDIR\$R0"
+    end:
+      Push $R0
+      Exch
+      Pop $R0
+      Exch
+      Pop $1
+      Exch
+      Pop $0
+  FunctionEnd
+  
+  !macro ConvertToFile V F
+    Push ${F}
+    Call ConvertToFile
+    Pop ${V}
+  !macroend
+  
+  !define ConvertToFile `!insertmacro ConvertToFile`
+  
+  Function ConvertToAlias
+    ;; $0= File
+    ;; $1 = Temp
+    ;; $2 = Temp
+    ;; $3 = Temp
+    ;; $R0 = File with backslashes.
+    Push $0
+    Exch
+    Pop $0
+    Push $1
+    Push $2
+    Push $3
+    Push $R0
+    ${StrSlash} "$0" "/"
+    GetFullPathName $1 "$EXEDIR"
+    StrLen $2 $1
+    StrCpy $3 $R0 $2
+    StrCmp $1 $3 replace_exedir
+    GetFullPathName /SHORT $1 "$EXEDIR"
+    StrLen $2 $1
+    StrCpy $3 $R0 $2
+    StrCmp $1 $3 replace_exedir
+    Goto usb
+    replace_exedir:
+      StrCpy $R0 $R0 "" $2
+      StrCpy $R0 "EXEDIR:$R0" 
+    usb:
+      Push $R0
+      ${SetEnv}
+      Pop $R0
+      StrCpy $1 $R0 3
+      StrCmp $1 $usb 0 end
+      StrCpy $R0 $R0 "" 3
+      StrCpy $R0 "USB:\$R0"
+    end:
+      
+      Push $R0
+      Exch
+      Pop $R0
+      Exch
+      Pop $3
+      Exch
+      Pop $2
+      Exch
+      Pop $1
+      Exch
+      Pop $0 
+  FunctionEnd
+  
+  !macro ConvertToAlias V F
+    Push ${F}
+    Call ConvertToAlias
+    Pop ${V}
+  !macroend
+  
+  !define ConvertToAlias `!insertmacro ConvertToAlias`
   
 #+END_SRC

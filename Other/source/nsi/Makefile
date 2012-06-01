@@ -3,7 +3,7 @@ emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh se
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../App/eps/set-proxy.exe ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/run.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/run.exe
 
 ../../../App/eps/run.exe: emacsportablerun.nsi
 	$(MAKENSIS) emacsportablerun.nsi
@@ -29,7 +29,7 @@ EmacsEnv.nsh: EmacsEnv.org
 EmacsDoc.nsi: EmacsShortcuts.el
 	$(EMACS) -Q --batch -l ./EmacsShortcuts.el 
 
-../../../App/eps/ep-proxy.exe: emacsproxyplugin.nsi emacsproxy.nsh
+../../../App/eps/ep-proxy.exe: emacsproxyplugin.nsi emacsproxy.nsh EmacsEnv.nsh
 	$(MAKENSIS) emacsproxyplugin.nsi
 
 emacsproxyplugin.nsi: emacsproxyplugin.org
@@ -66,8 +66,6 @@ EmacsFonts.nsi: EmacsFonts.org
 EmacsRegistry.nsi: EmacsRegistry.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsRegistry.org)"
 
-../../../App/eps/set-proxy.exe: SetProxy.nsi
-	$(MAKENSIS) SetProxy.nsi
 
 ../../../EmacsPortableApp.exe: EmacsPortableApp.nsi EmacsCall.nsh
 	$(MAKENSIS) EmacsPortableApp.nsi
@@ -132,9 +130,6 @@ EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
 emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/mirrors.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-gw32.el
 
-SetProxy.nsi: SetProxy.org emacsproxy.nsh
-	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'SetProxy.org)"
-
 install-net.nsi: install-net.org ${download_extras}
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'install-net.org)"
 
@@ -151,7 +146,6 @@ clean:
 	rm EmacsDebug.nsi
 	rm Emacs-Q.nsi
 	rm ./install-net.nsi
-	rm ./SetProxy.nsi
 	rm ./EmacsDownload*.nsi
 	rm ./EmacsPortableApp.nsi
 	rm ./EmacsPortableOptions.nsi
@@ -163,7 +157,6 @@ clean:
 	rm ../../../EmacsDownload.exe
 	rm ../../../EmacsPortableApp*.exe
 	rm ../../../EmacsOptions.exe
-	rm ../../../App/eps/set-proxy.exe
 
 
 

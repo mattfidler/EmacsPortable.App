@@ -12,25 +12,30 @@ I want:
  - CRC check
  - Good compression
 #+BEGIN_SRC nsis
-CRCCheck On
-RequestExecutionLevel user
-; Best Compression
-SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Caption "Loading EmacsPortable.App"
-Subcaption 3 " "
-XPStyle on
-OutFile "..\..\..\App\eps\ep-proxy.exe"
-Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\ico\trash_empty.ico"
-!include "emacsproxy.nsh" 
-var EPEXE
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Caption "Loading EmacsPortable.App"
+  Subcaption 3 " "
+  XPStyle on
+  OutFile "..\..\..\App\eps\ep-proxy.exe"
+  Icon "..\img\ico\appicon.ico"
+  UninstallIcon "..\img\ico\trash_empty.ico"
+  var EPEXE
+  !include "StrRep.nsh"
+  !include "LogicLib.nsh"
+  !include "FileFunc.nsh"
+  !include "emacsproxy.nsh"
+  !include "RepInFile.nsh"
+  !include "emacsEnv.nsh"
 #+END_SRC
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis 
+#+BEGIN_SRC nsis
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -41,6 +46,10 @@ EmacsPortable.App uses the loading bar to startup emacs.
   !define puttystr `WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
   !define puttyint `WriteRegDWORD HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
   Function FinalizePutty
+    Push $R0
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "ApplyPutty"
+    StrCmp $R0 "1" 0 end
+    DetailPrint "Set Proxy to `$PROXY_SERVER`"
     StrCmp "" $PROXY_SERVER clear_proxy set_proxy
     set_proxy:
       ${puttystr} "ProxyHost" $PROXY_SERVER
@@ -48,16 +57,69 @@ EmacsPortable.App uses the loading bar to startup emacs.
       ${puttystr} "ProxyPassword" $PROXY_PASS
       ${puttyint} "ProxyPort" $PROXY_PORT
       ${puttyint} "ProxyMethod" 3
-      Goto end
+      Goto start_pgt
     clear_proxy:
       ${puttystr} "ProxyHost" ""
       ${puttystr} "ProxyUsername" ""
       ${puttystr} "ProxyPassword" ""
       ${puttyint} "ProxyPort" ""
       ${puttyint} "ProxyMethod" 0
-      Goto end
+      Goto start_pgt
+    start_pgt:
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "PuttyKey"
+      ${ConvertToFile} $R0 $R0
+      IfFileExists $R0 0 end
+      ReadIniStr $R3 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "PuttyPortable"
+      StrCmp "$R3" "1" find_portable find_local
+    find_local:
+      IfFileExists "$PROGRAMFILES\PuTTY\pageant.exe" 0 +3
+      StrCpy "$R1" "$PROGRAMFILES\PuTTY\pageant.exe"
+      Goto done_find
+      
+      IfFileExists "$PROGRAMFILES32\PuTTY\pageant.exe" 0 +3
+      StrCpy "$R1" "$PROGRAMFILES32\PuTTY\pageant.exe"
+      Goto done_find
+      
+      IfFileExists "$PROGRAMFILES64\PuTTY\pageant.exe" 0 +3
+      StrCpy "$R1" "$PROGRAMFILES64\PuTTY\pageant.exe"
+      Goto done_find
+      StrCmp "$R3" "1" done_find find_portable
+    find_portable:
+      ${If} $usb == ""
+        Push $R0
+        ${SetEnv}
+        Pop $R0
+      ${EndIf}
+      EnumINI::Section "$EPEXE\App\ini\paths.ini" "portable.dirs"
+      Pop $R4
+      StrCmp $R4 "error" done_portable
+    loop_portable:
+      IntCmp $R4 "0" done_portable done_portable 0
+      Pop $R2
+      IfFileExists "$usb$R2\PuTTYPortable\PageantPortable.exe" 0 +2
+      StrCpy "$R1" "$usb$R2\PuTTYPortable\PageantPortable.exe"
+      Push $R0
+      FindProcDLL::FindProc "PuTTYPortable.exe"
+      StrCmp $R0 "1" 0 +2
+      StrCpy "$R1" "$usb$R2\PuTTYPortable\App\putty\pageant.exe"
+      Pop $R0
+    next_portable:
+      IntOp $R4 $R4 - 1
+      Goto loop_portable
+      
+    done_portable:
+      IfFileExists "$R1" done_find
+      StrCmp "$R3" "1" find_local done_find
+    done_find:
+      IfFileExists $R1 0 end
+      IfFileExists $R0 0 end
+      Exec '"$R1" "$R0"'
+      
     end:
       ClearErrors
+      Pop $R0
   FunctionEnd
   
   Function un.Putty
@@ -68,37 +130,63 @@ EmacsPortable.App uses the loading bar to startup emacs.
     ${puttyint} "ProxyMethod" 0
   FunctionEnd
   
-  !define FinalizePutty `Call FinalizePutty`
+  !macro FinalizePutty
+    !ifdef __UNINSTALL__
+      Call un.Putty
+      !else
+      Call FinalizePutty
+    !endif
+  !macroend
+  
+  !define FinalizePutty `!insertmacro FinalizePutty`
   
 #+END_SRC
-
 * Main Script
 #+BEGIN_SRC nsis
   Section "Main" sec_main
     HideWindow
     IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
     GetFullPathName /SHORT $EPEXE "..\.."
-    Goto +2
+    Goto ep_set
+    IfFileExists "$EXEDIR\ep.ini" 0 +3
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-    Push "$EPEXE"
-    Push "write"
-    Push "$EPEXE\Data\ini\"
-    Call SetupProxy
-    WriteUninstaller "$TEMP\ep\rm-ep-proxy.exe"
+    Goto ep_set
+    IfFileExists "$TEMP\ep.ini" 0 +5
+    ReadINIStr $EPEXE "$TEMP\ep.ini" "EmacsPortableApp" "EXEDIR"
+    GetFullPathName /SHORT $R0 "$TEMP\.."
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
+    Goto ep_set
+    IfFileExists "$TEMP\ep\ep.ini" 0 +3
+    ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    Goto ep_set
+    DetailPrint "Could not find ep.ini"
+    ep_set:    
+      DetailPrint "EPEXE: $EPEXE"
+      StrCpy $INSTDIR "$EPEXE"
+      StrCpy $EXEDIR "$EPEXE"
+      DetailPrint "Data: $EPEXE\Data\ini"
+      DetailPrint "TEMP: $TEMP"
+      Push "$EPEXE"
+      Push "write"
+      Push "$EPEXE\Data\ini\"
+      Call SetupProxy
+      ${FinalizePutty}
+      WriteUninstaller "$TEMP\ep\rm-ep-proxy.exe"
   SectionEnd 
+  
 #+END_SRC
 * Uninstaller
 #+BEGIN_SRC nsis
-Section "Uninstall" sec_uninstall
-    SetAutoClose true
-    IfFileExists "$TEMP\ep\rm-ep-proxy.exe" 0 +2
-    Delete "$TEMP\ep\rm-ep-proxy.exe"
-    IfFileExists "$TEMP\rm-ep-proxy.exe" 0 +2
-    Delete "$TEMP\rm-ep-proxy.exe"
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
-    Goto +2
-    ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
-    Call un.Putty
-  SectionEnd
+  Section "Uninstall" sec_uninstall
+      SetAutoClose true
+      IfFileExists "$TEMP\ep\rm-ep-proxy.exe" 0 +2
+      Delete "$TEMP\ep\rm-ep-proxy.exe"
+      IfFileExists "$TEMP\rm-ep-proxy.exe" 0 +2
+      Delete "$TEMP\rm-ep-proxy.exe"
+      IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+      GetFullPathName /SHORT $EPEXE "..\.."
+      Goto +2
+      ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+      ${FinalizePutty}
+    SectionEnd
 #+END_SRC

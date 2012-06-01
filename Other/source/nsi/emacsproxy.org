@@ -77,7 +77,8 @@
     IfFileExists "$7\App\ezwin\bin\sed.exe" 0 +2
     StrCpy $R0 "$7\App\ezwin\bin\sed.exe"
     FileOpen $4 "$TEMP\ep\ep-sed-ip.bat" w
-    IfErrors proxy_setup
+    IfErrors 0 +2
+    Abort
     FileWrite $4 "@$R0 -r $\"s/[^0-9]*([0-9]*[0-9.]+).*/\1/$\" $TEMP\ep\ep-ip.txt > $TEMP\ep\ep-ip2.txt$\r$\n"
     FileClose $4 
     ExecDos::exec "cmd /c $\"$TEMP\ep\ep-sed-ip.bat$\""
@@ -88,16 +89,16 @@
       FileOpen $4 "$TEMP\ep\ep-ip2.txt" r
       IfErrors 0 +3
       FileClose $4
-      Goto proxy_setup
-  
+      Abort
+      
       FileRead $4 $1
-  
+      
       StrCpy $1 $1  -1
-  
-      IfErrors 0 +3
+      
+      IfErrors 0 +4
       FileClose $4
-      goto proxy_setup
-  
+      Abort
+      
       execDos::exec  "cmd /c $\"nslookup $1 > $TEMP\ep\ep-dns.txt$\""
       
       FileOpen $5 "$TEMP\ep\ep-dns.txt" r
@@ -117,6 +118,7 @@
       StrCpy $PROXY_ID "Unknown"
       StrCpy $PROXY_NAME $PROXY_ID
       StrCpy $PROXY_ID "$PROXY_ID mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+      DetailPrint "Network: $PROXY_IDE"
       IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
       ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
       blowfish::decrypt $R0 "$PROXY_ID"
