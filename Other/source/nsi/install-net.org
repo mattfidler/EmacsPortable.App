@@ -25,6 +25,7 @@ AutoCloseWindow true
   !include "MUI2.nsh"
   !include "FileFunc.nsh"
   !include blowfish.nsh
+  !include "StrRep.nsh"
   !include "emacsproxy.nsh"
   !include "emacsdownloadshared.nsh"
   

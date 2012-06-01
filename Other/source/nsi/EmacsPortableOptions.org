@@ -25,10 +25,10 @@ This provides an interface to the Emacs Startup options
   !include "MUI2.nsh"
   !include "LogicLib.nsh"
   !include "FileFunc.nsh"
+  !include "StrRep.nsh"
   !include "emacsproxy.nsh"
   !include "setupEmacsData.nsh"
   !include "CommCtrl.nsh"
-  !include "StrRep.nsh"
   !include "RepInFile.nsh"
   !include "emacsEnv.nsh"
   
@@ -487,6 +487,11 @@ From http://nsis.sourceforge.net/Explode
       ; === GroupBox1 (type: GroupBox) ===
       ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
       Pop $hCtl_behavior_GroupBox1
+      ; === Daemon (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Daemon"
+      Pop $hCtl_behavior_Daemon
+      ${SetCheck} $hCtl_behavior_Daemon "Daemon"
+
       
       ; === newFrame (type: Checkbox) ===
       ${NSD_CreateCheckbox} 105u 34u 93u 14u "New Frame on file open"
@@ -498,10 +503,17 @@ From http://nsis.sourceforge.net/Explode
       Pop $hCtl_behavior_Debug
       ${SetUnCheck} $hCtl_behavior_Debug "Debug"
       
-      ; === Daemon (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Daemon"
-      Pop $hCtl_behavior_Daemon
-      ${SetCheck} $hCtl_behavior_Daemon "Daemon"
+      
+      
+      ; === ZipBin (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 12u 48u 151u 14u "(Un)Zip Binaries && Run from %TEMP%"
+      Pop $hCtl_behavior_ZipBin
+      ${SetUnCheck} $hCtl_behavior_ZipBin "Zip"
+      
+      ; === Clean (type: Checkbox) ===
+      ${NSD_CreateCheckbox} 167u 48u 117u 14u "Clean Residual Files (Stealth)"
+      Pop $hCtl_behavior_Clean
+      ${SetCheck} $hCtl_behavior_Clean "Clean"
       
       ; === Home_Txt (type: Text) ===
       ${NSD_CreateText} 70u 65u 192u 11u ""
@@ -516,17 +528,7 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_CreateButton} 264u 65u 20u 11u "..."
       Pop $hCtl_behavior_Home_Btn
       ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
-      
-      ; === ZipBin (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 12u 48u 151u 14u "(Un)Zip Binaries && Run from %TEMP%"
-      Pop $hCtl_behavior_ZipBin
-      ${SetUnCheck} $hCtl_behavior_ZipBin "Zip"
-      
-      ; === Clean (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 167u 48u 117u 14u "Clean Residual Files (Stealth)"
-      Pop $hCtl_behavior_Clean
-      ${SetCheck} $hCtl_behavior_Clean "Clean"
-      
+
       
       ; === GroupBox2 (type: GroupBox) ===
       ${NSD_CreateGroupBox} 8u 87u 280u 26u "Integration Options"
@@ -654,6 +656,12 @@ From http://nsis.sourceforge.net/Explode
     Call SetFontOptions
     
     ${NSD_CB_SelectString} $hCtl_visuals_FontName $3
+
+    ; === FontSize (type: Number) ===
+    ${NSD_CreateNumber} 222u 17u 62u 11u ""
+    Pop $hCtl_visuals_FontSize
+    ${SetText} $hCtl_visuals_FontSize "FontSize" "12"
+
     
     ; === Label1 (type: Label) ===
     ${NSD_CreateLabel} 186u 19u 32u 13u "Size"
@@ -681,10 +689,6 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_visuals_bg
     ${SetText} $hCtl_visuals_bg "Background" ""
     
-    ; === FontSize (type: Number) ===
-    ${NSD_CreateNumber} 222u 17u 62u 11u ""
-    Pop $hCtl_visuals_FontSize
-    ${SetText} $hCtl_visuals_FontSize "FontSize" "12"
     
     ; === sync (type: Link) ===
     ${NSD_CreateLink} 12u 43u 272u 13u "Sync EmacsPortable.App's current colors and fonts with the startup options"
@@ -747,15 +751,16 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateLabel} 12u 96u 107u 13u "Right offset (X),top left corner "
     Pop $hCtl_visuals_Label6
     
-    ; === gh (type: Number) ===
-    ${NSD_CreateNumber} 123u 81u 32u 11u ""
-    Pop $hCtl_visuals_gh
-    ${NSD_SetText} $hCtl_visuals_gh $R3
-    
+   
     ; === gw (type: Number) ===
     ${NSD_CreateNumber} 123u 68u 32u 11u ""
     Pop $hCtl_visuals_gw
     ${NSD_SetText} $hCtl_visuals_gw $R2
+
+    ; === gh (type: Number) ===
+    ${NSD_CreateNumber} 123u 81u 32u 11u ""
+    Pop $hCtl_visuals_gh
+    ${NSD_SetText} $hCtl_visuals_gh $R3
     
     ; === gx (type: Number) ===
     ${NSD_CreateNumber} 123u 94u 32u 11u ""
@@ -946,6 +951,10 @@ From http://nsis.sourceforge.net/Explode
     ; === TextBox1 (type: Text) ===
     ${NSD_CreateText} 79u 16u 98u 11u ""
     Pop $hCtl_proxy_server
+
+    ; === TextBox2 (type: Text) ===
+    ${NSD_CreateText} 230u 14u 53u 11u ""
+    Pop $hCtl_proxy_port
     
     ; === UserName (type: Text) ===
     ${NSD_CreateText} 79u 30u 205u 11u ""
@@ -959,9 +968,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateLabel} 186u 17u 40u 13u "Proxy Port"
     Pop $hCtl_proxy_Label2
     
-    ; === TextBox2 (type: Text) ===
-    ${NSD_CreateText} 230u 14u 53u 11u ""
-    Pop $hCtl_proxy_port
+
     
     ; === Label3 (type: Label) ===
     ${NSD_CreateLabel} 12u 47u 37u 13u "Password"
@@ -998,15 +1005,16 @@ From http://nsis.sourceforge.net/Explode
     
     ; === Label6 (type: Label) ===
     ${NSD_CreateLabel} 12u 90u 66u 13u "Putty Key to Load:"
-    Pop $hCtl_proxy_Label6
-    
-    ; === CheckBox2 (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
-    Pop $hCtl_proxy_putty_portable
-    
+    Pop $hCtl_proxy_Label6    
+   
     ; === CheckBox1 (type: Checkbox) ===
     ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
     Pop $hCtl_proxy_putty
+
+    ; === CheckBox2 (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
+    Pop $hCtl_proxy_putty_portable
+
     
     ${SetCheck} $hCtl_proxy_putty "ApplyPutty"
     ${SetCheck} $hCtl_proxy_putty_portable "PuttyPortable"

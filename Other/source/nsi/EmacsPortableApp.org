@@ -79,12 +79,12 @@ EmacsPortable.App uses the loading bar to startup emacs.
 ** Headers and Plug ins
 #+BEGIN_SRC nsis
   !include "FileFunc.nsh"
+  !include "StrRep.nsh"
   !include "ReadINIStrWithDefault.nsh"
   !include "blowfish.nsh"
   !include "logiclib.nsh"
   !include "WinMessages.nsh"
   !include "setupEmacsData.nsh"
-  !include "StrRep.nsh"
   !include "RepInFile.nsh"
   !include "emacsEnv.nsh"
 #+END_SRC
