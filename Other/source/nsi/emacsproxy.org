@@ -93,7 +93,7 @@
     FileWrite $4 "@CALL $TEMP\ep\ep-dns.bat$\r$\n"
     FileWrite $4 "@DEL $TEMP\ep\ep-dns.bat$\r$\n"
     FileWrite $4 "@$R2 $TEMP\ep\ep-dns2.txt$\r$\n"
-    FileWrite $4 "@$R0 $\"/Address:.*/d$\" $TEMP\ep\ep-dns2.txt | $R0 $\"s/Server: *//$\" | $R0 $\"/^ *$/d$\" | $R0 $\"$$!N; /^\(.*\)\n\1$$/!P; D$\" | $R0 $\":a;/$$/{N;s/\n/_/;ba}$\" > $TEMP\ep\ep-dns.txt$\r$\n"
+    FileWrite $4 "@$R0 $\"/Address:.*/d$\" $TEMP\ep\ep-dns2.txt | $R0 $\"s/Server: *//$\" | $R0 $\"/^ *$$/d$\" | $R0 $\"$$!N; /^\(.*\)\n\1$$/!P; D$\" | $R0 $\":a;/$$/{N;s/\n/_/;ba}$\" > $TEMP\ep\ep-dns.txt$\r$\n"
     FileWrite $4 "@DEL $TEMP\ep\ep-dns2.txt$\r$\n"
     FileClose $4
     ExecDos::exec "cmd /c $\"$TEMP\ep\ep-sed-ip.bat$\""

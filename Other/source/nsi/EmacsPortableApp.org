@@ -61,6 +61,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_foreground
   var option_daemon
   var option_colorsync
+  var option_updateproxy
   
   var option_font
   var option_font_size
@@ -229,11 +230,12 @@ FunctionEnd
     IfErrors +3 0
     MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-OR-FILENAME]...$\n$\n\
         /?$\t$\tShow this help$\n\
-        /COLORSYNC$\t$\tSync the fonts and display colors with the startup options$\n\
+        /UPDATEPROXY$\tUpdates the Proxy settings of running emacs sessions.$\n\
+        /COLORSYNC$\tSync the fonts and display colors with the startup options$\n\
         /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
         /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
         /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
-        /VERSION=ver$\t$\tRun using Emacs versionver if exists.$\n"
+        /VERSION=ver$\tRun using Emacs versionver if exists.$\n"
     Abort
     
     
@@ -256,6 +258,7 @@ FunctionEnd
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
     StrCpy $option_colorsync ""    
+    StrCpy $option_updateproxy "" 
   
     StrCpy $option_emacsclient "emacsclient.exe"
     ; Parse Parameters
@@ -349,6 +352,11 @@ FunctionEnd
       IfErrors no_colorsync
       StrCpy $option_colorsync "1"
     no_colorsync:
+
+      ${GetOptions} $cmdLineParams '/UPDATEPROXY' $R0
+      IfErrors no_proxy
+      StrCpy $option_updateproxy "1"
+    no_proxy:
       ClearErrors
       ${GetOptions} $cmdLineParams '/DEBUG' $R0
       IfErrors no_debug_cmd_line
@@ -390,6 +398,7 @@ FunctionEnd
       ${StrRep} $cmdLineParams $cmdLineParams "/DEBUG" ""
 
       ${StrRep} $cmdLineParams $cmdLineParams "/COLORSYNC" ""
+      ${StrRep} $cmdLineParams $cmdLineParams "/UPDATEPROXY" ""
 
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
@@ -896,11 +905,34 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Section "Main" sec_mainN
     StrCpy $EPEXE $EXEDIR
+    StrCmp $option_updateproxy "" 0 sync_proxy
     StrCpy "$emacs" "$EXEDIR\App\emacs-$option_version\bin"
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
     StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
     FindProcDLL::FindProc "$option_emacs"
     StrCmp $R0 "1" start_emacsclient start_emacs
+    sync_proxy:
+      FindFirst $0 $1 "$EXEDIR\App\emacs-*"
+    loop_proxy:
+      HideWindow
+      StrCmp $1 "" done_proxy
+      DetailPrint "Checking for running $1.exe"
+      FindProcDLL::FindProc "$1.exe"
+      StrCmp "$R0" "1" 0 loop_next
+      DetailPrint "$1 is running"
+      StrCpy $2 $1 "" 6
+      IfFileExists "$EXEDIR\App\emacs-$2\bin\emacsclient.exe" 0 +3
+      StrCpy $3 "$EXEDIR\App\emacs-$2\bin\emacsclient.exe"
+      Goto +3
+      IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
+      StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
+      StrCpy $3 '"$TEMP\ep\run.exe" "$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
+      Exec $3
+    loop_next:
+      FindNext $0 $1
+      Goto loop_proxy
+    done_proxy:
+      Goto end
     start_emacs:
       StrCmp $option_colorsync "" 0 cant_sync
       IfFileExists "$TEMP\ep\run.exe" +3

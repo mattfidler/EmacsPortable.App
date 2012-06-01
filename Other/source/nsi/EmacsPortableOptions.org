@@ -1077,9 +1077,13 @@ From http://nsis.sourceforge.net/Explode
 
 * Obligatory Section
 #+BEGIN_SRC nsis
-  Section "Components" 
-    ;Get Install Options dialog user input
-      ClearErrors
+  Section "Components"
+    IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
+    app_exists:
+      ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
+    noapp:
+      
+    ClearErrors
   SectionEnd
 #+END_SRC  
 
