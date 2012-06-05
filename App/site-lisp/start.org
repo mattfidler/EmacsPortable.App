@@ -962,7 +962,9 @@ the implementation
           (progn
             (shell-command-to-string (concat "git config --global http.proxy "
                                              (getenv "HTTP_PROXY"))))
-        (shell-command-to-string (concat "git config --global --unset http.proxy")))))
+        (if (and process
+                 (executable-find "git"))
+            (shell-command-to-string (concat "git config --global --unset http.proxy"))))))
   (refresh-proxy 1)
   
 #+END_SRC

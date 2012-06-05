@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 13 17:00:56 2011 (-0600)
 ;; Version: 
-;; Last-Updated: Tue May  1 23:34:44 2012 (-0500)
+;; Last-Updated: Mon Jun  4 16:52:17 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 15
+;;     Update #: 18
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -71,6 +71,7 @@ DetectHiddenWindows, on
   
   Process, wait, emacs-%1%.exe, 300
   EmacsPID = %ErrorLevel%
+  IniWrite "%EmacsPID%", "%TEMP%\ep-reg.ini", "pid", "%1%"
   HideDaemon = 1
   ExitDaemon = 0
   

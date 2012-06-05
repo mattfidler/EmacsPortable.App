@@ -39,8 +39,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
-
-
 * Setup Putty
 #+BEGIN_SRC nsis
   !define puttystr `WriteRegStr HKCU "Software\SimonTatham\PuTTY\Sessions\Default%20Settings"`
