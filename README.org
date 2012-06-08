@@ -133,25 +133,18 @@ possibly test lisp code, or use features not previously used.
 *** Register Org-protocol
 This registers Org-protocol and also associates org-protocol actions
 with adobe acrobat/adobe acrobat reader.
-*** Handle IE Mailto
-In theory this handles Internet explorer mail to, but I believe that
-this is broken.
-*** Handle IE Viewsource
-This handles Internet Explorer View Source. I'm not sure it works.
-*** Handle IE News
-This handles IE news.  I'm not sure it works.
 *** Startup Font, Color, Geometry
 This allows the initial font/color and gemoetry options to be
 specified so that emacs will startup with these options enabled.
 These are called from the command line and do not affect the
-registry. 
-**** TODO Add Color-theme foreground/background color sync.
+registry.
 *** Proxy
 This allows proxy settings to be dynamically determined based on your
 location.  Your password is encrypted based on the location as well.
+This works on windows only.
 *** Setting Startup Environment variables
 By creating or editing an environment ini file at
-=App/Environment.ini=, startup environmental variables may be set.
+=Data/ini/Environment.ini=, startup environmental variables may be set.
 For example, if you use the =colemak= keyboard with the ergoemacs
 package, the following ini-file will set the
 =ERGOEMACS_KEYBOARD_LAYOUT= to the proper value
@@ -173,7 +166,11 @@ restart LiberKey and make sure that the associations actually
 installed correctly.
 *** Associations Support
 EmacsPortable.App handles file associations in the following ways:
-
+- Associations through LiberKey
+- PortableApps.com specifictaion (when PortableApps supports association)
+- Registering Associations when running.
+When changing associations under windows, the Mac =Info.plist= xml
+file is also updated.
 ** General Customization
 
 - git branch :: The first step to user-specific customization is (like
@@ -275,8 +272,7 @@ major modes, define keybindings, etc..
 many personal key bindings
 
 ** Load Path
-Load Path for source directory moved to either =App/lisp/src= or
-=Data/src=.
+Load Path for source directory is in =Data/src=.
 ** Literate Initialization
 When using EmacsPortable.App's startup mechanism, t
 1) Any =.org=, =.el= or =.elc= files in =Data/init= and loads them
@@ -285,47 +281,6 @@ When using EmacsPortable.App's startup mechanism, t
 3) System based =.org=, =.el= or =.elc= files in =Data/init/system=.
 ** Home Directory
 
-* Using EmacsPortable.App before a release
-Using git, you can check out the latest EmacsPortable.App, as follows
-#+BEGIN_SRC sh
-  git clone https://mlf176f2@github.com/mlf176f2/EmacsPortable.App.git
-  cd EmacsPortable.App
-  cd EmacsPortable.App
-  git submodule init
-  git submodule update 
-#+END_SRC
-After that, you may wish to add [[http://www.nongnu.org/color-theme/][color theme]]  and [[http://ourcomments.org/Emacs/nXhtml/doc/nxhtml.html][nxhtml]] to the =App/lisp/src=
-
-** Windows Option
-To use EmacsPortable.App before a release:
-- Download the files from github
-- Download Emacs for windows from [[http://ftp.gnu.org/gnu/emacs/windows/][Gnu]]
-- Place the Emacs inside the =App= Subdirectory of EmacsPortable.  It
-  should be in the form:
-
-  =EmacsPortable.App/App/emacs-23.3=
-
-  Note this directory should be the root of the emacs distribution,
-  that is the included binaries should be in:
-
-  =EmacsPortable.App/App/emacs-23.3/bin=
-
-- Download the [[https://github.com/mlf176f2/emacs-portable-starter-kit][EmacsPortableApp Starter Kit]], and place it in the
-  directory:
-
-  =EmacsPortable.App/App/portable-starter-kit/=
-
-** Mac OS X Add On
-Add mac binaries to the emacs-XXX distribution as follows:
-- Assuming you have a windows emacs distribution unpacked, add the mac
-  OSX binaries in a sub-directory:
-
-  =EmacsPortable.App/App/emacs-23.3/MacOS=
-  
-  These binaries should include:
-  - =bin= directory.
-  - =libexec= directory.
-  - =Emacs= executable
 * How EmacsPortable.App Works
 ** EmacsPortable.App Startup (Windows Only)
 The Pseudo-Daemon Start-up script among other things:

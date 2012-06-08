@@ -200,13 +200,13 @@ This registers EmacsPortable.App file-type associations with liberkey.
     ${xml::LoadFile} $XML $0
     DetailPrint 'LoadFile $XML $0'
     StrCmp "$0" "-1" not_found
-    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    EnumINI::Section "$EPEXE\Data\ini\assoc.ini" "assoc"
     Pop $R0
     StrCmp $R0 "error" done_assoc
     loop_assoc:
       IntCmp $R0 "0" done_assoc done_assoc 0
       Pop $R1
-      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "assoc" "$R1"
       ${Explode}  $9  "," "$R2"
       ${For} $8 1 $9
         Pop $7
@@ -250,7 +250,7 @@ the xml file is already open
     ${xml::CreateNode} '<Action name="edit_with_emacsportableapp__liberkey"><Description.en>Edit with EmacsPortable.App (LiberKey)</Description.en><ExePath>%MYAPPS%\EmacsPortable.App\App\eps\EmacsDoc.exe</ExePath><CmdArgs>"%1"</CmdArgs></Action>' $1
     ${xml::InsertEndChild} $1 $0
     DetailPrint "Inserting Action Node (.$7) $0"
-    ReadINIStr $R9 "$EPEXE\App\ini\assoc.ini" "primary" "$7"
+    ReadINIStr $R9 "$EPEXE\Data\ini\assoc.ini" "primary" "$7"
     ClearErrors
     StrCmp "$R9" "1" 0 end
     ${xml::RootElement} $0 $1
@@ -292,13 +292,13 @@ FunctionEnd
     ${xml::LoadFile} $XML $0
     DetailPrint 'LoadFile $XML $0'
     StrCmp "$0" "-1" notfound   
-    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    EnumINI::Section "$EPEXE\Data\ini\assoc.ini" "assoc"
     Pop $R0
     StrCmp $R0 "error" done_assoc
     loop_assoc:
       IntCmp $R0 "0" done_assoc done_assoc 0
       Pop $R1
-      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "assoc" "$R1"
       ${unExplode}  $9  "," "$R2"
       ${For} $8 1 $9
         Pop $7
@@ -468,17 +468,19 @@ FunctionEnd
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
     ClearErrors
     StrCmp $R0 "1" 0 end
-
+  
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
     ClearErrors
     StrCmp $R0 "1" 0 end
-
+  
     StrCpy "$XML" ""
     ${GetDrives} "FDD+HDD" "GetDriveVars"
     StrCmp "$XML" "" end
     FindProcDLL::FindProc "LiberKeyMenu.exe"
     StrCmp $R0 "1" 0 +2
     MessageBox MB_OKCANCEL|MB_ICONQUESTION "If LiberKey Menu is running, or KeyFileAssoc is running the settings may not be saved. $\nIt is recommended that you close out of these applications before integrating with LiberKey.$\nNOTE: You do not need to close out other running portable apps.  $\n$\nWould you like to continue the LiberKey integration?" IDOK 0 IDCANCEL end
+    IfFileExists "$EPEXE\Data\ini\assoc.ini" +2
+    CopyFiles /SILENT "$EPEXE\App\ini\assoc.ini" "$EPEXE\Data\ini\assoc.ini"
     Call epRegExt
     ## Now Get Association information
     writeUninstaller "$EXEDIR\rm-ep-liberkey.exe"

@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file was created by NSISDialogDesigner 0.9.16.0
+http://coolsoft.altervista.org/nsisdialogdesigner
+Do not edit manually!
+-->
+<Dialog Name="startup_options" Title="Dialog title..." Subtitle="Dialog subtitle...">
+  <GroupBox Name="OptsGrp" Location="12, 12" Size="426, 204" Text="Options to Customize" TabIndex="0">
+    <ListBox Name="ListBox1" Location="6, 19" Size="414, 173" TabIndex="0" />
+  </GroupBox>
+</Dialog>

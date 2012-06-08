@@ -388,6 +388,7 @@ FunctionEnd
 
 #+BEGIN_SRC nsis
 Function DownloadFiles
+  Call Find7z
   Call downloadEmacs
 FunctionEnd
 #+END_SRC

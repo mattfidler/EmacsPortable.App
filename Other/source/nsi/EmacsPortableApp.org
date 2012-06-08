@@ -44,7 +44,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Var server_file
   var cmdLineParams
   
-  
+  Var option_batch
   Var option_debug
   var option_dos
   var option_emacs
@@ -62,6 +62,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_daemon
   var option_colorsync
   var option_updateproxy
+  var option_silent
   
   var option_font
   var option_font_size
@@ -235,6 +236,7 @@ FunctionEnd
         /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
         /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
         /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
+        /SILENT$\t$\tRun --batch files without showing command prompt.$\n\
         /VERSION=ver$\tRun using Emacs versionver if exists.$\n"
     Abort
     
@@ -258,8 +260,9 @@ FunctionEnd
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
     StrCpy $option_colorsync ""    
-    StrCpy $option_updateproxy "" 
-  
+    StrCpy $option_updateproxy ""
+    StrCpy $option_silent ""
+    
     StrCpy $option_emacsclient "emacsclient.exe"
     ; Parse Parameters
     Push $R0
@@ -352,11 +355,23 @@ FunctionEnd
       IfErrors no_colorsync
       StrCpy $option_colorsync "1"
     no_colorsync:
-
+  
       ${GetOptions} $cmdLineParams '/UPDATEPROXY' $R0
       IfErrors no_proxy
       StrCpy $option_updateproxy "1"
     no_proxy:
+      ClearErrors
+      ${GetOptions} $cmdLineParams '/SILENT' $R0
+      IfErrors no_silent
+      StrCpy $option_silent "1"
+      
+    no_silent:
+      ${GetOptions} $cmdLineParams '--batch' $R0
+      IfErrors no_batch
+      StrCpy $option_batch "1"
+      StrCpy $option_q " -Q"
+      
+    no_batch:
       ClearErrors
       ${GetOptions} $cmdLineParams '/DEBUG' $R0
       IfErrors no_debug_cmd_line
@@ -396,13 +411,14 @@ FunctionEnd
       ${StrRep} $cmdLineParams $cmdLineParams "/Q" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/DOS" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/DEBUG" ""
-
+  
       ${StrRep} $cmdLineParams $cmdLineParams "/COLORSYNC" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/UPDATEPROXY" ""
-
+      ${StrRep} $cmdLineParams $cmdLineParams "/SILENT" ""
+  
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
-
+      
       
       StrCmp "" $option_dos setupwin setupdos
     setupdos:
@@ -665,7 +681,7 @@ FunctionEnd
     StrCmp $found_emacs "" end 0
     StrCpy $R0 "$EXEDIR\App\MacOS\build-plist.el"
     ${StrSlash} "$R0" "/"
-    ExecDos::exec "$found_emacs\emacs.exe -Q --batch -l $R0 --eval $\"(build-app-info)$\""
+    ExecDos::exec "$found_emacs\emacs.exe -Q --batch -l $R0 -f build-app-info"
     end:
       ClearErrors
   FunctionEnd
@@ -788,7 +804,7 @@ FunctionEnd
       
       StrCmp $option_fullheight "1" 0 +2
       StrCpy $emacs "$emacs -fh"
-      
+
       StrCmp $found_gdb "" +2 0
       StrCpy $emacs `$emacs"`
   FunctionEnd
@@ -935,11 +951,10 @@ FunctionEnd
       Goto end
     start_emacs:
       StrCmp $option_colorsync "" 0 cant_sync
-      IfFileExists "$TEMP\ep\run.exe" +3
-      SetOutPath "$TEMP\ep"
-      File "..\..\..\App\eps\run.exe"
       ${emacs_setup}
       WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version" "1"
+      StrCmp "" $option_batch +2 0
+      StrCmp "" $option_silent start_emacs_dos start_emacs_regular
       StrCmp "" $option_dos 0 start_emacs_dos
       StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
       
@@ -950,6 +965,9 @@ FunctionEnd
       Pop $R0
       Goto loop
     start_emacs_regular:
+      IfFileExists "$TEMP\ep\run.exe" +3
+      SetOutPath "$TEMP\ep"
+      File "..\..\..\App\eps\run.exe"
       Push $TEMP
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
       ##${StrRep} "$emacs" "$emacs" '"' '""'

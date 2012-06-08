@@ -13,14 +13,30 @@
   !macroend
   !define getEmacsMac `!insertmacro getEmacsMac`
   !macro getEmacsMac VER
-    IfFileExists "$INSTDIR\App\emacs-${VER}" +3
-    DetailPrint "Cannot Locate Windows Emacs Binaries for Emacs ${VER}, Skipping Mac install."
-    Goto end
-    ReadINIStr $R0 "${mirror}" "${VER}" "mac"
-    inetc::get $R0 "$TEMP\emacsMac.zip"
-    ZipDLL::extractall "$TEMP\emacsMac.zip" "$INSTDIR\App\emacs-${VER}"
-    Delete "$TEMP\emacsMac.zip"
-    end:
+    ${If} ${FileExists} "$INSTDIR\App\emacs-${VER}"
+      Call Find7z
+      Pop $R0
+      ${If} $R0 != ""
+        ReadINIStr $R0 "${mirror}" "${VER}" "mac"
+        SetOutPath "$TEMP\emacsMac"
+        inetc::get $R0 "$TEMP\emacsMac\emacsMac.dmg"
+        ExecDos::exec  "cmd /c $\"cd $TEMP\emacsMac & $R0 e EmacsMac.dmg"
+        ${If} ${FileExists} "$TEMP\emacsMac\2.hfs"
+          ExecDos::exec  "cmd /c $\"cd $TEMP\emacsMac & $R0 x -y 2.hfs"
+          ${If} ${FileExsts} "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS"
+            CopyFiles /SILENT "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS" \
+                "$INSTDIR\App\emacs-${VER}\MacOS"
+          ${Else}
+            DetailPrint "Could not find 2.hfs"
+          ${EndIf}
+          RmDir /R "$TEMP\emacsMac"
+        ${Else}
+          DetailPrint "Could not find 7zip, cannot download mac binaries"
+      ${EndIf}
+      Delete "$TEMP\emacsMac.zip"
+    ${Else}
+      DetailPrint "Cannot Locate Windows Emacs Binaries for Emacs ${VER}, Skipping Mac install."
+    ${EndIf}
   !macroend
   
 #+END_SRC

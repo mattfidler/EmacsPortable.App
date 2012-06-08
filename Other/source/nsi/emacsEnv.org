@@ -414,6 +414,141 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
   
 #+END_SRC
 
+** Get Registry Paths
+#+BEGIN_SRC nsis
+  !macro _DirExists _a _b _t _f
+    !insertmacro _LOGICLIB_TEMP
+    StrCpy $_LOGICLIB_TEMP "0"    
+    StrCmp `${_b}` `` +3 0 ;if path is not blank, continue to next check
+    IfFileExists `${_b}\*.*` 0 +2 ;if directory exists, continue to confirm exists
+    StrCpy $_LOGICLIB_TEMP "1"
+    StrCmp $_LOGICLIB_TEMP "1" `${_t}` `${_f}`
+  !macroend
+  !define DirExists `"" DirExists`
+  
+  !macro GetRegStr2 RET HVE2 KEY VAL
+    ${Case} "${HVE2}"
+      ReadRegStr ${RET} ${HVE2} "${KEY}" "${VAL}"
+      ClearErrors
+      ${If} "${RET}" == ""
+        ReadRegStr ${RET} ${HVE2} "${KEY}\${VAL}" ""
+        ClearErrors
+      ${EndIf}
+      ${Break}
+  !macroend
+  !macro GetRegStr RET HVE KEY VAL
+    ${Switch} "${HVE}"
+      #(HKCR|HKLM|HKCU|HKU|HKCC|HKDD|HKPD|SHCTX)
+      !insertmacro GetRegStr2 "${RET}" HKCR "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" HKLM "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" HKCU "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" HKU "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" HKCC "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" HKDD "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" HKPD "${KEY}" "${VAL}"
+      !insertmacro GetRegStr2 "${RET}" SHCTX "${KEY}" "${VAL}"
+      ${Default}
+        StrCpy ${RET} ""
+        ${Break}
+    ${EndSwitch}
+  !macroEnd
+  !define GetRegStr `!insertMacro GetRegStr`
+  
+  
+  Function SetupReg
+    Push $R0
+    Push $R1
+    Push $R2
+    Push $R3
+    Push $R4
+    Push $R5
+    Push $R6
+    Push $R7
+    Push $3
+    EnumINI::Section "$EPEXE\App\ini\paths.ini" "reg"
+    Pop $R0
+    ${If} $R0 != "error"
+      ${ForEach} $R1 $R0 1 - 1
+        Pop $R2
+        DetailPrint "Reg:$R2"
+        StrCpy $R3 $R2 3
+        ${If} $R3 != "HKU"
+          StrCpy $R3 $R2 4
+          ${If} $R3 == "SHCT"
+            StrCpy $R3 $R2 5
+            StrCpy $R4 $R2 "" 6
+          ${Else}
+            StrCpy $R4 $R2 "" 5
+          ${EndIf}
+        ${Else}
+          StrCpy $R4 $R2 "" 4
+        ${EndIf}
+        StrLen $R7 $R4
+        IntOp $R7 0 - $R7
+        ${ForEach} $R5 -1 $R7 - 1
+          StrCpy $R6 $R4 1 $R5
+          ${If} $R6 == "\"
+            ${ExitFor}
+          ${EndIf}
+        ${Next}
+        # $R3 $R4 $R5
+        StrCpy $R6 $R4 $R5
+        IntOp $R5 $R5 + 1
+        StrCpy $R4 $R4 "" $R5
+        StrCpy $R5 $R4
+        StrCpy $R4 $R6
+        ${GetRegStr} $R6 $R3 $R4 $R5
+        ${If} $R6 != ""
+          StrCpy $R3 $R6
+          StrCpy $R6 $R3 1
+          ${If} $R6 == "$\""
+            ## Take Off Quotes
+            StrCpy $R3 $R3 "" 1
+            StrCpy $R3 $R3 -1
+          ${EndIf}
+          ${IfNot} ${DirExists} "$R3"
+            ## Convert to directory?
+            StrLen $R7 $R3
+            IntOp $R7 0 - $R7
+            ${ForEach} $R5 -1 $R7 - 1
+              StrCpy $R6 $R3 1 $R5
+              ${If} $R6 == "\"
+                ${ExitFor}
+              ${EndIf}
+            ${Next}
+            StrCpy $R3 $R3 $R5
+          ${EndIf}
+          StrCpy $R4 $R3 "" -1
+          ${If} $R4 == "\"
+            StrCpy $R3 $R3 -1
+          ${EndIf}
+          ReadIniStr $R2 "$EPEXE\App\ini\paths.ini" "reg" "$R2"
+          ${If} "$R2" != "."
+            GetFullPathName /SHORT $R4 "$R3\$R2"
+          ${Else}
+            GetFullPathName $R4 "$R2"
+          ${EndIf}
+          ${If} ${DirExists} "$R4"
+            DetailPrint "Path Add: $R4"
+            System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+            System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R4;$3").r2'
+          ${EndIf}
+        ${EndIf}
+      ${Next}
+    ${EndIf}
+    Pop $3
+    Pop $R7
+    Pop $R6
+    Pop $R5
+    Pop $R4
+    Pop $R3
+    Pop $R2
+    Pop $R1
+    Pop $R0
+  FunctionEnd
+  
+#+END_SRC
+
 ** Setup Environment
 
 #+BEGIN_SRC nsis
@@ -426,6 +561,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       ${LoadExedir}
       ${GetComputerName} $0
       ${LoadLocal}
+      Call SetupReg
     ${EndIf}
   !macroend
   !define SetEnv `!insertmacro SetEnv`

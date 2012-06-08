@@ -146,6 +146,7 @@ Usage:
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
+  Page custom fnc_startup_options_Show fnc_startup_options_Validate
   Page custom fnc_assocs_Show fnc_assocs_Validate
   Page custom fnc_proxy_Show fnc_proxy_Validate
   Page custom fnc_behavior_Show fnc_behavior_Validate
@@ -172,7 +173,7 @@ Usage:
   !define SetCheck `!insertmacro SetCheck`
   
   !macro SetUnCheck VARIABLE OPT 
-    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "${OPT}"
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "${OPT}" 
     ${If} $R0 == "1"
       ${NSD_Check} ${VARIABLE}
     ${ElseIf} ${Errors}
@@ -416,6 +417,70 @@ From http://nsis.sourceforge.net/Explode
   
 #+END_SRC
 * Pages
+** Select Options to Customize
+*** Dialog
+#+BEGIN_SRC nsis
+  ; handle variables
+  Var hCtl_startup_options
+  Var hCtl_startup_options_OptsGrp
+  Var hCtl_startup_options_Select
+  Var option_startup
+  Var option_assoc
+  Var option_proxy
+  Var option_behavior
+  Var option_visual
+  
+  
+  ; dialog create function
+  Function fnc_startup_options_Create
+    
+    ; === startup_options (type: Dialog) ===
+    nsDialogs::Create 1018
+    Pop $hCtl_startup_options
+    ${If} $hCtl_startup_options == error
+      Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "Select Options" "Options to Customize"
+    
+    ; === OptsGrp (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 7u 280u 115u "Options to Customize"
+    Pop $hCtl_startup_options_OptsGrp
+    
+    ; === Select (type: ListBox) ===
+    ${NSD_CreateListView} 12u 17u 272u 97u ""
+    Pop $hCtl_startup_options_Select
+    SetCtlColors $hCtl_startup_options_Select 0x000000 0xFFFFFF
+    ${NSD_LV_InsertColumn} $hCtl_startup_options_Select 0 300 "Option To Customize"
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 0 "Association Settings"
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 1 "Proxy Settings"
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 2 "Behavior; Startup Options, Integration Options, etc."
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
+    !define /math _LISTVIEW_TEMP_STYLE ${LVS_EX_CHECKBOXES} | ${LVS_EX_FULLROWSELECT}
+    SendMessage $hCtl_startup_options_Select ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${_LISTVIEW_TEMP_STYLE}
+    !undef _LISTVIEW_TEMP_STYLE
+  FunctionEnd
+  
+  
+  ; dialog show function
+  Function fnc_startup_options_Show
+    ${If} $option_startup != "1"
+      Call fnc_startup_options_Create
+      nsDialogs::Show $hCtl_startup_options
+    ${EndIf}
+  FunctionEnd
+  
+  Function fnc_startup_options_Validate
+    ${If} $option_startup != "1"
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 0 $option_assoc
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 1 $option_proxy
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
+      StrCpy $option_startup "1"
+    ${EndIf}
+  FunctionEnd
+  
+#+END_SRC
+
 ** Behavior
 *** Dialog Definitions
 #+BEGIN_SRC nsis
@@ -518,7 +583,7 @@ From http://nsis.sourceforge.net/Explode
       StrCmp $4 "" 0 +2
       StrCpy $4 $2
       ${NSD_CB_SelectString} $hCtl_behavior_StartupScript $4
-
+  
       ; === GroupBox1 (type: GroupBox) ===
       ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
       Pop $hCtl_behavior_GroupBox1
@@ -526,7 +591,7 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Daemon"
       Pop $hCtl_behavior_Daemon
       ${SetCheck} $hCtl_behavior_Daemon "Daemon"
-
+  
       
       ; === newFrame (type: Checkbox) ===
       ${NSD_CreateCheckbox} 105u 34u 93u 14u "New Frame on file open"
@@ -563,7 +628,7 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_CreateButton} 264u 65u 20u 11u "..."
       Pop $hCtl_behavior_Home_Btn
       ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
-
+  
       
       ; === GroupBox2 (type: GroupBox) ===
       ${NSD_CreateGroupBox} 8u 87u 280u 26u "Integration Options"
@@ -589,8 +654,10 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_behavior_Show
-    Call fnc_behavior_Create
-    nsDialogs::Show $hCtl_behavior
+    ${If} $option_behavior == "1"
+      Call fnc_behavior_Create
+      nsDialogs::Show $hCtl_behavior
+    ${EndIf}
   FunctionEnd
   
   
@@ -615,19 +682,21 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   Function fnc_behavior_Validate
     ## Save Data.
-    ${WriteCheck} $hCtl_behavior_newFrame "NewFrame"
-    ${WriteCheck} $hCtl_behavior_Debug "Debug"
-    ${WriteCheck} $hCtl_behavior_Daemon "Daemon"
-    ${WriteCheck} $hCtl_behavior_ZipBin "Zip"
-    ${WriteCheck} $hCtl_behavior_Clean "Clean"
-    ${WriteCheck} $hCtl_behavior_editWith "RightEdit"
-    ${WriteCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
-    ${WriteCheck} $hCtl_behavior_LiberKey "LiberKey"
-    
-    ${WriteText} $hCtl_behavior_Home_Txt "Home"
-
-    ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
-    ${WriteCB} $hCtl_behavior_StartupScript "Startup"
+    ${If} $option_behavior == "1"
+      ${WriteCheck} $hCtl_behavior_newFrame "NewFrame"
+      ${WriteCheck} $hCtl_behavior_Debug "Debug"
+      ${WriteCheck} $hCtl_behavior_Daemon "Daemon"
+      ${WriteCheck} $hCtl_behavior_ZipBin "Zip"
+      ${WriteCheck} $hCtl_behavior_Clean "Clean"
+      ${WriteCheck} $hCtl_behavior_editWith "RightEdit"
+      ${WriteCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
+      ${WriteCheck} $hCtl_behavior_LiberKey "LiberKey"
+      
+      ${WriteText} $hCtl_behavior_Home_Txt "Home"
+      
+      ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
+      ${WriteCB} $hCtl_behavior_StartupScript "Startup"
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
@@ -691,12 +760,12 @@ From http://nsis.sourceforge.net/Explode
     Call SetFontOptions
     
     ${NSD_CB_SelectString} $hCtl_visuals_FontName $3
-
+  
     ; === FontSize (type: Number) ===
     ${NSD_CreateNumber} 222u 17u 62u 11u ""
     Pop $hCtl_visuals_FontSize
     ${SetText} $hCtl_visuals_FontSize "FontSize" "12"
-
+  
     
     ; === Label1 (type: Label) ===
     ${NSD_CreateLabel} 186u 19u 32u 13u "Size"
@@ -791,7 +860,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateNumber} 123u 68u 32u 11u ""
     Pop $hCtl_visuals_gw
     ${NSD_SetText} $hCtl_visuals_gw $R2
-
+  
     ; === gh (type: Number) ===
     ${NSD_CreateNumber} 123u 81u 32u 11u ""
     Pop $hCtl_visuals_gh
@@ -858,8 +927,10 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_visuals_Show
-    Call fnc_visuals_Create
-    nsDialogs::Show $hCtl_visuals
+    ${If} $option_visual == "1"
+      Call fnc_visuals_Create
+      nsDialogs::Show $hCtl_visuals
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
@@ -905,31 +976,33 @@ From http://nsis.sourceforge.net/Explode
 *** Validation Function
 #+BEGIN_SRC nsis
   Function fnc_visuals_Validate
-    ${WriteCheck} $hCtl_visuals_max "Max"
-    ${WriteCheck} $hCtl_visuals_mw "Fullwidth"
-    ${WriteCheck} $hCtl_visuals_mh "Fullheight"
-    ${WriteCheck} $hCtl_visuals_mnf "MaxApplyNew"
-    
-    ${WriteText} $hCtl_visuals_FontSize "FontSize"
-    ${WriteText} $hCtl_visuals_bg "Background"
-    ${WriteText} $hCtl_visuals_fg "Foreground"
+    ${If} $option_visual == "1"
+      ${WriteCheck} $hCtl_visuals_max "Max"
+      ${WriteCheck} $hCtl_visuals_mw "Fullwidth"
+      ${WriteCheck} $hCtl_visuals_mh "Fullheight"
+      ${WriteCheck} $hCtl_visuals_mnf "MaxApplyNew"
+      
+      ${WriteText} $hCtl_visuals_FontSize "FontSize"
+      ${WriteText} $hCtl_visuals_bg "Background"
+      ${WriteText} $hCtl_visuals_fg "Foreground"
   
-    ${WriteCB} $hCtl_visuals_FontName "Font"
-    
-    ${NSD_GetText} $hCtl_visuals_gh $R3
-    ${NSD_GetText} $hCtl_visuals_gw $R2
-    ${NSD_GetText} $hCtl_visuals_gx $R4
-    ${NSD_GetText} $hCtl_visuals_gy $R5
-    StrCpy $R0 ""
-    ${If} $R2 != ""
-    ${AndIf} $R3 != ""
-      StrCpy $R0 "$R2x$R3"
-      ${If} $R4 != ""
-      ${AndIf} $R5 != ""
-        StrCpy $R0 "$R0+$R4+$R5"
+      ${WriteCB} $hCtl_visuals_FontName "Font"
+      
+      ${NSD_GetText} $hCtl_visuals_gh $R3
+      ${NSD_GetText} $hCtl_visuals_gw $R2
+      ${NSD_GetText} $hCtl_visuals_gx $R4
+      ${NSD_GetText} $hCtl_visuals_gy $R5
+      StrCpy $R0 ""
+      ${If} $R2 != ""
+      ${AndIf} $R3 != ""
+        StrCpy $R0 "$R2x$R3"
+        ${If} $R4 != ""
+        ${AndIf} $R5 != ""
+          StrCpy $R0 "$R0+$R4+$R5"
+        ${EndIf}
       ${EndIf}
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" $R0
     ${EndIf}
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Geometry" $R0
   FunctionEnd
   
 #+END_SRC
@@ -965,18 +1038,18 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog create function
   Function fnc_proxy_Create
-    ${If} $PROXY_IDE == ""
-      StrCpy $7 "$EXEDIR"
-      ${SetupProxy}
-      Pop $0
-    ${EndIf}
+  
     ; === proxy (type: Dialog) ===
     nsDialogs::Create 1018
     Pop $hCtl_proxy
     ${If} $hCtl_proxy == error
       Abort
     ${EndIf}
-    
+    ${If} $PROXY_IDE == ""
+      StrCpy $7 "$EXEDIR"
+      ${SetupProxy}
+      Pop $0
+    ${EndIf}
     !insertmacro MUI_HEADER_TEXT "Proxy Settings" "This sets the proxy setings for the current network ($PROXY_IDE)"
     
     ; === GroupBox1 (type: GroupBox) ===
@@ -986,7 +1059,7 @@ From http://nsis.sourceforge.net/Explode
     ; === TextBox1 (type: Text) ===
     ${NSD_CreateText} 79u 16u 98u 11u ""
     Pop $hCtl_proxy_server
-
+  
     ; === TextBox2 (type: Text) ===
     ${NSD_CreateText} 230u 14u 53u 11u ""
     Pop $hCtl_proxy_port
@@ -1003,7 +1076,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateLabel} 186u 17u 40u 13u "Proxy Port"
     Pop $hCtl_proxy_Label2
     
-
+  
     
     ; === Label3 (type: Label) ===
     ${NSD_CreateLabel} 12u 47u 37u 13u "Password"
@@ -1045,11 +1118,11 @@ From http://nsis.sourceforge.net/Explode
     ; === CheckBox1 (type: Checkbox) ===
     ${NSD_CreateCheckbox} 12u 105u 115u 14u "Apply Proxy Settings to Putty"
     Pop $hCtl_proxy_putty
-
+  
     ; === CheckBox2 (type: Checkbox) ===
     ${NSD_CreateCheckbox} 131u 105u 153u 14u "Prefer Launching PuttyPortable"
     Pop $hCtl_proxy_putty_portable
-
+  
     
     ${SetCheck} $hCtl_proxy_putty "ApplyPutty"
     ${SetCheck} $hCtl_proxy_putty_portable "PuttyPortable"
@@ -1070,8 +1143,10 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_proxy_Show
-    Call fnc_proxy_Create
-    nsDialogs::Show $hCtl_proxy
+    ${If} $option_proxy == "1"
+      Call fnc_proxy_Create
+      nsDialogs::Show $hCtl_proxy
+    ${EndIf}
   FunctionEnd
   
   
@@ -1095,16 +1170,17 @@ From http://nsis.sourceforge.net/Explode
 *** Validation Function
 #+BEGIN_SRC nsis
   Function fnc_proxy_Validate
+    ${If} $option_proxy == "1"
+      ${WriteCheck} $hCtl_proxy_putty "ApplyPutty"
+      ${WriteCheck} $hCtl_proxy_putty_portable "PuttyPortable"
   
-    ${WriteCheck} $hCtl_proxy_putty "ApplyPutty"
-    ${WriteCheck} $hCtl_proxy_putty_portable "PuttyPortable"
+      ${WriteText} $hCtl_proxy_FileRequest1_Txt "PuttyKey"
   
-    ${WriteText} $hCtl_proxy_FileRequest1_Txt "PuttyKey"
-  
-    ${WriteProxy} $hCtl_proxy_server "Server"
-    ${WriteProxy} $hCtl_proxy_port "Port"
-    ${WriteProxy} $hCtl_proxy_UserName "User"
-    ${WriteProxy} $hCtl_proxy_Password1 "Password"
+      ${WriteProxy} $hCtl_proxy_server "Server"
+      ${WriteProxy} $hCtl_proxy_port "Port"
+      ${WriteProxy} $hCtl_proxy_UserName "User"
+      ${WriteProxy} $hCtl_proxy_Password1 "Password"
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
@@ -1135,6 +1211,8 @@ From http://nsis.sourceforge.net/Explode
   Var assoc_md5
   ; dialog create function
   Function fnc_assocs_Create
+    IfFileExists "$EPEXE\Data\ini\assoc.ini" +2
+    CopyFiles /SILENT "$EPEXE\App\ini\assoc.ini" "$EPEXE\Data\ini\assoc.ini"
     StrCmp $assoc_md5 "" 0 +3
     md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
     Pop $assoc_md5
@@ -1143,6 +1221,7 @@ From http://nsis.sourceforge.net/Explode
     nsDialogs::Create 1018
     Pop $hCtl_assocs
     ${If} $hCtl_assocs == error
+    ${OrIf} $option_assoc != "1"
       Abort
     ${EndIf}
     !insertmacro MUI_HEADER_TEXT "EmacsPortable.App File Associations" "Determines the file-assocation options for EmacsPortable.App"
@@ -1209,17 +1288,19 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_assocs_Show
-    Call fnc_assocs_Create
-    Call GetFileTypes
-    StrCpy $CurrentDesc ""
-    StrCpy $CurrentIdx ""
-    SendMessage $hCtl_assocs_AssocList ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${LVS_EX_FULLROWSELECT}
-    ##EnableWindow $hCtl_assocs_New 0
-    ${NSD_SetText} $hCtl_assocs_New "Save"
-    EnableWindow $hCtl_assocs_Delete 0
-    ${NSD_CreateTimer} PopulateSteal 700
-    
-    nsDialogs::Show $hCtl_assocs
+    ${If} $option_assoc == "1"
+      Call fnc_assocs_Create
+      Call GetFileTypes
+      StrCpy $CurrentDesc ""
+      StrCpy $CurrentIdx ""
+      SendMessage $hCtl_assocs_AssocList ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${LVS_EX_FULLROWSELECT}
+      ##EnableWindow $hCtl_assocs_New 0
+      ${NSD_SetText} $hCtl_assocs_New "Save"
+      EnableWindow $hCtl_assocs_Delete 0
+      ${NSD_CreateTimer} PopulateSteal 700
+      
+      nsDialogs::Show $hCtl_assocs
+    ${EndIf}
   FunctionEnd
   
   
@@ -1229,46 +1310,48 @@ From http://nsis.sourceforge.net/Explode
 **** Validation function
 #+BEGIN_SRC nsis
   Function fnc_assocs_Validate
-    ${NSD_KillTimer} PopulateSteal
-    ${WriteCheck} $hCtl_assocs_Assoc "Assoc"
-    DeleteIniSec "$EXEDIR\App\ini\assoc.ini" "assoc"
-    SendMessage $hCtl_assocs_AssocList ${LVM_GETITEMCOUNT} 0 0 $R1
-    IntOp $R1 $R1 - 1
-    StrCpy $R9 ""
-    ${For} $R2 0 $R1
-      ${NSD_LV_GetItemText} $hCtl_assocs_AssocList $R2 0 $R3
-      ${NSD_LV_GetItemText} $hCtl_assocs_AssocList $R2 1 $R4
-      WriteIniStr "$EXEDIR\App\ini\assoc.ini" "assoc" "$R3" "$R4"
-      StrCpy $R9 "$R9,$R4"
-    ${Next}
-    ## Now delete any primary assocations not equal to 1
-    EnumIni::Section "$EXEDIR\App\ini\assoc.ini" "primary"
-    pop $R0
-    StrCmp $R0 "error" no_pri
-    loop_pri:
-      IntCmp $R0 "0" no_pri no_pri 0
-      Pop $R1
-      ReadIniStr $R2 "$EXEDIR\App\ini\assoc.ini" "primary" "$R1"
-      ${If} $R2 != "1"
-        DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$R1"
-      ${Else}
-        StrCpy $R8 "1"
-        ${Explode}  $0  "," "$R9"
-        ${For} $1 1 $0
-          Pop $2
-          ${If} $2 == "$R1"
-            StrCpy $R8 "1"
+    ${If} $option_assoc == "1"
+      ${NSD_KillTimer} PopulateSteal
+      ${WriteCheck} $hCtl_assocs_Assoc "Assoc"
+      DeleteIniSec "$EXEDIR\Data\ini\assoc.ini" "assoc"
+      SendMessage $hCtl_assocs_AssocList ${LVM_GETITEMCOUNT} 0 0 $R1
+      IntOp $R1 $R1 - 1
+      StrCpy $R9 ""
+      ${For} $R2 0 $R1
+        ${NSD_LV_GetItemText} $hCtl_assocs_AssocList $R2 0 $R3
+        ${NSD_LV_GetItemText} $hCtl_assocs_AssocList $R2 1 $R4
+        WriteIniStr "$EXEDIR\Data\ini\assoc.ini" "assoc" "$R3" "$R4"
+        StrCpy $R9 "$R9,$R4"
+      ${Next}
+      ## Now delete any primary assocations not equal to 1
+      EnumIni::Section "$EXEDIR\Data\ini\assoc.ini" "primary"
+      pop $R0
+      StrCmp $R0 "error" no_pri
+      loop_pri:
+        IntCmp $R0 "0" no_pri no_pri 0
+        Pop $R1
+        ReadIniStr $R2 "$EXEDIR\Data\ini\assoc.ini" "primary" "$R1"
+        ${If} $R2 != "1"
+          DeleteIniStr "$EXEDIR\Data\ini\assoc.ini" "primary" "$R1"
+        ${Else}
+          StrCpy $R8 "1"
+          ${Explode}  $0  "," "$R9"
+          ${For} $1 1 $0
+            Pop $2
+            ${If} $2 == "$R1"
+              StrCpy $R8 "1"
+            ${EndIf}
+          ${Next}
+          ${If} $R8 == ""
+            DeleteIniStr "$EXEDIR\Data\ini\assoc.ini" "primary" "$R1"
           ${EndIf}
-        ${Next}
-        ${If} $R8 == ""
-          DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$R1"
         ${EndIf}
-      ${EndIf}
-    next:
-      IntOp $R0 $R0 - 1
-      Goto loop_pri
-    no_pri:
-      ClearErrors
+      next:
+        IntOp $R0 $R0 - 1
+        Goto loop_pri
+      no_pri:
+        ClearErrors
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
@@ -1278,7 +1361,7 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   Function GetFileTypes
     # Emacs Icon
-    EnumINI::Section "$EXEDIR\App\ini\assoc.ini" "assoc"
+    EnumINI::Section "$EXEDIR\Data\ini\assoc.ini" "assoc"
     Pop $R0
     StrCpy $R3 "" 
     StrCpy $R4 ""
@@ -1296,7 +1379,7 @@ From http://nsis.sourceforge.net/Explode
       IntOp $R3 $R3 - 1
       ${For} $R0 0 $R3
         ${NSD_LV_GetItemText} $hCtl_assocs_AssocList $R0 0 $R1
-        ReadINIStr $R2 "$EXEDIR\App\ini\assoc.ini" "assoc" "$R1"
+        ReadINIStr $R2 "$EXEDIR\Data\ini\assoc.ini" "assoc" "$R1"
         ${NSD_LV_SetItemText} $hCtl_assocs_AssocList $R0 1 '$R2'
       ${Next}
       ClearErrors
@@ -1401,7 +1484,7 @@ From http://nsis.sourceforge.net/Explode
       ${Explode}  $0  "," "$R0"
       ${For} $1 1 $0
         Pop $2
-        ReadIniStr $R5 "$EXEDIR\App\ini\assoc.ini" "primary" "$2"
+        ReadIniStr $R5 "$EXEDIR\Data\ini\assoc.ini" "primary" "$2"
         ClearErrors
         ${If} $R5 == "1"
           SendMessage $hCtl_assocs_Steal ${LB_FINDSTRINGEXACT} 0 "STR:$2" $3
@@ -1429,9 +1512,9 @@ From http://nsis.sourceforge.net/Explode
       System::Call "user32::SendMessage(i$hCtl_assocs_Steal,i${LB_GETTEXT},i$R9,t.r1)"
       SendMessage $hCtl_assocs_Steal ${LB_GETSEL} $R9 0 $2
       ${If} $2 > 0
-        WriteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$1" "1"
+        WriteIniStr "$EXEDIR\Data\ini\assoc.ini" "primary" "$1" "1"
       ${Else}
-        DeleteIniStr "$EXEDIR\App\ini\assoc.ini" "primary" "$1"
+        DeleteIniStr "$EXEDIR\Data\ini\assoc.ini" "primary" "$1"
       ${EndIf}
       Goto loop
     end_loop:
@@ -1545,21 +1628,25 @@ From http://nsis.sourceforge.net/Explode
 * Obligatory Section
 #+BEGIN_SRC nsis
   Section "Components"
-    md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
-    Pop $R0
-    ${If} "$R0" != "assoc_md5"
-      ## Not Really working quite right.
-      Call RemoveAssoc
-      Call RestoreAssoc
+    ${If} $option_assoc == "1"
+      md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
+      Pop $R0
+      ${If} "$R0" != $assoc_md5
+        Call RemoveAssoc
+        Call RestoreAssoc
+        ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
+      ${EndIf}
     ${EndIf}
-    
-    IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
-    app_exists:
-      ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
-    noapp:
-      
-    ClearErrors
+  
+    ${If} $option_proxy == "1"
+      IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
+      app_exists:
+        ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
+      noapp:
+        ClearErrors
+    ${EndIf}
   SectionEnd
+  
 #+END_SRC  
 
 

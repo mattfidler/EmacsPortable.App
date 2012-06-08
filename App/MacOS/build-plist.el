@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Tue Apr 10 15:25:37 2012 (-0500)
 ;; Version: 
-;; Last-Updated: Fri May 11 13:24:15 2012 (-0500)
+;; Last-Updated: Thu Jun  7 16:00:33 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 46
+;;     Update #: 61
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -79,7 +79,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>English</string>
     <key>CFBundleDocumentTypes</key>
-    <array>")
+    <array>\n")
         ext name)
     ;; Create Appinfo.ini
     (unless (file-exists-p (concat usb-app-dir "AppInfo"))
@@ -166,7 +166,7 @@
       (insert "SendTo=true\n")
       (let ((ft ""))
         (with-temp-buffer
-          (insert-file-contents (concat usb-app-dir "ini/assoc.ini"))
+          (insert-file-contents (concat usb-app-dir "../Data/ini/assoc.ini"))
           (goto-char (point-min))
           (when (re-search-forward "\\[assoc\\]" nil t) 
             (save-match-data
@@ -175,14 +175,15 @@
                             (progn
                               (re-search-forward "\\[.*?\\]" nil t)
                               (point-at-bol))))
-              (write-file (concat usb-app-dir "ini/assoc.ini")))
+              (write-file (concat usb-app-dir "../Data/ini/assoc.ini")))
             (replace-match ""))
           (delete-region (point-min) (point))
           (when (re-search-forward "\\[.*?\\]" nil t)
             (delete-region (point-at-bol) (point-max)))
           (goto-char (point-min))
           (while (re-search-forward "=\\(.*?\\)" nil t)
-            (setq ft (concat ft "," (match-string 1)))))
+            (setq ft (concat ft "," (match-string 1))))
+          (revert-buffer t t t))
         (insert "FileTypes=html,htm,xhtml,xhtm,xht,shtml\n"))
       (insert "Protocols=mailto,org-protocol\n"))
     
@@ -207,7 +208,7 @@
                    (concat usb-app-dir "AppInfo/appicon_128.png"))))
     
     (with-temp-buffer
-      (insert-file-contents (concat usb-app-dir "ini/assoc.ini"))
+      (insert-file-contents (concat usb-app-dir "../Data/ini/assoc.ini"))
       (goto-char (point-min))
       (when (re-search-forward "\\[assoc\\]" nil t)
         (replace-match ""))
@@ -223,7 +224,8 @@
               (concat ret "<dict>\n<key>CFBundleTypeExtensions</key>\n<array>\n"
                       (mapconcat
                        (lambda(x)
-                         (concat "<string>" x "</string>"))
+                         (when (string-match "^\\(?:\\sw\\|\\s_\\|\\s.\\)+" x)
+                           (concat "<string>" (match-string 0 x) "</string>")))
                        (split-string ext ",") "\n")
                       "\n</array>
                       <key>CFBundleTypeIconFile</key>
@@ -375,6 +377,7 @@
       (make-directory  (concat usb-app-dir "../Contents/Resources/English.lproj") t))
     
     (with-temp-file (concat usb-app-dir "../Contents/Info.plist")
+      (goto-char (point-min))
       (insert ret)
       (nxml-mode)
       (indent-region (point-min) (point-max)))
