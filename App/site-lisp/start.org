@@ -965,7 +965,7 @@ the implementation
         (if (and process
                  (executable-find "git"))
             (shell-command-to-string (concat "git config --global --unset http.proxy"))))))
-  (refresh-proxy 1)
+  (refresh-proxy)
   
 #+END_SRC
 * Add el-get support
