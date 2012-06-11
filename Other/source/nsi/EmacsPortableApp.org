@@ -40,7 +40,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Var cnt
   
   Var Rpath
-
+  
   Var server_file
   var cmdLineParams
   
@@ -63,6 +63,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_colorsync
   var option_updateproxy
   var option_silent
+  var option_help
   
   var option_font
   var option_font_size
@@ -237,7 +238,10 @@ FunctionEnd
         /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
         /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
         /SILENT$\t$\tRun --batch files without showing command prompt.$\n\
-        /VERSION=ver$\tRun using Emacs versionver if exists.$\n"
+        /VERSION=ver$\tRun using Emacs versionver if exists.$\n\
+        $\n\
+        Also accepts standard emacs arguments or emacsclient arguments depending on$\n\
+        if the launcher has detected a running emacs."
     Abort
     
     
@@ -272,23 +276,30 @@ FunctionEnd
   
 #+END_SRC
 ** Parse Parameters
-#+BEGIN_SRC nsis
-  Function SetValues
-    StrLen $R1 "$EXEDIR\App\emacs-"
-    StrLen $R2 $R9
-    IntOp $R2 $R1 - $R2
-    StrCpy $R1 $R9 "" $R2
-    FindProcDLL::FindProc "emacs-$R1.exe"
-    StrCmp $R0 "1" 0 +2
-    StrCpy $option_version $R1
-    Push $0
-  FunctionEnd
-  
+#+BEGIN_SRC nsis  
   Function parseParameters
     ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
     FindProcDLL::FindProc "emacs-$option_version.exe"
     StrCmp $R0 "1" already_running
-    ${Locate} "$EXEDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetValues"
+    FindFirst $0 $1 "$EXEDIR\App\emacs-*"
+    StrCpy $2  ""
+    StrCpy $3 ""
+    loop_find_running:
+      StrCmp "$1" "" already_running 0
+      StrCpy $1 $1 "" 6
+      ${If} $2 != ""
+        CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$2.exe"
+        StrCpy $3 "1"
+      ${EndIf}
+      ${If} $3 != ""
+        CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$1.exe"
+      ${EndIf}
+      FindProcDLL::FindProc "emacs-$1.exe"
+      StrCmp $R0 "1" 0 +2
+      StrCpy $option_version $1
+      StrCpy $2 $1
+      FindNext $0 $1
+      Goto loop_find_running
     already_running:
       
       ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
@@ -312,8 +323,12 @@ FunctionEnd
       StrCmp "1" $option_daemon 0 +2
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
       
+      ## Now Replace standard emacs options with EmacsPortableApp.org options.
+      ${StrRep} $cmdLineParams $cmdLineParams "-Q" "/Q"
+      
+      
       ${GetOptions} $cmdLineParams '/VERSION=' $R0
-      IfErrors read_cmd_line_ver 0
+      IfErrors read_cmd_line_ver
       StrCpy $option_version $R0
       ${StrRep} $cmdLineParams $cmdLineParams "/VERSION=$option_version" ""
     read_cmd_line_ver:
@@ -350,12 +365,11 @@ FunctionEnd
       Abort
     emacs_ver_done:
       ClearErrors
-  
       ${GetOptions} $cmdLineParams '/COLORSYNC' $R0
       IfErrors no_colorsync
       StrCpy $option_colorsync "1"
     no_colorsync:
-  
+      ClearErrors
       ${GetOptions} $cmdLineParams '/UPDATEPROXY' $R0
       IfErrors no_proxy
       StrCpy $option_updateproxy "1"
@@ -366,12 +380,18 @@ FunctionEnd
       StrCpy $option_silent "1"
       
     no_silent:
+      ClearErrors
       ${GetOptions} $cmdLineParams '--batch' $R0
       IfErrors no_batch
       StrCpy $option_batch "1"
       StrCpy $option_q " -Q"
       
     no_batch:
+      ClearErrors
+      ${GetOptions} $cmdLineParams '--help' $R0
+      IfErrors no_help
+      StrCpy $option_help "1"
+    no_help:
       ClearErrors
       ${GetOptions} $cmdLineParams '/DEBUG' $R0
       IfErrors no_debug_cmd_line
@@ -383,26 +403,28 @@ FunctionEnd
       StrCpy $option_debug ""
       Goto emacs_debug_done
     read_debug_ini_file:
+      ClearErrors
       ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
       StrCmp $option_debug "1" 0 no_debugging
       StrCpy $option_debug " --debug-init"
       Goto emacs_debug_done
     no_debugging:
+      ClearErrors
       StrCpy $option_debug ""
     emacs_debug_done:
       ClearErrors
       
       ${GetOptions} $cmdLineParams '/Q' $R0
-      IfErrors +2 0
+      IfErrors no_q
       StrCpy $option_q " -Q"
+    no_q:
       ClearErrors
-      
-      
       ${GetOptions} $cmdLineParams '/DOS' $R0
-      IfErrors +4 0
+      IfErrors no_dos
       StrCpy $option_dos " -nw"
       StrCpy $option_emacs "emacs-$option_version-dos.exe"
       StrCpy $option_emacsclient "emacsclient.exe"
+    no_dos:
       ClearErrors
       
       
@@ -411,11 +433,11 @@ FunctionEnd
       ${StrRep} $cmdLineParams $cmdLineParams "/Q" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/DOS" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/DEBUG" ""
-  
+      
       ${StrRep} $cmdLineParams $cmdLineParams "/COLORSYNC" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/UPDATEPROXY" ""
       ${StrRep} $cmdLineParams $cmdLineParams "/SILENT" ""
-  
+      
       ${Trim} $cmdLineParams
       StrCpy $cmdLineParams $0
       
@@ -965,17 +987,23 @@ FunctionEnd
       Pop $R0
       Goto loop
     start_emacs_regular:
-      IfFileExists "$TEMP\ep\run.exe" +3
-      SetOutPath "$TEMP\ep"
-      File "..\..\..\App\eps\run.exe"
-      Push $TEMP
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-      ##${StrRep} "$emacs" "$emacs" '"' '""'
-      Exec "$TEMP\ep\run.exe $emacs"
-      Pop $R0                  
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
-      Goto loop
+      ${If} $option_help == "1"
+        execDos::exec /TOSTACK "$emacs"
+        Pop $R0
+        MessageBox MB_OK "$R0"
+      ${Else}
+        IfFileExists "$TEMP\ep\run.exe" +3
+        SetOutPath "$TEMP\ep"
+        File "..\..\..\App\eps\run.exe"
+        Push $TEMP
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+        ##${StrRep} "$emacs" "$emacs" '"' '""'
+        Exec "$TEMP\ep\run.exe $emacs"
+        Pop $R0                  
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
+        Goto loop
+      ${EndIf}
     start_emacs_dos:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
       Exec "$emacs"
@@ -1006,7 +1034,27 @@ FunctionEnd
       StrCmp $option_debug "" 0 no_debug
       StrCmp $option_q "" 0 start_emacs
       ${emacsclient_setup}
-      ${If} $option_colorsync == ""
+      ${If} $option_help == "1"
+        Push "ExecDos::End" # Add a marker for the loop to test for.
+        ExecDos::exec /TOSTACK "$emacs"
+        Pop $R0
+        StrCpy $R0 ""
+        StrCpy $R1 ""
+        Loop_emacsclient_help:
+          Pop $1
+          StrCmp $1 "ExecDos::End" exit_emacsclient_help
+          StrCmp $1 $R1 exit_emacsclient_help
+          ${If} $R0 == ""
+            StrCpy $R0 "$1"
+          ${Else}
+            StrCpy $R0 "$1$\n$R0"
+          ${EndIf}
+          StrCpy $R1 $1
+          Goto Loop_emacsclient_help
+        exit_emacsclient_help:
+          SendMessage $HWNDPARENT ${WM_SETTEXT} 0 "STR:Emacsclient help"
+          MessageBox MB_OK|MB_ICONQUESTION "$R0"
+      ${ElseIf} $option_colorsync == ""
         ##${StrRep} $emacs $emacs '"' '""'
         Exec "$TEMP\ep\run.exe $emacs"
       ${Else}

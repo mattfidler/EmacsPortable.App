@@ -31,7 +31,6 @@ Modern UI2 user interface
 #+BEGIN_SRC nsis
 !define mirror $EXEDIR\App\ini\mirrors.ini
 #+END_SRC
-
 ** Headers and Plugins
 #+BEGIN_SRC nsis
   !include "FileFunc.nsh"
@@ -46,14 +45,14 @@ OutFile "..\..\..\App\eps\download-unix.exe"
 #+BEGIN_SRC nsis
   Name "EmacsPortable.App Download Emacs"
   BrandingText "EmacsPortable.App"
-  !define MUI_ICON "..\img\ico\download.ico"
+  !define MUI_ICON "..\img\ico\preferences_system.ico"
   !define MUI_HEADERIMAGE
   
-  !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage.bmp" ; 150x57 pixels
-  !define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage.bmp" ; 150x57 pixels
+  !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage-options.bmp" ; 150x57 pixels
+  !define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage-options.bmp" ; 150x57 pixels
   
-  !define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
-  !define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome.bmp" ;164x314 pixels
+  !define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome-options.bmp" ;164x314 pixels
+  !define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome-options.bmp" ;164x314 pixels
   
   !define MUI_ABORTWARNING
   !define MUI_UNABORTWARNING
@@ -92,7 +91,8 @@ OutFile "..\..\..\App\eps\download-unix.exe"
     Goto +2
     ReadINIStr $INSTDIR "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
     ClearErrors
-    Delete "$INSTDIR\Data\ini\unix-download.ini"
+    SetOutPath "$TEMP\ep"
+    Delete "$TEMP\ep\unix-download.ini"
     ${G32_INI}
     ${EZWIN_INI}
   FunctionEnd

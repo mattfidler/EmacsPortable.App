@@ -17,12 +17,16 @@ This provides an interface to the Emacs Startup options
 ** Definitions and Variables
 #+BEGIN_SRC nsis
   !define TEMP1 $R0 ;Temp variable
+  !define mirror $INSTDIR\App\ini\mirrors.ini
   Var EPEXE 
+  Var download_emacs_version
+  Var download_mac
   
 #+END_SRC
 ** Include files
 #+BEGIN_SRC nsis
   !include "MUI2.nsh"
+  !include "EmacsDownloadShared.nsh"
   !include "LogicLib.nsh"
   !include "FileFunc.nsh"
   !include "StrRep.nsh"
@@ -31,6 +35,7 @@ This provides an interface to the Emacs Startup options
   !include "CommCtrl.nsh"
   !include "RepInFile.nsh"
   !include "emacsEnv.nsh"
+  !include "EmacsCall.nsh"
   
 #+END_SRC
 ** nsDialogs Hacks
@@ -151,8 +156,9 @@ Usage:
   Page custom fnc_proxy_Show fnc_proxy_Validate
   Page custom fnc_behavior_Show fnc_behavior_Validate
   Page custom fnc_visuals_Show fnc_visuals_Validate
+  Page custom fnc_download_Show fnc_download_Validate
   !insertmacro MUI_PAGE_INSTFILES
-  !insertmacro MUI_PAGE_FINISH
+  ##!insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
   
 #+END_SRC
@@ -406,6 +412,7 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   Function .onInit
     StrCpy $EPEXE $EXEDIR
+    StrCpy $INSTDIR $EXEDIR
     ClearErrors
   FunctionEnd  
 #+END_SRC
@@ -429,6 +436,7 @@ From http://nsis.sourceforge.net/Explode
   Var option_proxy
   Var option_behavior
   Var option_visual
+  Var option_download
   
   
   ; dialog create function
@@ -455,6 +463,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 1 "Proxy Settings"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 2 "Behavior; Startup Options, Integration Options, etc."
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 4 "Download Components"
     !define /math _LISTVIEW_TEMP_STYLE ${LVS_EX_CHECKBOXES} | ${LVS_EX_FULLROWSELECT}
     SendMessage $hCtl_startup_options_Select ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${_LISTVIEW_TEMP_STYLE}
     !undef _LISTVIEW_TEMP_STYLE
@@ -475,6 +484,7 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 1 $option_proxy
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
       StrCpy $option_startup "1"
     ${EndIf}
   FunctionEnd
@@ -1625,7 +1635,324 @@ From http://nsis.sourceforge.net/Explode
   FunctionEnd
 #+END_SRC
 
-* Obligatory Section
+** Download
+*** Dialog Definition
+#+BEGIN_SRC nsis
+  ; handle variables
+  Var hCtl_download
+  Var hCtl_download_EmacsDownload
+  Var hCtl_download_DownloadVersion
+  Var hCtl_download_Label1
+  Var hCtl_download_DownloadMac
+  Var hCtl_download_GroupBox2
+  Var hCtl_download_GnuWin32Utils
+  Var hCtl_download_EZWinUtils
+  Var hCtl_download_LinkToSelect
+  Var hCtl_download_Startup
+  Var hCtl_download_DropList1
+  Var hCtl_download_Label2
+  Var hCtl_download_GroupBox1
+  Var hCtl_download_DropList2
+  Var hCtl_download_Label3
+  Var hCtl_download_Link2
+  Var hCtl_download_Use
+  Var hCtl_download_UseLabel
+  Var hCtl_download_CompileTools
+  Var hCtl_download_NSIS
+  Var hCtl_download_CheckBox1
+  Var hCtl_download_SpellGroup
+  Var hCtl_download_DropList3
+  Var hCtl_download_Label4
+  Var hCtl_download_Label5
+  Var hCtl_download_Dict
+  
+  
+  ; dialog create function
+  Function fnc_download_Create
+    
+    ; === download (type: Dialog) ===
+    nsDialogs::Create 1018
+    Pop $hCtl_download
+    ${If} $hCtl_download == error
+      Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "Select Components to Download" "These are optional components or additional components to download for EmacsPortable.App"
+    
+    ; === EmacsDownload (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 7u 131u 44u "Emacs Download"
+    Pop $hCtl_download_EmacsDownload
+    
+    ; === DownloadVersion (type: DropList) ===
+    ${NSD_CreateDropList} 48u 17u 87u 12u "24.4"
+    Pop $hCtl_download_DownloadVersion
+    SetCtlColors $hCtl_download_DownloadVersion 0x000000 0xFFFFFF
+    ${NSD_OnChange} $hCtl_download_DownloadVersion CheckMac
+    Call SetupVersions
+    
+    ; === Label1 (type: Label) ===
+    ${NSD_CreateLabel} 12u 19u 32u 13u "Version"
+    Pop $hCtl_download_Label1
+    
+    ; === DownloadMac (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 33u 123u 14u "Download Mac Binaries"
+    Pop $hCtl_download_DownloadMac
+    ${NSD_Check} $hCtl_download_DownloadMac
+  
+    SetOutPath "$TEMP\ep"
+    File "unix-download.ini"  
+    ; === GroupBox2 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 54u 131u 68u "Unix Utilities Download"
+    Pop $hCtl_download_GroupBox2
+    
+    ; === GnuWin32Utils (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 65u 123u 14u "Download GnuWin32 Utilities"
+    Pop $hCtl_download_GnuWin32Utils
+  
+    Call enablegw32
+    
+    ; === EZWinUtils (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 82u 123u 14u "Download EZWin Utilities"
+    Pop $hCtl_download_EZWinUtils
+    
+    ; === LinkToSelect (type: Link) ===
+    ${NSD_CreateLink} 12u 97u 123u 20u "Select individual Unix components"
+    Pop $hCtl_download_LinkToSelect
+    ${NSD_OnClick} $hCtl_download_LinkToSelect SelectUnixComponents
+    
+    ; === VLine1 (type: VLine) ===
+    ${NSD_CreateVLine} 143u 7u 1u 115u ""
+    
+    ; === Startup (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 7u 139u 44u "Startup Script Download"
+    Pop $hCtl_download_Startup
+    
+    ; === DropList1 (type: DropList) ===
+    ${NSD_CreateDropList} 179u 17u 104u 12u ""
+    Pop $hCtl_download_DropList1
+    SetCtlColors $hCtl_download_DropList1 0x000000 0xFFFFFF
+    
+    ; === Label2 (type: Label) ===
+    ${NSD_CreateLabel} 152u 17u 23u 13u "Script"
+    Pop $hCtl_download_Label2
+    
+    ; === GroupBox1 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 7u 139u 44u "Startup Script Download"
+    Pop $hCtl_download_GroupBox1
+    
+    ; === DropList2 (type: DropList) ===
+    ${NSD_CreateDropList} 179u 17u 104u 12u ""
+    Pop $hCtl_download_DropList2
+    SetCtlColors $hCtl_download_DropList2 0x000000 0xFFFFFF
+    
+    ; === Label3 (type: Label) ===
+    ${NSD_CreateLabel} 152u 17u 23u 13u "Script"
+    Pop $hCtl_download_Label3
+    
+    ; === Link2 (type: Link) ===
+    ${NSD_CreateLink} 247u 35u 37u 13u "Add script"
+    Pop $hCtl_download_Link2
+    ${NSD_OnClick} $hCtl_download_Link2 AddStartup
+    
+    ; === Use (type: ComboBox) ===
+    ${NSD_CreateComboBox} 179u 33u 64u 12u "Git"
+    Pop $hCtl_download_Use
+    SetCtlColors $hCtl_download_Use 0x000000 0xFFFFFF
+    ${NSD_CB_AddString} $hCtl_download_Use "Git"
+    ${NSD_CB_AddString} $hCtl_download_Use "Zip"
+    ${NSD_CB_SelectString} $hCtl_download_Use "Git"
+    
+    ; === UseLabel (type: Label) ===
+    ${NSD_CreateLabel} 152u 34u 23u 13u "Use"
+    Pop $hCtl_download_UseLabel
+    
+    ; === CompileTools (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 54u 139u 24u "EmacsPortable.App Compile Tools"
+    Pop $hCtl_download_CompileTools
+    
+    ; === NSIS (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 152u 64u 42u 14u "NSIS"
+    Pop $hCtl_download_NSIS
+    
+    ; === CheckBox1 (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 198u 64u 56u 14u "AutoHotKey"
+    Pop $hCtl_download_CheckBox1
+    
+    ; === SpellGroup (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 148u 81u 139u 41u "Fonts and Spelling Download"
+    Pop $hCtl_download_SpellGroup
+    
+    ; === DropList3 (type: DropList) ===
+    ${NSD_CreateDropList} 188u 90u 96u 12u ""
+    Pop $hCtl_download_DropList3
+    SetCtlColors $hCtl_download_DropList3 0x000000 0xFFFFFF
+    
+    ; === Label4 (type: Label) ===
+    ${NSD_CreateLabel} 155u 92u 20u 13u "Font"
+    Pop $hCtl_download_Label4
+    
+    ; === Label5 (type: Label) ===
+    ${NSD_CreateLabel} 155u 107u 39u 13u "Dictionary"
+    Pop $hCtl_download_Label5
+    
+    ; === ComboBox1 (type: ComboBox) ===
+    ${NSD_CreateDropList} 198u 105u 85u 12u ""
+    Pop $hCtl_download_Dict
+    SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
+  FunctionEnd
+  
+  
+  ; dialog show function
+  Function fnc_download_Show
+    ${If} $option_download == "1"
+      Call fnc_download_Create
+      nsDialogs::Show $hCtl_download
+    ${EndIf}
+  FunctionEnd
+  
+#+END_SRC
+*** Helper Functions
+**** Setup Functions
+**** Setup Emacs Versions for Download
+#+BEGIN_SRC nsis
+  Function SetupVersions
+    EnumINI::SectionNames "${mirror}"
+    Pop $R0
+    StrCmp $R0 "error" done
+    loop:
+      IntCmp $R0 "0" done done 0
+      Pop $R1
+      EnumINI::KeyExist "${mirror}" $R1 "win"
+      Pop $R2
+      StrCmp $R2 "1" 0 next
+      ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R1
+    next:
+      IntOp $R0 $R0 - 1
+      Goto loop
+    done:
+      ReadIniStr $R0 "${mirror}" "emacs" "default.ver"
+      ${NSD_CB_SelectString} $hCtl_download_DownloadVersion $R0
+      ClearErrors
+  FunctionEnd
+  
+#+END_SRC
+
+**** Are all the GnuWin32 Components available
+#+BEGIN_SRC nsis
+  Function enablegw32
+    StrCpy $R9 "1"
+    
+    IfFileExists "$INSTDIR\App\ini\gw32.ini" +3
+    StrCpy $R9 "0"
+    Goto done
+    
+    EnumINI::Section "$INSTDIR\Data\ini\unix-download.ini" "gw32"
+    Pop $R0
+    StrCmp $R0 "error" done
+    ${While} $R0 > 0
+      Pop $R1
+       ##MessageBox MB_OK "$R1, $R0, $R2, $R9!"
+      StrCmp $R9 "0" next
+      
+      ReadINIStr $R2 "$INSTDIR\Data\ini\unix-download.ini" "assoc" "$R1"
+      StrCmp "$R2" "1" 0 next
+       ##MessageBox MB_OK "$R1, $R0, $R2, $R9!"
+      EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "$R1.bin"
+      Pop $R2
+      ##MessageBox MB_OK "$R1, $R0, $R2, $R9!"
+      StrCmp "$R2" "1" 0 not_installed
+      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "$R1.bin"
+      Pop $R2
+      StrCmp "$R2" "error" not_installed
+      ${While} $R2 > 0
+        Pop $R3
+        ##MessageBox MB_OK "$R2, $INSTDIR\App\gw32\$R3, $R9!"
+        StrCmp $R9 "0" next_check
+        IfFileExists "$INSTDIR\App\gw32\$R3" next_check
+        StrCpy $R9 "0"
+        next_check:
+          IntOp $R2 $R2 - 1
+      ${EndWhile}
+      Goto next
+      not_installed:
+        StrCpy $R9 "0"
+      next:
+        IntOp $R0 $R0 - 1
+    ${EndWhile}  
+    done:
+      MessageBox MB_OK "R9: $R9"
+      ClearErrors
+      ${If} $R9 == '0'
+        EnableWindow $hCtl_download_GnuWin32Utils 0
+        ${NSD_Check} $hCtl_download_GnuWin32Utils
+      ${Else}
+        EnableWindow $hCtl_download_GnuWin32Utils 1
+      ${EndIf}
+  FunctionEnd
+  
+#+END_SRC
+
+**** Select Unix Utilities to Add
+#+BEGIN_SRC nsis
+  Function SelectUnixComponents
+    SetOutPath "$INSTDIR\App\eps"
+    ExecWait "$INSTDIR\App\eps\download-unix.exe"
+    Call enablegw32
+  FunctionEnd
+#+END_SRC
+**** Check to see if Mac Binaries are available
+#+BEGIN_SRC nsis
+   Function CheckMac
+     
+   FunctionEnd   
+#+END_SRC
+**** Add a startup script
+#+BEGIN_SRC nsis
+Function AddStartup
+FunctionEnd
+#+END_SRC
+*** Leave Download Page
+#+BEGIN_SRC nsis
+  Function fnc_download_Validate
+    ${NSD_GetText}  $hCtl_download_DownloadVersion $download_emacs_version
+    ${NSD_GetState}  $hCtl_download_DownloadMac $download_mac
+  FunctionEnd
+  
+#+END_SRC
+*** Download Functions
+**** Download Emacs
+#+BEGIN_SRC nsis
+Function downloadEmacs
+  DetailPrint "Attempting to Download Emacs $download_emacs_version"
+  IfFileExists "$INSTDIR\App\emacs-$download_emacs_version" 0 +3
+  DetailPrint "Emacs $download_emacs_version already exists, not downloading again."
+  Goto download_mac
+  download_pc:
+    Call getWin
+  download_mac:
+    StrCmp "$download_mac" "1" 0 skip_mac
+    IfFileExists "$INSTDIR\App\emacs-$download_emacs_version\MacOS" 0 +3
+    DetailPrint "Emacs $download_emacs_version  Mac files already exist, not downloading again."
+    Goto skip_mac
+    Call getMac
+  skip_mac:
+    ClearErrors
+FunctionEnd
+Function getWin
+  ${getEmacsWin} "$download_emacs_version"
+FunctionEnd
+Function getMac
+  ${getEmacsMac} "$download_emacs_version"
+FunctionEnd
+#+END_SRC
+**** Download Function
+#+BEGIN_SRC nsis
+Function DownloadFiles
+  Call Find7z
+  Call downloadEmacs
+FunctionEnd
+#+END_SRC
+
+* Single section for installing
 #+BEGIN_SRC nsis
   Section "Components"
     ${If} $option_assoc == "1"
@@ -1645,8 +1972,14 @@ From http://nsis.sourceforge.net/Explode
       noapp:
         ClearErrors
     ${EndIf}
+    ${If} $option_download == "1"
+      Call Find7z
+      Call downloadEmacs
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "Version" "$download_emacs_version"
+      ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
+    ${EndIf}
   SectionEnd
-  
 #+END_SRC  
 
 

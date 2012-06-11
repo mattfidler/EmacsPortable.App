@@ -73,7 +73,7 @@ EmacsRegistry.nsi: EmacsRegistry.org
 ../../../EmacsDownload.exe: EmacsDownload.nsi
 	$(MAKENSIS) EmacsDownload.nsi
 
-../../../EmacsOptions.exe: EmacsPortableOptions.nsi EmacsCall.nsh EmacsEnv.nsh
+../../../EmacsOptions.exe: EmacsPortableOptions.nsi EmacsCall.nsh EmacsEnv.nsh EmacsDownloadShared.nsh
 	$(MAKENSIS) EmacsPortableOptions.nsi
 
 ../../../EmacsInstall-Net.exe: install-net.nsi EmacsDownload-pae.nsi

@@ -21,8 +21,8 @@ SetDatablockOptimize On
 Modern UI2 user interface
 #+BEGIN_SRC nsis
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
 !include "EmacsDownloadShared.nsh"
-!include "LogicLib.nsh" 
 #+END_SRC
 ** Defines
 #+BEGIN_SRC nsis
@@ -244,85 +244,6 @@ Var download_mac
   FunctionEnd
   
 #+END_SRC
-*** Setup Functions
-**** Setup Emacs Versions for Download
-#+BEGIN_SRC nsis
-  Function SetupVersions
-    EnumINI::SectionNames "${mirror}"
-    Pop $R0
-    StrCmp $R0 "error" done
-    loop:
-      IntCmp $R0 "0" done done 0
-      Pop $R1
-      EnumINI::KeyExist "${mirror}" $R1 "win"
-      Pop $R2
-      StrCmp $R2 "1" 0 next
-      ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R1
-    next:
-      IntOp $R0 $R0 - 1
-      Goto loop
-    done:
-      ReadIniStr $R0 "${mirror}" "emacs" "default.ver"
-      ${NSD_CB_SelectString} $hCtl_download_DownloadVersion $R0
-      ClearErrors
-  FunctionEnd
-  
-#+END_SRC
-
-**** Are all the GnuWin32 Components available
-#+BEGIN_SRC nsis
-  Function enablegw32
-    StrCpy $R9 "1"
-    
-    IfFileExists "$INSTDIR\App\ini\gw32.ini" +3
-    StrCpy $R9 "0"
-    Goto done
-    
-    EnumINI::Section "$INSTDIR\Data\ini\unix-download.ini" "gw32"
-    Pop $R0
-    StrCmp $R0 "error" done
-    ${While} $R0 > 0
-      Pop $R1
-       MessageBox MB_OK "$R1, $R0, $R2, $R9!"
-      StrCmp $R9 "0" next
-      
-      ReadINIStr $R2 "$INSTDIR\Data\ini\unix-download.ini" "assoc" "$R1"
-      StrCmp "$R2" "1" 0 next
-       MessageBox MB_OK "$R1, $R0, $R2, $R9!"
-      EnumINI::SectionExist "$INSTDIR\App\ini\gw32.ini" "$R1.bin"
-      Pop $R2
-      MessageBox MB_OK "$R1, $R0, $R2, $R9!"
-      StrCmp "$R2" "1" 0 not_installed
-      EnumINI::Section "$INSTDIR\App\ini\gw32.ini" "$R1.bin"
-      Pop $R2
-      StrCmp "$R2" "error" not_installed
-      ${While} $R2 > 0
-        Pop $R3
-        MessageBox MB_OK "$R2, $INSTDIR\App\gw32\$R3, $R9!"
-        StrCmp $R9 "0" next_check
-        IfFileExists "$INSTDIR\App\gw32\$R3" next_check
-        StrCpy $R9 "0"
-        next_check:
-          IntOp $R2 $R2 - 1
-      ${EndWhile}
-      Goto next
-      not_installed:
-        StrCpy $R9 "0"
-      next:
-        IntOp $R0 $R0 - 1
-    ${EndWhile}  
-    done:
-      MessageBox MB_OK "R9: $R9"
-      ClearErrors
-      ${If} $R9 == '0'
-        EnableWindow $hCtl_download_GnuWin32Utils 0
-        ${NSD_Check} $hCtl_download_GnuWin32Utils
-      ${Else}
-        EnableWindow $hCtl_download_GnuWin32Utils 1
-      ${EndIf}
-  FunctionEnd
-  
-#+END_SRC
 
 *** Callback Functions
 **** Check to see if Mac Binaries are available
@@ -332,14 +253,6 @@ Var download_mac
    FunctionEnd   
 #+END_SRC
 
-**** Select Unix Utilities to Add
-#+BEGIN_SRC nsis
-  Function SelectUnixComponents
-    SetOutPath "$INSTDIR\App\eps"
-    ExecWait "$INSTDIR\App\eps\download-unix.exe"
-    Call enablegw32
-  FunctionEnd
-#+END_SRC
 
 **** Add a startup script
 #+BEGIN_SRC nsis
@@ -398,8 +311,7 @@ FunctionEnd
   Section "Components"
     Call DownloadFiles
     ClearErrors
-  SectionEnd
-  
+  SectionEnd  
 #+END_SRC
 * Function
 ** Initialization
