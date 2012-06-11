@@ -5,10 +5,10 @@
 ;; Author: Matthew L. Fidler
 ;; Maintainer: 
 ;; Created: Thu Jun  7 16:07:47 2012 (-0500)
-;; Version: 
-;; Last-Updated: Thu Jun  7 17:11:16 2012 (-0500)
+;; Version:
+;; Last-Updated: Mon Jun 11 08:45:04 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 22
+;;     Update #: 26
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -96,8 +96,7 @@
         (delete-region (point) (point-at-eol))
         (insert ver)
         (insert what))
-      (write-file mirrors.ini)
-      (message "%s" (buffer-substring (point-min) (point-max))))))
+      (write-file mirrors.ini))))
 
 (defun get-mac-emacs-ver-from-buffer (known-versions prefix)
   "Gets the mac emacs versions from the buffer and the known versions of emacs.  Will create INI file strings for buffers"
@@ -111,6 +110,12 @@
               (format "%s\n[%s]\nwin=%s%s-bin-i386.zip\nmac=http://emacsformacosx.com/emacs-builds%s"
                       ret (match-string 1) prefix (match-string 1) (match-string 0))))
       (add-to-list 'found (match-string 1)))
+    (mapc (lambda(x)
+            (unless (member x found)
+              (setq ret
+                    (format "%s\n[%s]\nwin=%s%s-bin-i386.zip"
+                            ret x prefix x))))
+          known-versions)
     (symbol-value 'ret)))
 
 (defun get-emacs-ver-from-buffer ()
