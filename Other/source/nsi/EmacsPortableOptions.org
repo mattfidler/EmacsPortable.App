@@ -43,30 +43,30 @@ This provides an interface to the Emacs Startup options
 See
 http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_control
 #+BEGIN_SRC nsis
-/*
-nsDialogs_createDroplistSorted.nsh
-Header file for creating a sorted droplist control.
- 
-Usage:
-  ${NSD_CreateDroplistSorted} left top width height ""
-  Creates the sorted droplist at the location specified.
-*/
- 
-!ifndef NSDIALOGS_createDroplistSorted_INCLUDED
-	!define NSDIALOGS_createDroplistSorted_INCLUDED
-	!verbose push
-	!verbose 3
- 
-	!include WinMessages.nsh
- 
-	!define __NSD_DropListSorted_CLASS COMBOBOX
-	!define __NSD_DropListSorted_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${WS_CLIPCHILDREN}|${CBS_AUTOHSCROLL}|${CBS_HASSTRINGS}|${CBS_DROPDOWNLIST}|${CBS_SORT}
-	!define __NSD_DropListSorted_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
- 
-	!insertmacro __NSD_DefineControl DropListSorted
- 
-	!verbose pop
-!endif
+  /*
+  nsDialogs_createDroplistSorted.nsh
+  Header file for creating a sorted droplist control.
+   
+  Usage:
+    ${NSD_CreateDroplistSorted} left top width height ""
+    Creates the sorted droplist at the location specified.
+  ,*/
+  
+  !ifndef NSDIALOGS_createDroplistSorted_INCLUDED
+    !define NSDIALOGS_createDroplistSorted_INCLUDED
+    !verbose push
+    !verbose 3
+    
+    !include WinMessages.nsh
+    
+    !define __NSD_DropListSorted_CLASS COMBOBOX
+    !define __NSD_DropListSorted_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${WS_CLIPCHILDREN}|${CBS_AUTOHSCROLL}|${CBS_HASSTRINGS}|${CBS_DROPDOWNLIST}|${CBS_SORT}
+    !define __NSD_DropListSorted_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
+    
+    !insertmacro __NSD_DefineControl DropListSorted
+    
+    !verbose pop
+  !endif
 #+END_SRC
 *** Sorted ComboBox 
 #+BEGIN_SRC nsis
@@ -106,11 +106,11 @@ Usage:
 
 *** Sorted ListBoxMultiselect
 
-  !define __NSD_ListBoxMultiSelectSort_CLASS LISTBOX
-  !define __NSD_ListBoxMultiSelectSort_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${LBS_DISABLENOSCROLL}|${LBS_HASSTRINGS}|${LBS_NOINTEGRALHEIGHT}|${LBS_NOTIFY}|${LBS_MULTIPLESEL}|${LVS_SORTASCENDING}
-  !define __NSD_ListBoxMultiSelectSort_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
-  !insertmacro __NSD_DefineControl ListBoxMultiSelectSort
-  #+BEGIN_SRC nsis
+!define __NSD_ListBoxMultiSelectSort_CLASS LISTBOX
+!define __NSD_ListBoxMultiSelectSort_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${LBS_DISABLENOSCROLL}|${LBS_HASSTRINGS}|${LBS_NOINTEGRALHEIGHT}|${LBS_NOTIFY}|${LBS_MULTIPLESEL}|${LVS_SORTASCENDING}
+!define __NSD_ListBoxMultiSelectSort_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
+!insertmacro __NSD_DefineControl ListBoxMultiSelectSort
+#+BEGIN_SRC nsis
   !define __NSD_ListBoxMultiSelectSort_CLASS LISTBOX
   !define __NSD_ListBoxMultiSelectSort_STYLE ${DEFAULT_STYLES}|${WS_TABSTOP}|${WS_VSCROLL}|${LBS_DISABLENOSCROLL}|${LBS_HASSTRINGS}|${LBS_NOINTEGRALHEIGHT}|${LBS_NOTIFY}|${LBS_MULTIPLESEL}|${LBS_SORT}
   !define __NSD_ListBoxMultiSelectSort_EXSTYLE ${WS_EX_WINDOWEDGE}|${WS_EX_CLIENTEDGE}
@@ -118,7 +118,7 @@ Usage:
 #+END_SRC
 
 
-  
+
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
   Name "EmacsPortable.App Options"
@@ -1652,7 +1652,7 @@ From http://nsis.sourceforge.net/Explode
   Var hCtl_download_DropList1
   Var hCtl_download_Label2
   Var hCtl_download_GroupBox1
-  Var hCtl_download_DropList2
+  Var hCtl_download_Droplist
   Var hCtl_download_Label3
   Var hCtl_download_Link2
   Var hCtl_download_Use
@@ -1661,7 +1661,7 @@ From http://nsis.sourceforge.net/Explode
   Var hCtl_download_NSIS
   Var hCtl_download_CheckBox1
   Var hCtl_download_SpellGroup
-  Var hCtl_download_DropList3
+  Var hCtl_download_Font
   Var hCtl_download_Label4
   Var hCtl_download_Label5
   Var hCtl_download_Dict
@@ -1681,9 +1681,14 @@ From http://nsis.sourceforge.net/Explode
     ; === EmacsDownload (type: GroupBox) ===
     ${NSD_CreateGroupBox} 8u 7u 131u 44u "Emacs Download"
     Pop $hCtl_download_EmacsDownload
-    
+  
+    ReadIniStr $R1 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
+    ${If} $R1 == ""
+      ClearErrors
+      ReadIniStr $R1 "$EXEDIR\App\ini\mirrors.ini" "emacs" "default.ver"
+    ${EndIf}
     ; === DownloadVersion (type: DropList) ===
-    ${NSD_CreateDropList} 48u 17u 87u 12u "24.4"
+    ${NSD_CreateDropListSorted} 48u 17u 87u 12u "$R1"
     Pop $hCtl_download_DownloadVersion
     SetCtlColors $hCtl_download_DownloadVersion 0x000000 0xFFFFFF
     ${NSD_OnChange} $hCtl_download_DownloadVersion CheckMac
@@ -1697,7 +1702,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateCheckbox} 12u 33u 123u 14u "Download Mac Binaries"
     Pop $hCtl_download_DownloadMac
     ${NSD_Check} $hCtl_download_DownloadMac
-  
+    
     SetOutPath "$TEMP\ep"
     File "unix-download.ini"  
     ; === GroupBox2 (type: GroupBox) ===
@@ -1707,8 +1712,8 @@ From http://nsis.sourceforge.net/Explode
     ; === GnuWin32Utils (type: Checkbox) ===
     ${NSD_CreateCheckbox} 12u 65u 123u 14u "Download GnuWin32 Utilities"
     Pop $hCtl_download_GnuWin32Utils
-  
-    Call enablegw32
+    
+    ##Call enablegw32
     
     ; === EZWinUtils (type: Checkbox) ===
     ${NSD_CreateCheckbox} 12u 82u 123u 14u "Download EZWin Utilities"
@@ -1739,10 +1744,10 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateGroupBox} 148u 7u 139u 44u "Startup Script Download"
     Pop $hCtl_download_GroupBox1
     
-    ; === DropList2 (type: DropList) ===
-    ${NSD_CreateDropList} 179u 17u 104u 12u ""
-    Pop $hCtl_download_DropList2
-    SetCtlColors $hCtl_download_DropList2 0x000000 0xFFFFFF
+    ; === Font (type: DropList) ===
+    ${NSD_CreateDropListSorted} 179u 17u 104u 12u ""
+    Pop $hCtl_download_Droplist
+    SetCtlColors $hCtl_download_Droplist 0x000000 0xFFFFFF
     
     ; === Label3 (type: Label) ===
     ${NSD_CreateLabel} 152u 17u 23u 13u "Script"
@@ -1783,8 +1788,8 @@ From http://nsis.sourceforge.net/Explode
     
     ; === DropList3 (type: DropList) ===
     ${NSD_CreateDropList} 188u 90u 96u 12u ""
-    Pop $hCtl_download_DropList3
-    SetCtlColors $hCtl_download_DropList3 0x000000 0xFFFFFF
+    Pop $hCtl_download_Font
+    SetCtlColors $hCtl_download_Font 0x000000 0xFFFFFF
     
     ; === Label4 (type: Label) ===
     ${NSD_CreateLabel} 155u 92u 20u 13u "Font"
@@ -1798,6 +1803,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateDropList} 198u 105u 85u 12u ""
     Pop $hCtl_download_Dict
     SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
+    Call SetupFontDownload
   FunctionEnd
   
   
@@ -1834,6 +1840,21 @@ From http://nsis.sourceforge.net/Explode
       ClearErrors
   FunctionEnd
   
+#+END_SRC
+
+**** Setup Fonts Available for Download
+#+BEGIN_SRC nsis
+  Function SetupFontDownload
+    EnumIni::Section "$EXEDIR\App\ini\fonts.ini" "fonts.download"
+    Pop $R0
+    ${If} $R0 != "error"
+      ${ForEach} $R1 $R0 0 - 1
+        Pop $R2
+        ${NSD_CB_AddString} $hCtl_download_Font $R2
+      ${Next}
+    ${EndIf}
+    ${NSD_CB_AddString} $hCtl_download_Font "(Select)"
+  FunctionEnd
 #+END_SRC
 
 **** Are all the GnuWin32 Components available

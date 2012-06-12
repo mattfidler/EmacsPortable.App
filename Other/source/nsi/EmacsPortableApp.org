@@ -46,6 +46,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   
   Var option_batch
   Var option_debug
+  Var option_debug_from_ini
   var option_dos
   var option_emacs
   var option_emacsclient
@@ -258,6 +259,7 @@ FunctionEnd
     StrCpy $option_foreground "white"
     StrCpy $option_daemon "1"             
     StrCpy $option_debug ""
+    StrCpy $option_debug_from_ini ""
     StrCpy $option_dos ""
     StrCpy $option_q ""
     StrCpy $option_version "24.0"
@@ -407,6 +409,7 @@ FunctionEnd
       ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
       StrCmp $option_debug "1" 0 no_debugging
       StrCpy $option_debug " --debug-init"
+      StrCpy $option_debug_from_ini "1"
       Goto emacs_debug_done
     no_debugging:
       ClearErrors
@@ -802,7 +805,7 @@ FunctionEnd
       StrCmp $found_gdb "" 0 +3
       StrCpy $emacs '$emacs --font "$R0$R3$R1"'
       Goto +2
-      StrCpy $emacs '$emacs --font \\"$R0$R3$R1\\"'
+      StrCpy $emacs '$emacs --font $R0$R3$R1'
     skip_font:                  
       
       StrCmp $found_gdb "" 0 +3
@@ -826,7 +829,7 @@ FunctionEnd
       
       StrCmp $option_fullheight "1" 0 +2
       StrCpy $emacs "$emacs -fh"
-
+  
       StrCmp $found_gdb "" +2 0
       StrCpy $emacs `$emacs"`
   FunctionEnd
@@ -1009,8 +1012,8 @@ FunctionEnd
       Exec "$emacs"
       Goto end
     loop:
-      StrCmp "1" $option_daemon 0 end
-      StrCmp "" $option_q 0 end
+      StrCmp "1" $option_daemon 0 found_running_emacs
+      StrCmp "" $option_q 0 found_running_emacs
       StrCpy $cnt 300
       IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +2 0
       CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
@@ -1022,6 +1025,8 @@ FunctionEnd
       FindProcDLL::FindProc "emacs-$option_version-dos.exe"
       StrCmp "$R0" "1" found_running_emacs 
       Sleep 1000 # Wait 1 seconds for emacs process to start.
+      IntOp $cnt $cnt - 1
+      IntCmp $cnt $cnt 0 end end 
       Goto look_for_running_emacs
     found_running_emacs:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
@@ -1031,7 +1036,8 @@ FunctionEnd
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
       Goto end
     start_emacsclient:
-      StrCmp $option_debug "" 0 no_debug
+      StrCmp $option_debug "" +2 
+      StrCmp $option_debug_from_ini "" no_debug
       StrCmp $option_q "" 0 start_emacs
       ${emacsclient_setup}
       ${If} $option_help == "1"
@@ -1145,8 +1151,24 @@ This removes registry settings, fonts and other settings.
       Delete "$TEMP\ep\ep-ip*.txt"
       ReadIniStr $R2 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Clean"
       ClearErrors
-      StrCmp $R2 "1" 0 +2
-      RmDir /R "$TEMP\ep"
+      ${If} $R2 == "1"
+        RmDir /R "$TEMP\ep"
+      ${Else}
+        FindFirst $0 $1 "$TEMP\ep\*.*"
+        ${While} $1 != ""
+          StrCpy $2 $1 6
+          ${IfNot} $2 == "emacs-"
+          ${AndIfNot} $2 == "."
+          ${AndIfNot} $2 == ".."
+            ${If} ${DirExists} "$TEMP\ep\$1"
+              RmDir /R "$TEMP\ep\$1"
+            ${Else}
+              Delete "$TEMP\ep\$1"
+            ${EndIf}
+          ${EndIf}
+          FindNext $0 $1
+        ${EndWhile}
+      ${EndIf}
   SectionEnd ; sec_uninstall
   
 #+END_SRC
