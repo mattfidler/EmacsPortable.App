@@ -37,6 +37,11 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Var msys
   Var found_gdb
   Var emacs
+  Var emacs_dir
+  Var emacs_exe
+  Var emacs_client_exe
+  Var cmd_args
+  Var cmd
   Var cnt
   
   Var Rpath
@@ -48,8 +53,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Var option_debug
   Var option_debug_from_ini
   var option_dos
-  var option_emacs
-  var option_emacsclient
   var option_q
   var option_version
   var option_home
@@ -191,14 +194,14 @@ FunctionEnd
   Function SetupEmacsExe
     StrCmp "" $option_dos setupwin setupdos
     setupdos:
-      IfFileExists "$emacs\emacs-$option_version-dos.exe" end 
-      IfFileExists "$emacs\emacs.exe" 0 not_found
-      CopyFiles /SILENT "$emacs\emacs.exe" "$emacs\emacs-$option_version-dos.exe"
+      IfFileExists "$emacs_dir\emacs-$option_version-dos.exe" end 
+      IfFileExists "$emacs_dir\emacs.exe" 0 not_found
+      CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version-dos.exe"
       Goto end
     setupwin:
-      IfFileExists "$emacs\emacs-$option_version.exe" end
-      IfFileExists "$emacs\emacs.exe" 0 not_found
-      CopyFiles /SILENT "$emacs\emacs.exe" "$emacs\emacs-$option_version.exe"
+      IfFileExists "$emacs_dir\emacs-$option_version.exe" end
+      IfFileExists "$emacs_dir\emacs.exe" 0 not_found
+      CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version.exe"
       Goto end
     not_found:
       MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
@@ -211,6 +214,123 @@ FunctionEnd
   !define SetupEmacsExe "Call SetupEmacsExe"
   
 #+END_SRC
+** Execute and get process id
+:LOGBOOK:
+CLOCK: [2012-06-12 Tue 23:23]
+:END:
+Executes files via the ShellExecuteEx api, uses three
+modes: 1. nowait - returns process id, 2. nowait - returns process
+handle, and 3. wait mode - returns process exit code. XP-SP1/2003 or
+higher is required for mode 1.
+
+http://nsis.sourceforge.net/ShellExecEx
+
+#+BEGIN_SRC nsis
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Gets the parent directory
+  ;; P1 :out: Parent dir
+  ;; P2 :in:  File/Dir
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  !define PathPath "!insertmacro _PathPath"
+  !macro _PathPath _RetVal_ _Path_
+     Push "${_Path_}"
+     Call PathPath
+     Pop "${_RetVal_}"
+  !macroend
+  Function PathPath
+     Exch $0  ;; Path
+     Push $1  ;; Strlen / Counter
+     Push $2  ;; Curchar
+     StrLen $1 '$0'
+     IntCmp $1 0 +6
+        IntOp $1 $1 - 1
+        StrCpy $2 "$0" 1 $1
+        StrCmp "$2" '\' +3
+        StrCmp "$2" ":" 0 -4
+           IntOp $1 $1 + 1
+     StrCpy $0 "$0" $1 0
+     Pop $2
+     Pop $1
+     Exch $0
+  FunctionEnd
+   
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Executes a file with the ShellExecuteEx api
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; P1 :out: Return value, depends on the mode (P7). On error returns -1 and sets the error flag
+  ;; P2 :in:  Verb. if="" then it opens with default associated app
+  ;; P3 :in:  File
+  ;; P4 :in:  File parameters
+  ;; P5 :in:  Working directory. if="" then its set to the same dir as the file
+  ;; P6 :in:  Show flag. if="" then SH_SHOW is used (http://msdn.microsoft.com/en-us/library/bb762153(v=VS.85).aspx)
+  ;; P7 :in:  Mode: 1=Nowait, Return Process Id
+  ;;                2=Nowait, Return Process Handle (must close the handle yourself)
+  ;;                3=Wait, Return Process Exit Code
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  !define ShellExecEx "!insertmacro _ShellExecEx"
+  !macro _ShellExecEx _RetVal_ _Verb_ _File_ _Params_ _WorkDir_ _Show_ _Mode_  
+     Push `${_Mode_}`
+     Push `${_Show_}`
+     Push `${_WorkDir_}`
+     Push `${_Params_}`
+     Push `${_File_}`
+     Push `${_Verb_}`
+     Call ShellExecEx
+     Pop ${_RetVal_}
+  !macroend
+  Function ShellExecEx
+     Exch $0  ;; Verb
+     Exch
+     Exch $1  ;; File
+     Exch 2
+     Exch $2  ;; Params / process handle
+     Exch 3
+     Exch $3  ;; WorkDir
+     Exch 4
+     Exch $4  ;; Show / return value
+     Exch 5
+     Exch $5  ;; Mode
+     Push "$9"  ;; shellexecuteinfo struct
+   
+     ClearErrors
+     StrCmpS "" "$3" 0 wdok
+        ${PathPath} $3 "$1"
+     wdok:
+     StrCmpS "" "$4" 0 +2  ;; if show mode is undefined, then
+        StrCpy $4 0x05    ; = SH_SHOW
+     System::Call '*(&i60) i .r9' ;; allocate the structure
+     System::Call '*$9(i 60, i 0x140, i $HWNDPARENT, t r0, t r1, t r2, t r3, i r4) i .r9'  ;; assign the values to the struct
+     System::Call 'shell32::ShellExecuteEx(i r9) i .r1'  ;; execute the file
+     StrCmpS 0 $1 0 +4  ;; if there was errors, then
+        StrCpy $4 -1  ; return -1 and set the error flag
+        SetErrors
+        Goto end
+   
+     System::Call '*$9(i, i, i, i, i, i, i, i, i, i, i, i, i, i, i .r2)'  ;; get the process handle
+     IntCmp $5 2 +4 0 +6  ;; 1:nowait-pid, 2:nowait-handle, 3:wait-exitcode
+        System::Call 'kernel32::GetProcessId(i r2) i .r4'
+        System::Call 'kernel32::CloseHandle(i r2)'
+        Goto end
+  ;      handle:
+        StrCpy $4 "$2"
+        Goto end
+  ;      wait:
+        System::Call 'kernel32::WaitForSingleObject(i r2, i -1)'  ;;  wait indefinitely for the process to exit
+        System::Call 'kernel32::GetExitCodeProcess(i r2,*i .r4)'
+        System::Call 'Kernel32::CloseHandle(i r2)'
+   
+     end:
+     System::Free $9
+     Pop $9
+     Pop $5
+     Pop $0
+     Pop $1
+     Pop $2
+     Pop $3
+     Exch $4
+  FunctionEnd
+#+END_SRC
+
 
 * Command Line Options
 ** Get Command Line Options
@@ -269,7 +389,7 @@ FunctionEnd
     StrCpy $option_updateproxy ""
     StrCpy $option_silent ""
     
-    StrCpy $option_emacsclient "emacsclient.exe"
+    StrCpy $emacs_client_exe "emacsclient.exe"
     ; Parse Parameters
     Push $R0
     Call parseParameters
@@ -335,7 +455,7 @@ FunctionEnd
       ${StrRep} $cmdLineParams $cmdLineParams "/VERSION=$option_version" ""
     read_cmd_line_ver:
       ClearErrors
-      StrCpy $option_emacs "emacs-$option_version.exe"
+      StrCpy $emacs_exe "emacs-$option_version.exe"
       IfFileExists "$EXEDIR\App\emacs-$option_version\lisp" emacs_ver_done
       
       IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 +2
@@ -360,7 +480,7 @@ FunctionEnd
       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version" $2
       
       StrCpy $option_version $2
-      StrCpy $option_emacs "emacs-$option_version.exe"
+      StrCpy $emacs_exe "emacs-$option_version.exe"
       
       Goto emacs_ver_done
     abort_run:
@@ -425,8 +545,8 @@ FunctionEnd
       ${GetOptions} $cmdLineParams '/DOS' $R0
       IfErrors no_dos
       StrCpy $option_dos " -nw"
-      StrCpy $option_emacs "emacs-$option_version-dos.exe"
-      StrCpy $option_emacsclient "emacsclient.exe"
+      StrCpy $emacs_exe "emacs-$option_version-dos.exe"
+      StrCpy $emacs_client_exe "emacsclient.exe"
     no_dos:
       ClearErrors
       
@@ -634,9 +754,9 @@ FunctionEnd
 #+BEGIN_SRC nsis
   !define dllcp `!insertmacro _dllcp`
   !macro _dllcp FILENAME FILETO
-    IfFileExists "$emacs\${FILETO}" +5
+    IfFileExists "$emacs_dir\${FILETO}" +5
     IfFileExists "$EXEDIR\App\${FILENAME}" 0 +4
-    CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs\${FILETO}"
+    CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs_dir\${FILETO}"
     IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" 0 +2
     ExecDos::exec /DETAILED "cmd /c $\"$R5 & cd $TEMP\ep & $R4 a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip emacs-$option_version\bin\${FILETO}$\""
   !macroend
@@ -738,100 +858,84 @@ FunctionEnd
 ** Configure Emacs Command
 #+BEGIN_SRC nsis
   Function EmacsCmd
-    StrCmp $option_debug "" normal_exe debug_exe
     StrCpy $found_gdb ""
-    normal_exe:
-      StrCpy $emacs `"$emacs\$option_emacs" $option_debug$option_dos$option_q $cmdLineParams`
-      Goto setup_options
-    debug_exe:
-      IfFileExists "$msys\bin\gdb.exe" msys_exe
-      IfFileExists "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe" msys_pa
-      IfFileExists "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe" msys_pa2
-      IfFileExists "$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe" msys_liber
-      Goto cygwin_exe
-    msys_pa:
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\PortableApps\CommonFiles\MinGW").r0'
-      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
-      StrCpy $emacs `"$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "source $EXEDIR\App\gdbinit" --eval-command "Run `
-      Goto +2
-      StrCpy $emacs `"$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "Run `
-      StrCpy $found_gdb "1"
-      Goto setup_options
-    msys_pa2:
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\Apps\CommonFiles\MinGW").r0'
-      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
-      StrCpy $emacs `"$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "source $EXEDIR\App\gdbinit" --eval-command "Run `
-      Goto +2
-      StrCpy $emacs `"$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "Run `
-      StrCpy $found_gdb "1"
-      Goto setup_options
-    msys_liber:
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\LiberKey\MyApps\CommonFiles\MinGW").r0'
-      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
-      StrCpy $emacs `"$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "source $EXEDIR\App\gdbinit" --eval-command "Run `
-      Goto +2
-      StrCpy $emacs `"$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "Run `
-      StrCpy $found_gdb "1"
-      Goto setup_options
-    msys_exe:
-      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
-      StrCpy $emacs `"$msys\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "source $EXEDIR\App\gdbinit" --eval-command "Run `
-      Goto +2
-      StrCpy $emacs `"$msys\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "Run `
-      StrCpy $found_gdb "1"
-      Goto setup_options
-    cygwin_exe:
-      IfFileExists "$cygwin\bin\gdb.exe" 0 normal_exe
-      IfFileExists "$EXEDIR\App\gdbinit" 0 +3
-      StrCpy $emacs `"$cygwin\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "Run `
-      Goto +2
-      StrCpy $emacs `"$cygwin\bin\gdb.exe" "$emacs\$option_emacs" --eval-command "Run `
-      StrCpy $found_gdb "1"
-      Goto setup_options
-    setup_options:      
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
-      ClearErrors
-      IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
-      ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
-      IfErrors skip_font
-      ReadINIStr $R1 $EXEDIR\App\ini\fonts.ini "fonts2" "$option_font"
-      IfErrors 0 +2
-      StrCpy "$R1" "-*-*-*-c-*-iso8859-1"
-      ClearErrors
-      IntOp $R3 $option_font_size * 96
-      IntOp $R3 $R3 / 72
-      ##WriteRegStr HKCU "SOFTWARE\GNU\Emacs" "Emacs.Font"  "$R0$R3$R1"
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPFONT", "$R0$R3$R1").r0'
-      StrCmp $found_gdb "" 0 +3
-      StrCpy $emacs '$emacs --font "$R0$R3$R1"'
-      Goto +2
-      StrCpy $emacs '$emacs --font $R0$R3$R1'
-    skip_font:                  
-      
-      StrCmp $found_gdb "" 0 +3
+    ${If} $option_debug == ""
+      StrCpy $cmd "$emacs_dir\$emacs_exe"
+      StrCpy $cmd_args "$option_debug$option_dos$option_q $cmdLineParams"
+    ${Else}
+      ${If} ${FileExists} "$msys\bin\gdb.exe"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$msys").r0'
+        StrCpy $cmd "$msys\bin\gdb.exe"
+      ${ElseIf} ${FileExists} "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\PortableApps\CommonFiles\MinGW").r0'
+        StrCpy $cmd "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
+      ${ElseIf} ${FileExists} "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\Apps\CommonFiles\MinGW").r0'
+        StrCpy $cmd "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"
+      ${ElseIf} ${FileExists} "$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\LiberKey\MyApps\CommonFiles\MinGW").r0'
+        StrCpy $cmd "$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe"
+      ${ElseIf} ${FileExists} "$cygwin\bin\gdb.exe"
+        StrCpy $cmd "$cygwin\bin\gdb.exe"
+      ${Else}
+        StrCpy $cmd "$emacs_dir\$emacs_exe"
+        StrCpy $cmd_args "$option_debug$option_dos$option_q $cmdLineParams"
+      ${EndIf}
+      ${If} $cmd != "$emacs_dir\$emacs_exe"
+        StrCpy $cmd_args '"$emacs_dir\$emacs_exe"'
+        ${If} ${FileExists} "$EXEDIR\App\gdbinit"
+        ${AndIf} $cmd  != "$cygwin\bin\gdb.exe"
+          StrCpy $cmd_args '$cmd_args --eval-command "source $EXEDIR\App\gdbinit"'
+        ${EndIf}
+        StrCpy $cmd_args '$cmd_args --eval-command "Run '
+        StrCpy $found_gdb "1"
+      ${EndIf}
+    ${EndIf}
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
+    ClearErrors
+    IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
+    ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
+    IfErrors skip_font
+    ReadINIStr $R1 $EXEDIR\App\ini\fonts.ini "fonts2" "$option_font"
+    IfErrors 0 +2
+    StrCpy "$R1" "-*-*-*-c-*-iso8859-1"
+    ClearErrors
+    IntOp $R3 $option_font_size * 96
+    IntOp $R3 $R3 / 72
+    ##WriteRegStr HKCU "SOFTWARE\GNU\Emacs" "Emacs.Font"  "$R0$R3$R1"
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPFONT", "$R0$R3$R1").r0'
+    ${If} $found_gdb == ""
+      StrCpy $cmd_args '$cmd_args --font "$R0$R3$R1"'
+    ${Else}
+      StrCpy $cmd_args '$cmd_args --font $R0$R3$R1'
+    ${EndIf}
+    skip_font:
       
       StrCmp "$option_scrollbar" "1" 0 +2
-      StrCpy $emacs "$emacs -vb"
+      StrCpy $cmd_args "$cmd_args -vb"
       
       StrCmp "" "$option_foreground" +2 0
-      StrCpy $emacs "$emacs -fg $option_foreground"
+      StrCpy $cmd_args "$cmd_args -fg $option_foreground"
+      
       StrCmp "" "$option_background" +2 0
-      StrCpy $emacs "$emacs -bg $option_background"
+      StrCpy $cmd_args "$cmd_args -bg $option_background"
       
       Strcmp "" "$option_geometry" +2 0
-      StrCpy $emacs "$emacs -g $option_geometry"
+      StrCpy $cmd_args "$cmd_args -g $option_geometry"
       
       StrCmp $option_maximized "1" 0 +2
-      StrCpy $emacs "$emacs -mm"
+      StrCpy $cmd_args "$cmd_args -mm"
       
       StrCmp $option_fullwidth "1" 0 +2
-      StrCpy $emacs "$emacs -fw"
+      StrCpy $cmd_args "$cmd_args -fw"
       
       StrCmp $option_fullheight "1" 0 +2
-      StrCpy $emacs "$emacs -fh"
-  
+      StrCpy $cmd_args "$cmd_args -fh"
+      
       StrCmp $found_gdb "" +2 0
-      StrCpy $emacs `$emacs"`
+      StrCpy $cmd_args `$cmd_args"`
+  
+      StrCpy $emacs '"$cmd" $cmd_args'
   FunctionEnd
   !define EmacsCmd "Call EmacsCmd"  
   
@@ -850,7 +954,7 @@ FunctionEnd
     Call ExtractZip
     IfFileExists "$EXEDIR\App\emacs-$option_version\bin" +3  
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
-    StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
+    StrCpy "$emacs_dir" "$TEMP\ep\emacs-$option_version\bin"
     DetailPrint "Remove Stale Emacs Server, if it exists"
     Call SetupServer
     DetailPrint "Setup Emacs EXE"
@@ -899,28 +1003,40 @@ FunctionEnd
 #+BEGIN_SRC nsis
   !macro emacsclient_setup
     ${SetupDirs}
+    StrCpy $cmd "$emacs_dir\$emacs_client_exe"
     StrCmp "" $option_colorsync 0 colorsync
     StrCmp "" $option_dos setupwin_client setupdos_client
     setupdos_client:
-      StrCmp $cmdLineParams "" +3
-      StrCpy $emacs `"$emacs\$option_emacsclient" -d 0 --server-file "$TEMP\ep\epd-$option_version\server" $cmdLineParams`
-      Goto +2
-      StrCpy $emacs `"$emacs\$option_emacsclient" -t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"`
+      ${If} $cmdLineParams == ""
+        StrCpy $cmd_args '-d 0 --server-file "$TEMP\ep\epd-$option_version\server" $cmdLineParams'
+      ${Else}
+        StrCpy $cmd_args '-t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"'
+      ${EndIf}
       goto end_client
     setupwin_client:
       ## Only open a new window when emacs isn't visible, or when
       ## clicking on EmacsPortableApp
+      ${If} $cmdLineParams == ""
+        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
+        ${If} $R0 == "1"
+          ${If} ${FileExists} "$TEMP\ep\hidden-$option_version"
+            StrCpy $R9 " -c"
+          ${Else}
+            StrCpy $R9 ""
+          ${EndIf}
+        ${Else}
+          StrCpy $R9 " -c"
+        ${EndIf}
+      ${Else}
+        StrCpy $R9 " -c"
+      ${EndIf}
+      StrCpy $cmd_args `$R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
       StrCmp "$cmdLineParams" "" +5
-      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
-      StrCmp $R0 "1" +3
-      StrCpy $R9 ""
-      IfFileExists "$TEMP\ep\hidden-$option_version" 0 +2
-      StrCpy $R9 " -c"
-      StrCpy $emacs `"$emacs\$option_emacsclient" $R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
       Goto end_client
     colorsync:
-      StrCpy $emacs `"$emacs\$option_emacsclient" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
+      StrCpy $cmd_args `--server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
     end_client:
+      StrCpy $emacs "$cmd $cmd_args"
       ClearErrors
   !macroend
   !define emacsclient_setup "!insertmacro emacsclient_setup"
@@ -947,10 +1063,10 @@ FunctionEnd
   Section "Main" sec_mainN
     StrCpy $EPEXE $EXEDIR
     StrCmp $option_updateproxy "" 0 sync_proxy
-    StrCpy "$emacs" "$EXEDIR\App\emacs-$option_version\bin"
+    StrCpy "$emacs_dir" "$EXEDIR\App\emacs-$option_version\bin"
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
-    StrCpy "$emacs" "$TEMP\ep\emacs-$option_version\bin"
-    FindProcDLL::FindProc "$option_emacs"
+    StrCpy "$emacs_dir" "$TEMP\ep\emacs-$option_version\bin"
+    FindProcDLL::FindProc "$emacs_exe"
     StrCmp $R0 "1" start_emacsclient start_emacs
     sync_proxy:
       FindFirst $0 $1 "$EXEDIR\App\emacs-*"
@@ -967,8 +1083,7 @@ FunctionEnd
       Goto +3
       IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
       StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
-      StrCpy $3 '"$TEMP\ep\run.exe" "$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
-      Exec $3
+      ${ShellExecEx} $R1 "" "$3" '--server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"' "" SH_HIDE "1"
     loop_next:
       FindNext $0 $1
       Goto loop_proxy
@@ -986,22 +1101,33 @@ FunctionEnd
     start_emacs_gdb:
       Push $TEMP
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-      Exec "$emacs"
+      ${ShellExecEx} $R1 "" "$cmd" "$cmd_args" "" "0" "1"
       Pop $R0
       Goto loop
+      
     start_emacs_regular:
       ${If} $option_help == "1"
-        execDos::exec /TOSTACK "$emacs"
-        Pop $R0
-        MessageBox MB_OK "$R0"
-      ${Else}
-        IfFileExists "$TEMP\ep\run.exe" +3
         SetOutPath "$TEMP\ep"
-        File "..\..\..\App\eps\run.exe"
+        ${ShellExecEx} $R1 "" "$cmd" '$cmd_args > "$TEMP\ep\emacs-help.txt"' "" SH_HIDE "1"
+        ClearErrors
+        FileOpen $0 "$TEMP\ep\emacs-help.txt" r
+        ${DoUntil} ${Errors}
+          FileRead $0 $1
+          ${If} $R2 == ""
+            StrCpy $R2 "$R2$\n$1"
+          ${Else}
+            StrCpy $R2 "$R2$\n$1"
+          ${EndIf}
+        ${Loop}
+        FileClose $0
+        Delete "$TEMP\ep\emacs-help.txt"
+        ClearErrors
+        MessageBox MB_OK|MB_ICONQUESTION "$R2"
+      ${Else}
         Push $TEMP
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
         ##${StrRep} "$emacs" "$emacs" '"' '""'
-        Exec "$TEMP\ep\run.exe $emacs"
+        ${ShellExecEx} $R1 "" "$cmd" "$cmd_args" "" SH_HIDE "1"
         Pop $R0                  
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
@@ -1009,7 +1135,7 @@ FunctionEnd
       ${EndIf}
     start_emacs_dos:
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
-      Exec "$emacs"
+      ${ShellExecEx} $R1 "" "$cmd" "$cmd_args" "" "" "1"
       Goto end
     loop:
       StrCmp "1" $option_daemon 0 found_running_emacs
@@ -1062,7 +1188,7 @@ FunctionEnd
           MessageBox MB_OK|MB_ICONQUESTION "$R0"
       ${ElseIf} $option_colorsync == ""
         ##${StrRep} $emacs $emacs '"' '""'
-        Exec "$TEMP\ep\run.exe $emacs"
+        ${ShellExecEx} $R1 "" "$cmd" "$cmd_args" "" SH_HIDE "1"
       ${Else}
         HideWindow
         ExecWait "$emacs"
@@ -1147,7 +1273,6 @@ This removes registry settings, fonts and other settings.
       Delete "$TEMP\ep\ep-ip2.ini"
       Delete "$TEMP\ep\ep.ini"
       Delete "$TEMP\ep\hidden-*"
-      Delete "$TEMP\ep\run.exe"
       Delete "$TEMP\ep\ep-ip*.txt"
       ReadIniStr $R2 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Clean"
       ClearErrors

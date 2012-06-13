@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 13 17:00:56 2011 (-0600)
 ;; Version: 
-;; Last-Updated: Mon Jun  4 16:52:17 2012 (-0500)
+;; Last-Updated: Tue Jun 12 10:53:09 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 18
+;;     Update #: 20
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -57,6 +57,7 @@ DetectHiddenWindows, on
   
   WinHide ___EmacsPortableDaemon_%1%___
   WinHide \mingw\bin\gdb.exe
+  WinHide \MinGW\bin\gdb.exe
   WinHide \cygwin\bin\gdb.exe
   
   Menu, Tray, NoStandard
@@ -81,12 +82,14 @@ DetectHiddenWindows, on
       WinHide ___EmacsPortableDaemon_%1%___
       SetTitleMatchMode 2
       WinHide \mingw\bin\gdb.exe
+      WinHide \MinGW\bin\gdb.exe
       WinHide \cygwin\bin\gdb.exe
     } Else {
       SetTitleMatchMode 3
       WinShow ___EmacsPortableDaemon_%1%___
       SetTitleMatchMode 2
       WinShow \mingw\bin\gdb.exe
+      WinShow \MinGW\bin\gdb.exe
       WinShow \cygwin\bin\gdb.exe
     }
     Process, exist, %EmacsPID%
@@ -105,7 +108,7 @@ xt:
 SetTitleMatchMode 3
 WinShow ___EmacsPortableDaemon_%1%___
 SetTitleMatchMode 2
-WinShow \mingw\bin\gdb.exe
+WinShow \MinGW\bin\gdb.exe
 WinShow \cygwin\bin\gdb.exe
 ExitApp
 Return
@@ -123,6 +126,7 @@ HideDaemon = 1
   WinShow ___EmacsPortableDaemon_%1%___
   SetTitleMatchMode 2
   WinShow \mingw\bin\gdb.exe
+  WinShow \MinGW\bin\gdb.exe
   WinShow \cygwin\bin\gdb.exe
   ExitDaemon = 1
   ExitApp
@@ -165,6 +169,7 @@ HideDaemon = 1
     WinShow, ___EmacsPortableDaemon_%1%___
     SetTitleMatchMode 2
     WinShow \mingw\bin\gdb.exe
+    WinShow \MinGW\bin\gdb.exe
     WinShow \cygwin\bin\gdb.exe
     SetTitleMatchMode 1
     WinGet, ID, List, ___EmacsPortableDaemon_%1%___

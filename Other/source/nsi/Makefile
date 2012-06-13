@@ -1,15 +1,9 @@
 download_extras=EmacsDownload-pae.nsi EmacsDownloadShared.nsh emacsproxy.nsh EmacsCompileTools.nsh emacsdownload-gw32.nsi build.el emacsdownload-ezwin.nsi EmacsCall.nsh
-emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh EmacsEnv.nsh ../../../App/eps/run.exe
+emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh setupEmacsData.nsh EmacsEnv.nsh
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../EmacsDownload.exe ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/run.exe
-
-../../../App/eps/run.exe: emacsportablerun.nsi
-	$(MAKENSIS) emacsportablerun.nsi
-
-emacsportablerun.nsi: emacsportablerun.org
-	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsportablerun.org)"
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsInstall-Net.exe ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe
 
 ../../../App/eps/download-unix.exe: EmacsUnix.nsi unix-download.ini
 	$(MAKENSIS) EmacsUnix.nsi
@@ -70,9 +64,6 @@ EmacsRegistry.nsi: EmacsRegistry.org
 ../../../EmacsPortableApp.exe: EmacsPortableApp.nsi EmacsCall.nsh
 	$(MAKENSIS) EmacsPortableApp.nsi
 
-../../../EmacsDownload.exe: EmacsDownload.nsi
-	$(MAKENSIS) EmacsDownload.nsi
-
 ../../../EmacsOptions.exe: EmacsPortableOptions.nsi EmacsCall.nsh EmacsEnv.nsh EmacsDownloadShared.nsh
 	$(MAKENSIS) EmacsPortableOptions.nsi
 
@@ -114,9 +105,6 @@ emacsPathIfExists.nsh: emacsPathIfExists.org
 
 EmacsCall.nsh: EmacsCall.org
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsCall.org)"
-
-EmacsDownload.nsi: EmacsDownload.org ${download_extras}
-	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'EmacsDownload.org)"
 
 emacsproxy.nsh: emacsproxy.org 
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsproxy.org)"

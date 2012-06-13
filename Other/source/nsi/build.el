@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Thu Apr  5 14:40:55 2012 (-0500)
+;; Last-Updated: Wed Jun 13 08:33:15 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 77
+;;     Update #: 78
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -94,12 +94,13 @@
             (setq org-files (list (expand-file-name org-files
                                                     build-dir))))
         (setq org-files (directory-files build-dir nil ".org"))))
-    (setq org-dir (nth 0 (directory-files (concat build-dir "../../../Data/lisp/src") t "\\<org")))
-    (load (concat org-dir "/lisp/org-install"))
-    (setq load-path (cons (concat org-dir "/lisp") load-path))
-    (setq load-path (cons (concat org-dir "/lisp/contrib") load-path))
-    (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp . t)))
+    (when (> 24 emacs-major-version )
+      (setq org-dir (nth 0 (directory-files (concat build-dir "../../../Data/lisp/src") t "\\<org")))
+      (load (concat org-dir "/lisp/org-install"))
+      (setq load-path (cons (concat org-dir "/lisp") load-path))
+      (setq load-path (cons (concat org-dir "/lisp/contrib") load-path)))
     (require 'org)(require 'org-exp)(require 'ob)(require 'ob-tangle)
+    (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp . t)))
     (mapc
      (lambda(file)
        (let ((org-confirm-babel-evaluate nil))
