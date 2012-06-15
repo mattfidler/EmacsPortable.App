@@ -21,6 +21,47 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
         (insert txt)))
     (setq EmacsPortable-last-time (float-time)))
 #+END_SRC
+* Set Font
+#+BEGIN_SRC emacs-lisp
+  (let ((epi (expand-file-name "../Data/ini/EmacsPortableApp.ini" (getenv "EPOTHER")))
+        font-name font-size)
+    (cond
+     ((and (getenv "EPOTHER")
+           (if (not (file-exists-p epi)) nil
+             (with-temp-buffer
+               (insert-file-contents epi)
+               (goto-char (point-min))
+               (when (re-search-forward "^[ \t]*[fF]ont[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
+                 (setq font-name (match-string 1)))
+               (goto-char (point-min))
+               (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$")
+                 (setq font-size (match-string 1)))
+               (message "%s,%s" font-name font-size))
+             (if (not (find-font (font-spec :name font-name))) nil
+               (set-face-attribute 'default nil :font (format "%s-%s" font-name
+                                                              (or font-size "12")))
+               t))))
+     ((find-font (font-spec :name "Inconsolata"))
+      (set-face-attribute 'default nil :font (format "Inconsolata-%s" (or font-size "12"))))
+     
+     ((find-font (font-spec :name "Consolas"))
+      (set-face-attribute 'default nil :font (format "Consolas-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Droid Sans Mono"))
+      (set-face-attribute 'default nil :font (format "Droid Sans Mono-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Anonymous Pro"))
+      (set-face-attribute 'default nil :font (format "Anonymous Pro-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "DejaVu Sans Mono"))
+      (set-face-attribute 'default nil :font (format "DejaVu Sans Mono-%s" (or font-size "12"))))))
+  
+  
+  
+  
+  
+  
+  
+#+END_SRC
+
+
 * Increase defaults
 Increase default =max-lisp-eval-depth=
 #+BEGIN_SRC emacs-lisp

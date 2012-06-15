@@ -567,6 +567,15 @@ Icons came from various places:
 - Dos Box/Terminal http://www.clker.com/clipart-3716.html
 - Wrench http://www.clker.com/clipart-3716.html
 - Screw Driver http://www.clker.com/clipart-14895.html
+* Bleeding edge emacs
+These are notes to use the bleeding edge emacs.
+
+Goto the App directory, and under a command prompt that has bzr
+installed, type
+
+#+BEGIN_SRC ntcmd 
+bzr branch --stacked bzr://bzr.savannah.gnu.org/emacs/trunk emacs-bzr
+#+END_SRC
 
 * EmacsPortable.App Wish List/TODO list
 ** TODO Add Mac Support of Daemon Mode

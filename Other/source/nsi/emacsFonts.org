@@ -12,135 +12,127 @@ I want:
  - CRC check
  - Good compression
 #+BEGIN_SRC nsis
-CRCCheck On
-RequestExecutionLevel user
-; Best Compression
-SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Caption "Loading EmacsPortable.App"
-Subcaption 3 " "
-XPStyle on
-OutFile "..\..\..\App\eps\ep-font.exe"
-Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\ico\trash_empty.ico"
-!include "WinMessages.nsh"
-var EPEXE 
-Var INSTALL_FONT
-Var FONT_REG
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Caption "Loading EmacsPortable.App"
+  Subcaption 3 " "
+  XPStyle on
+  OutFile "..\..\..\App\eps\ep-font.exe"
+  Icon "..\img\ico\appicon.ico"
+  UninstallIcon "..\img\ico\trash_empty.ico"
+  !include "LogicLib.nsh"
+  !include "WinMessages.nsh"
+  var EPEXE
 #+END_SRC
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis
+#+BEGIN_SRC nsis 
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
 * Setup Fonts
+** Find Fonts
 #+BEGIN_SRC nsis
-  Function InstallFonts
-    StrCpy $INSTALL_FONT "0"
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
-    IfErrors main-9x main-NT 
-    main-NT:
-      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-      goto main-go
-      
-    main-9x:
-      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
-      goto main-go
-      
-    main-go:
-      ClearErrors
-      IfFileExists "$EXEDIR\App\fonts\fonts.ini" 0 no_fonts
-      EnumIni::Section "$EXEDIR\App\fonts\fonts.ini" "fonts"
-      pop $R0
-      StrCmp $R0 "error" no_fonts
-    loop_fonts:
-      IntCmp $R0 "0" no_fonts no_fonts 0
-      Pop $R1
-      DetailPrint "$R1"
-      IfFileExists "$FONTS\$R1" no_install
-      IfFileExists "$EXEDIR\App\fonts\$R1" 0 no_install
-      ReadINIStr $R2 "$EXEDIR\App\fonts\fonts.ini" "fonts" "$R1"
-      DetailPrint "Temporarily Installing Font: $R2"
-      CopyFiles /SILENT "$EXEDIR\App\fonts\$R1" "$FONTS\$R1"
-      IfFileExists "$FONTS\$R1" 0 no_install
-      WriteRegStr HKLM "$FONT_REG" "$R2" "$FONTS\$R1"
-      WriteINIStr "$TEMP\ep\ep-reg.ini" "font.tmp" "$R1" "$R2"
-      StrCpy $INSTALL_FONT "1"
-    no_install:
-      IntOp $R0 $R0 - 1
-      Goto loop_fonts
-    no_fonts:
-      IfFileExists "$EXEDIR\App\fonts" 0 end
-      IfFileExists "$EXEDIR\App\eps\addfont.exe" 0 end
-      Exec "$\"$EXEDIR\App\eps\addfont.exe$\" $\"$EXEDIR\App\fonts$\""
-      WriteINIStr "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir" "$EXEDIR\App\fonts"
-      SetOutPath "$TEMP\ep"
-      IfFileExists "$TEMP\ep\rmfont.exe" +2 0
-      CopyFiles /SILENT "..\..\..\App\eps\rmfont.exe" "$TEMP\ep\rmfont.exe"
-      DetailPrint "Extracted font cleanup files."
-    end:
-      # End Install
-  FunctionEnd
-  !define InstallFonts "Call InstallFonts"
+  !macro AddFonts EXT
+    DetailPrint "Adding ${EXT} fonts"
+    FindFirst $0 $1 "$EPEXE\App\fonts\*${EXT}"
+    ${While} $1 != ""
+      GetFullPathName $2 "$EPEXE\App\fonts\$1"
+      DetailPrint "Attempting to add Font Resource $2"
+      System::Call 'Gdi32::AddFontResource(t "$2")i .r3'
+      ${If} $3 == "0"
+        DetailPrint "Failed"
+      ${Else}
+        DetailPrint "Sucessfully added $2 font(s)"
+      ${EndIf}
+      FindNext $0 $1
+    ${EndWhile}
+    FindClose $0
+  !macroend
+  !define AddFonts '!insertmacro AddFonts'
+  
+  !macro RmFonts EXT
+    DetailPrint "Removing ${EXT} fonts"
+    FindFirst $0 $1 "$EPEXE\App\fonts\*${EXT}"
+    ${While} $1 != ""
+      GetFullPathName $2 "$EPEXE\App\fonts\$1"
+      DetailPrint "Removing Font Resource $2"
+      System::Call 'Gdi32::RemoveFontResource(t "$2")i .r3'
+      ${If} $3 == "0"
+        DetailPrint "Failed"
+      ${Else}
+        DetailPrint "Successfully Removed"
+      ${EndIf}
+      FindNext $0 $1
+    ${EndWhile}
+    FindClose $0
+  !macroend
+  !define RmFonts '!insertmacro RmFonts'
   
 #+END_SRC
 
-
 * Main
 #+BEGIN_SRC nsis
-Section "Main" sec_main
+  Section "Main" sec_main
     HideWindow
+    IfFileExists "$TEMP\rm-ep-font.exe" end
+    IfFileExists "$TEMP\ep\rm-ep-font.exe" end
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+    ClearErrors
+    StrCmp $R0 "1" 0 end
     DetailPrint "Add Fonts"
-    ${InstallFonts}
+    ${AddFonts} .fon
+    ${AddFonts} .fnt
+    ${AddFonts} .ttf
+    ${AddFonts} .ttc
+    ${AddFonts} .fot
+    ${AddFonts} .otf
+    ${AddFonts} .mmm
+    ${AddFonts} .pfb
+    ${AddFonts} .pfm
+    SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
     writeUninstaller "$TEMP\ep\rm-ep-font.exe"
-SectionEnd
+    end:
+      ClearErrors
+  SectionEnd
 #+END_SRC
 * Uninstall
 #+BEGIN_SRC nsis
-  Section "Uninstall" sec_uninstall
+  Section "Uninstall" sec_uninstall 
     SetAutoClose true
     Delete "$TEMP\ep\rm-ep-font.exe"
-    SetOutPath "$TEMP\ep\"
-    File "..\..\..\App\eps\rmfont.exe"
-    ReadIniStr $R0 "$TEMP\ep\ep-reg.ini" "font.rm" "fontdir"
-    IfErrors 0 +3
-    Delete "$TEMP\ep\rmfont.exe"
-    Goto skip_font_rm
-    ExecWait "$\"$TEMP\ep\rmfont$\" $\"$R0$\""
-    Delete "$TEMP\ep\rmfont.exe"
-    skip_font_rm:
-      ClearErrors
-      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
-      IfErrors uninstall-9x uninstall-NT 
-    uninstall-NT:
-      StrCpy $FONT_REG "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
-      goto uninstall-go
-      
-    uninstall-9x:
-      StrCpy $FONT_REG "Software\Microsoft\Windows\CurrentVersion\Fonts"
-      goto uninstall-go
-      
-    uninstall-go:
-      ClearErrors
-      EnumINI::Section "$TEMP\ep\ep-reg.ini" "font.tmp"
-      Pop $R0
-      StrCmp $R0 "error" skip_font
-    loop_font:
-      IntCmp "0" "$R0" skip_font skip_font 0
-      Pop $R1
-      ReadIniStr $R2 "$TEMP\ep\ep-reg.ini" "font.rm" "$R1"
-      System::Call "GDI32::RemoveFontResourceA(t) i ('$R1') .s"
-      DeleteRegValue HKLM "$FONT_REG" "$R2"
-      Delete /REBOOTOK "$FONTS\$R2"
-      IntOp $R0 $R0 - 1
-      goto loop_font
-    skip_font:
-    done:
-      ClearErrors
+    ${If} ${FileExists} "..\..\EmacsPortableApp.exe"
+      GetFullPathName /SHORT $EPEXE "..\.."
+    ${ElseIf} ${FileExists} "$TEMP\ep.ini"
+      ReadINIStr $EPEXE "$TEMP\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ${ElseIf} ${FileExists} "$TEMP\ep\ep.ini"
+      ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ${ElseIf} ${FileExists} "$EXEDIR\ep.ini"
+      ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ${EndIf}
+    ClearErrors
+    ${If} $EPEXE != ""
+      DetailPrint "EpEXE: $EPEXE"
+      ${RmFonts} .fon
+      ${RmFonts} .fnt
+      ${RmFonts} .ttf
+      ${RmFonts} .ttc
+      ${RmFonts} .fot
+      ${RmFonts} .otf
+      ${RmFonts} .mmm
+      ${RmFonts} .pfb
+      ${RmFonts} .pfm
       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
+    ${EndIf}
   SectionEnd
 #+END_SRC nsis
