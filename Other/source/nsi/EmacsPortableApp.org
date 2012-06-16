@@ -433,7 +433,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     StrCpy $option_updateproxy ""
     StrCpy $option_silent ""
     
-    StrCpy $emacs_client_exe "emacsclientw.exe"
+    StrCpy $emacs_client_exe "emacsclient.exe"
     ; Parse Parameters
     Push $R0
     Call parseParameters
@@ -596,7 +596,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       IfErrors no_dos
       StrCpy $option_dos " -nw"
       StrCpy $emacs_exe "emacs-$option_version-dos.exe"
-      StrCpy $emacs_client_exe "emacsclientw.exe"
+      StrCpy $emacs_client_exe "emacsclient.exe"
     no_dos:
       ClearErrors
       
@@ -866,7 +866,6 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       ExecWait '"$R0" a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X'
       ExecWait '"$R0"  a -mx9 -tzip emacs-$option_version\ext-bin.zip \
           emacs-$option_version\bin\emacsclient.exe \
-          emacs-$option_version\bin\emacsclientw.exe \
           emacs-$option_version\bin\runemacs.exe \
           emacs-$option_version\bin\cmd*.exe \
           emacs-$option_version\bin\hex*.exe \
@@ -1155,11 +1154,11 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       StrCmp "$R0" "1" 0 loop_next
       DetailPrint "$1 is running"
       StrCpy $2 $1 "" 6
-      IfFileExists "$EXEDIR\App\emacs-$2\bin\emacsclientw.exe" 0 +3
-      StrCpy $3 "$EXEDIR\App\emacs-$2\bin\emacsclientw.exe"
+      IfFileExists "$EXEDIR\App\emacs-$2\bin\emacsclient.exe" 0 +3
+      StrCpy $3 "$EXEDIR\App\emacs-$2\bin\emacsclient.exe"
       Goto +3
-      IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclientw.exe" 0 loop_next
-      StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclientw.exe"
+      IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
+      StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
       ${ExecHide} '"$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'\
           "$home" $R1
       ${If} $R1 == "0"
@@ -1259,7 +1258,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       StrCmp $option_q "" 0 start_emacs
       ${emacsclient_setup}
       ${If} $option_help == "1"
-        ${Execute} '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"' "$home" $R1
+        ${ExecHide} '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"' "$home" $R1
         ${If} $R1 == "0"
           SetOutPath $home
           Exec '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"'
@@ -1280,7 +1279,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
         MessageBox MB_OK|MB_ICONQUESTION "$R2"
       ${ElseIf} $option_colorsync == ""
         ##${StrRep} $emacs $emacs '"' '""'
-        ${Execute} '"$cmd" $cmd_args' "$home" $R1
+        ${ExecHide} '"$cmd" $cmd_args' "$home" $R1
         ${If} $R1 == "0"
           SetOutPath $home
           Exec '"$cmd" $cmd_args'

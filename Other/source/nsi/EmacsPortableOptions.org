@@ -21,7 +21,7 @@ This provides an interface to the Emacs Startup options
   Var EPEXE 
   Var download_emacs_version
   Var download_mac
-  
+  Var download_font
 #+END_SRC
 ** Include files
 #+BEGIN_SRC nsis
@@ -220,15 +220,19 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
   
   !macro WriteText VARIABLE OPT
     ${NSD_GetText} ${VARIABLE} $R0
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
-        "${OPT}" "$R0"
+    ${If} $R0 != "(Select)"
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "${OPT}" "$R0"
+    ${EndIf}
   !macroEnd
   !define WriteText `!insertmacro WriteText`
   
   !macro WriteCB VARIABLE OPT
     ${NSD_CB_GetSelection} ${VARIABLE} $R0
-    WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
-        "${OPT}" "$R0"
+    ${If} $R0 != "(Select)"
+      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+          "${OPT}" "$R0"
+    ${EndIf}
   !macroend
   !define WriteCB `!insertmacro WriteCB`
   
@@ -1787,7 +1791,7 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_SpellGroup
     
     ; === DropList3 (type: DropList) ===
-    ${NSD_CreateDropList} 188u 90u 96u 12u ""
+    ${NSD_CreateDropListSorted} 188u 90u 96u 12u ""
     Pop $hCtl_download_Font
     SetCtlColors $hCtl_download_Font 0x000000 0xFFFFFF
     
@@ -1835,8 +1839,8 @@ From http://nsis.sourceforge.net/Explode
       IntOp $R0 $R0 - 1
       Goto loop
     done:
-      ReadIniStr $R0 "${mirror}" "emacs" "default.ver"
-      ${NSD_CB_SelectString} $hCtl_download_DownloadVersion $R0
+      ${NSD_CB_AddString} $hCtl_download_DownloadVersion "(Select)"
+      ${NSD_CB_SelectString} $hCtl_download_DownloadVersion "(Select)"
       ClearErrors
   FunctionEnd
   
@@ -1848,12 +1852,15 @@ From http://nsis.sourceforge.net/Explode
     EnumIni::Section "$EXEDIR\App\ini\fonts.ini" "fonts.download"
     Pop $R0
     ${If} $R0 != "error"
-      ${ForEach} $R1 $R0 0 - 1
+      ${ForEach} $R1 $R0 1 - 1
         Pop $R2
         ${NSD_CB_AddString} $hCtl_download_Font $R2
       ${Next}
     ${EndIf}
     ${NSD_CB_AddString} $hCtl_download_Font "(Select)"
+    ${If} $download_font == ""
+      ${NSD_CB_SelectString} $hCtl_download_Font "(Select)"
+    ${EndIf}
   FunctionEnd
 #+END_SRC
 
@@ -1936,34 +1943,36 @@ FunctionEnd
   Function fnc_download_Validate
     ${NSD_GetText}  $hCtl_download_DownloadVersion $download_emacs_version
     ${NSD_GetState}  $hCtl_download_DownloadMac $download_mac
+    ${NSD_GetText}  $hCtl_download_Font $download_font
   FunctionEnd
-  
 #+END_SRC
 *** Download Functions
 **** Download Emacs
 #+BEGIN_SRC nsis
-Function downloadEmacs
-  DetailPrint "Attempting to Download Emacs $download_emacs_version"
-  IfFileExists "$INSTDIR\App\emacs-$download_emacs_version" 0 +3
-  DetailPrint "Emacs $download_emacs_version already exists, not downloading again."
-  Goto download_mac
-  download_pc:
-    Call getWin
-  download_mac:
-    StrCmp "$download_mac" "1" 0 skip_mac
-    IfFileExists "$INSTDIR\App\emacs-$download_emacs_version\MacOS" 0 +3
-    DetailPrint "Emacs $download_emacs_version  Mac files already exist, not downloading again."
-    Goto skip_mac
-    Call getMac
-  skip_mac:
-    ClearErrors
-FunctionEnd
-Function getWin
-  ${getEmacsWin} "$download_emacs_version"
-FunctionEnd
-Function getMac
-  ${getEmacsMac} "$download_emacs_version"
-FunctionEnd
+  Function downloadEmacs
+    ${If} $download_emacs_version != "(Select)" 
+      DetailPrint "Attempting to Download Emacs $download_emacs_version"
+      IfFileExists "$INSTDIR\App\emacs-$download_emacs_version" 0 +3
+      DetailPrint "Emacs $download_emacs_version already exists, not downloading again."
+      Goto download_mac
+      download_pc:
+        Call getWin
+      download_mac:
+        StrCmp "$download_mac" "1" 0 skip_mac
+        IfFileExists "$INSTDIR\App\emacs-$download_emacs_version\MacOS" 0 +3
+        DetailPrint "Emacs $download_emacs_version  Mac files already exist, not downloading again."
+        Goto skip_mac
+        Call getMac
+      skip_mac:
+        ClearErrors
+    ${EndIf}
+  FunctionEnd
+  Function getWin
+    ${getEmacsWin} "$download_emacs_version"
+  FunctionEnd
+  Function getMac
+    ${getEmacsMac} "$download_emacs_version"
+  FunctionEnd
 #+END_SRC
 **** Download Function
 #+BEGIN_SRC nsis
@@ -1985,7 +1994,6 @@ FunctionEnd
         ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
       ${EndIf}
     ${EndIf}
-  
     ${If} $option_proxy == "1"
       IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
       app_exists:
@@ -1996,11 +2004,74 @@ FunctionEnd
     ${If} $option_download == "1"
       Call Find7z
       Call downloadEmacs
+      ${If} $download_font != "(Select)"
+        DetailPrint "Attempting To Download $download_font"
+        ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
+        DetailPrint "URL: $R0"
+        ClearErrors
+        ${If} $R0 != ""
+          StrCpy $R1 $R0 "" -3
+          ${If} $R1 == "zip"
+            DetailPrint "Zip"
+            SetOutPath "$TEMP\ep"
+            inetc::get  $R0 "$TEMP\ep\font.zip"
+            SetOutPath "$EXEDIR\App\fonts"
+            ExecWait '"$exe_7z" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
+            Delete "$TEMP\ep\font.zip"
+          ${Else}
+            DetailPrint "Raw"
+            Push $R0
+            ${Explode} $R1 "/" $R0
+            ${If} $R1 != "0"
+              Pop $R2
+              IntOp $R1 $R1 - 1
+              ${For} $1 1 $R1
+                Pop $R2
+              ${Next}
+              Pop $R0
+              DetailPrint "URL: $R0"
+              DetailPrint "Should save to $EXEDIR\App\fonts\$R2"
+              inetc::get $R0 "$EXEDIR\App\fonts\$R2"
+            ${EndIf}
+          ${EndIf}
+          ## Clean Up Font Directory
+          StrCpy $3 ""
+          FindFirst $0 $1 $EXEDIR\App\fonts\*.*
+          loop_fonts:
+            StrCmp $1 "" done_fonts
+            StrCpy $2 $1 "" -4
+            ${IfNot} $2 == ".fon"
+            ${AndIfNot} $2 == ".fnt"
+            ${AndIfNot} $2 == ".ttf"
+            ${AndIfNot} $2 == ".ttc"
+            ${AndIfNot} $2 == ".fot"
+            ${AndIfNot} $2 == ".otf"
+            ${AndIfNot} $2 == ".mmm"
+            ${AndIfNot} $2 == ".pfb"
+            ${AndIfNot} $2 == ".pfm"
+              ${If} ${DirExists} $1
+                RmDir /r $1
+              ${Else}
+                Delete $1
+              ${EndIf}
+            ${EndIf}
+            FindNext $0 $1
+            Goto loop_fonts
+          done_fonts:
+            ClearErrors
+            ${If} $3 == ""
+              FindFirst $0 $1 $EXEDIR\App\fonts\*
+              StrCpy $3 "1"
+              Goto  loop_fonts
+            ${EndIf}
+        ${EndIf}
+      ${EndIf}
       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
           "Version" "$download_emacs_version"
       ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
     ${EndIf}
   SectionEnd
+  
 #+END_SRC  
 
 

@@ -41,23 +41,26 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
                (set-face-attribute 'default nil :font (format "%s-%s" font-name
                                                               (or font-size "12")))
                t))))
-     ((find-font (font-spec :name "Inconsolata"))
-      (set-face-attribute 'default nil :font (format "Inconsolata-%s" (or font-size "12"))))
-     
-     ((find-font (font-spec :name "Consolas"))
-      (set-face-attribute 'default nil :font (format "Consolas-%s" (or font-size "12"))))
-     ((find-font (font-spec :name "Droid Sans Mono"))
-      (set-face-attribute 'default nil :font (format "Droid Sans Mono-%s" (or font-size "12"))))
      ((find-font (font-spec :name "Anonymous Pro"))
       (set-face-attribute 'default nil :font (format "Anonymous Pro-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Inconsolata"))
+      (set-face-attribute 'default nil :font (format "Inconsolata-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Consolas"))
+      (set-face-attribute 'default nil :font (format "Consolas-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Monaco"))
+      (set-face-attribute 'default nil :font (format "Monaco-%s" (or font-size "15"))))
      ((find-font (font-spec :name "DejaVu Sans Mono"))
-      (set-face-attribute 'default nil :font (format "DejaVu Sans Mono-%s" (or font-size "12"))))))
-  
-  
-  
-  
-  
-  
+      (set-face-attribute 'default nil :font (format "DejaVu Sans Mono-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Droid Sans Mono"))
+      (set-face-attribute 'default nil :font (format "Droid Sans Mono-%s" (or font-size "12"))))
+     ((find-font (font-spec :name "Andale Mono"))
+      (set-face-attribute 'default nil :font (format "Andale Mono-%s" (or font-size "15"))))
+     ((find-font (font-spec :name "Monofur"))
+      (set-face-attribute 'default nil :font (format "Monofur-%s" (or font-size "15"))))
+     ((find-font (font-spec :name "Proggy Clean"))
+      (set-face-attribute 'default nil :font (format "Proggy Clean-%s" (or font-size "15"))))
+     ((find-font (font-spec :name "Courier"))
+      (set-face-attribute 'default nil :font (format "Courier-%s" (or font-size "15"))))))
   
 #+END_SRC
 
