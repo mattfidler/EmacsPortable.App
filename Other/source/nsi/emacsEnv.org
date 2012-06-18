@@ -280,7 +280,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         IntOp $R3 $R3 - 1
         Goto loop_man_${WHAT}
       done_man_${WHAT}:
-  
+        
         EnumINI::Section "${PATHS}" "${WHAT}.info"
         Pop $R3
         StrCmp "$R3" "error" done_info_${WHAT}
@@ -303,6 +303,30 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         IntOp $R3 $R3 - 1
         Goto loop_info_${WHAT}
       done_info_${WHAT}:
+        
+        EnumINI::Section "${PATHS}" "${WHAT}.dic"
+        Pop $R3
+        StrCmp "$R3" "error" done_dic_${WHAT}
+      loop_dic_${WHAT}:
+        IntCmp $R3 "0" done_dic_${WHAT} done_dic_${WHAT} 0
+        Pop $R4
+        ReadINIStr $R5 "${PATHS}" "${WHAT}.dic" "$R4"
+        DetailPrint "Checking $9$R1\$R5"
+        IfFileExists "$9$R1\$R5" 0 next_dic_${WHAT}
+        ReadIniStr $R6 "${CACHE}" "$R1" "DICPATH"
+        ClearErrors
+        GetFullPathName /SHORT $R7 "$9$R1\$R5"
+        ${If} $R6 == ""
+          StrCpy "$R6" "$R7"
+        ${Else}
+          StrCpy "$R6" "$R6;$R7"
+        ${EndIf}
+        WriteIniStr "${CACHE}" "$R1" "DICPATH" "$R6"
+      next_dic_${WHAT}:
+        IntOp $R3 $R3 - 1
+        Goto loop_dic_${WHAT}
+      done_dic_${WHAT}:
+        
         StrCpy $R9 "StopGetDrives"
         Goto done
       not_found:
@@ -382,13 +406,17 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R4;$3").r2'
       ${ElseIf} $R3 == "MANPATH"
-        DetailPrint "Path Add: $R4"
+        DetailPrint "Man Add: $R4"
         System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("MANPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MANPATH", "$R4;$3").r2'
       ${ElseIf} $R3 == "INFOPATH"
-        DetailPrint "Path Add: $R4"
+        DetailPrint "Info Add: $R4"
         System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("INFOPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$R4;$3").r2'
+      ${ElseIf} $R3 == "DICPATH"
+        DetailPrint "DicPath Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("DICPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("DICPATH", "$R4;$3").r2'
       ${ElseIf} $R3 != "Drive"
       ${AndIf} $R3 != "MD5"
         DetailPrint "Env: $R3=$R4"

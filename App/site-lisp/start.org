@@ -864,12 +864,11 @@ what firefox and open office use.
         (setq rw-hunspell-make-dictionary-menu t)
         (setq rw-hunspell-use-rw-ispell t)
         (setq ispell-program-name (executable-find "hunspell"))
-  
-        (setq rw-hunspell-dicpath-list (list (getenv "DICPATH")))
+        ;;(setq rw-hunspell-dicpath-list (list (getenv "DICPATH")))
         (rw-hunspell-setup))
     (error nil))
   
- 
+   
   
 #+end_src
 *** Flyspell
