@@ -451,7 +451,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     StrCpy $2  ""
     StrCpy $3 ""
     loop_find_running:
-      StrCmp "$1" "" already_running 0
+      StrCmp "$1" "" not_running 0
       StrCpy $1 $1 "" 6
       ${If} $2 != ""
         CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$2.exe"
@@ -466,6 +466,10 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       StrCpy $2 $1
       FindNext $0 $1
       Goto loop_find_running
+    not_running:
+      ${If} ${FileExists} "$TEMP\ep\ep-rm.exe"
+        ExecWait "$TEMP\ep\ep-rm.exe"
+      ${EndIf}
     already_running:
       
       ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry

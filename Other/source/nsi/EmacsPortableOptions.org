@@ -468,6 +468,13 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 2 "Behavior; Startup Options, Integration Options, etc."
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 4 "Download Components"
+    ${If} $option_startup == "1"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 0 "$option_assoc"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 1 "$option_proxy"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 2 "$option_behavior"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 3 "$option_visual"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 4 "$option_download"
+    ${EndIf}
     !define /math _LISTVIEW_TEMP_STYLE ${LVS_EX_CHECKBOXES} | ${LVS_EX_FULLROWSELECT}
     SendMessage $hCtl_startup_options_Select ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${_LISTVIEW_TEMP_STYLE}
     !undef _LISTVIEW_TEMP_STYLE
@@ -476,21 +483,17 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_startup_options_Show
-    ${If} $option_startup != "1"
-      Call fnc_startup_options_Create
-      nsDialogs::Show $hCtl_startup_options
-    ${EndIf}
+    Call fnc_startup_options_Create
+    nsDialogs::Show $hCtl_startup_options
   FunctionEnd
   
   Function fnc_startup_options_Validate
-    ${If} $option_startup != "1"
-      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 0 $option_assoc
-      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 1 $option_proxy
-      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
-      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
-      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
-      StrCpy $option_startup "1"
-    ${EndIf}
+    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 0 $option_assoc
+    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 1 $option_proxy
+    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
+    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
+    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
+    StrCpy $option_startup "1"
   FunctionEnd
   
 #+END_SRC

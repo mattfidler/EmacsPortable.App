@@ -69,6 +69,7 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 Increase default =max-lisp-eval-depth=
 #+BEGIN_SRC emacs-lisp
 (setq max-lisp-eval-depth 10000)
+(setq max-specpdl-size 10000)
 #+END_SRC
 
 * Get the major and minor versions of emacs
@@ -146,102 +147,124 @@ EmacsPortableApp.exe launcher.
   ;; Emacs Portable USB drive can be coded usb:/ or ~usb/
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
+  (setq ep-start-dirs
+        (mapcar
+         (lambda(x)
+           `(,(format "%s"
+                      (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
+                          (match-string 1 x) x)) .
+                          ,(format "%s/"
+                                   (expand-file-name x (concat usb-app-dir "../Data/start")))))
+         (remove-if
+          (lambda(x)
+            (string-match (format "^%s$"
+                                  (regexp-opt '("." ".." "user" "shared" "system") 'paren)) x))
+          (directory-files (expand-file-name (concat usb-app-dir "../Data/start"))))))
+  
+  (setq ep-start-reg
+        (format "^~%s[/\\\\]"
+                (regexp-opt
+                 (mapcar
+                  (lambda(x)
+                    (nth 0 x))
+                  ep-start-dirs) 'paren)))
+  
   ;; On windows convert ~/Dropbox to %MY Documents% dropbox
   (defun ep-usb-convert-file-name (name)
     "Converts a usb filename to a regular file-name"
-    (let ((ret name)
-          (case-fold-search t))
-      (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
-        (setq ret (replace-match usb-drive-letter t t ret)))
-      
-      (when (string-match "^~pa[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-drive-letter "PortableApps/") t t ret)))
-      
-      (when (string-match "^~doc[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-drive-letter "Documents/") t t ret)))
-      
-      (when (string-match "^~[h~][/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
+    (save-match-data
+      (let ((ret name)
+            (case-fold-search t))
+        
+        (when (and (string-match ep-start-reg ret)
+                   (assoc (match-string 1 ret) ep-start-dirs))
+          (setq ret (cdr (assoc (match-string 1 ret) ep-start-dirs))))
+        
+        (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
+          (setq ret (replace-match usb-drive-letter t t ret)))
+        
+        (when (string-match "^~pa[/\\\\]" ret)
+          (setq ret (replace-match (concat usb-drive-letter "PortableApps/") t t ret)))
+        
+        (when (string-match "^~doc[/\\\\]" ret)
+          (setq ret (replace-match (concat usb-drive-letter "Documents/") t t ret)))
+        
+        (when (string-match "^~[h~][/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
                                     (getenv "OHOME")) t t ret)))
-      (when (string-match "^~ep[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../")) t t ret)))
-      (when (string-match "^~themes?[/\\\\]" ret)
-        (setq ret
-              (replace-match (concat usb-app-dir "../Data/themes/")
-                             t t ret)))
-      (when (string-match "^~elpa[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/elpa/") t t ret)))
-      
-      (when (string-match "^~el-get[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/el-get/") t t ret)))
-      
-      (when (string-match "^~site-lisp[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "site-lisp/") t t ret)))
-      (when (string-match "^~app[/\\\\]" ret)
-        (setq ret (replace-match usb-app-dir t t ret)))
-      
-      (when (string-match "^~kick\\(:er?\\)?[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/kicker/")
-                                 t t ret)))
-      (when (string-match "^~rcp[/\\\\]" ret)
-        (setq ret (replace-match (concat usb-app-dir "../Data/lisp/kicker/rcp/")
-                                 t t ret)))
-      (when (string-match "^~data[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/")) t t ret)))
-      
-      (when (string-match "^~nsi[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Other/source/nsi/")) t t ret)))
-      (when (string-match "^~ahk[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Other/source/ahk/")) t t ret)))
-      (when (string-match "^~other[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Other/")) t t ret)))
-      
-      (when (string-match "^~start[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/start/")) t t ret)))
-      (when (string-match "^~ini[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/ini/")) t t ret)))
-      (when (string-match "^~src[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/src/")) t t ret)))
-      (when (string-match "^~snip\\(pet\\)?s?[/\\\\]" ret)
-        (setq ret (replace-match
-                   (expand-file-name
-                    (concat usb-app-dir "../Data/snippets/")) t t ret)))
-      (when (string-match "^~use?rs?[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir
-                                          "../Data/start/user/")) t t ret)))
-      (when (string-match "^~shared?[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/start/shared/")) t t ret)))
-      (when (string-match "^~system[/\\\\]" ret)
-        (setq ret (replace-match (expand-file-name
-                                  (concat usb-app-dir "../Data/start/system/")) t t ret)))
-      (when (and (eq system-type 'windows-nt)
-                 (getenv "TEMP")
-                 (file-readable-p (getenv "TEMP"))
-                 (string-match "^/tmp/" ret))
-        (setq ret (replace-match (concat (expand-file-name (getenv "TEMP")) "/") t t ret)))
-      (when (and (getenv "MYDOC")
-                 (string-match "^~mydoc[/\\\\]" ret))
-        (setq ret (replace-match (concat (expand-file-name (getenv "MYDOC")) "/") t t ret)))
-      ;; Fake link of el-get/package/elpa to ~elpa
-      (when (string-match "/el-get/package/elpa/" ret)
-        (setq ret (replace-match "/elpa/" t t ret)))
-      (cond
-       ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
-             (getenv "MYDOC")
-             (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
-        (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox") t t ret)))
-       (t ret))
-      (symbol-value 'ret)))
+        (when (string-match "^~ep[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../")) t t ret)))
+        (when (string-match "^~themes?[/\\\\]" ret)
+          (setq ret
+                (replace-match (concat usb-app-dir "../Data/themes/")
+                               t t ret)))
+        (when (string-match "^~elpa[/\\\\]" ret)
+          (setq ret (replace-match (concat usb-app-dir "../Data/lisp/elpa/") t t ret)))
+        
+        (when (string-match "^~el-get[/\\\\]" ret)
+          (setq ret (replace-match (concat usb-app-dir "../Data/lisp/el-get/") t t ret)))
+        
+        (when (string-match "^~site-lisp[/\\\\]" ret)
+          (setq ret (replace-match (concat usb-app-dir "site-lisp/") t t ret)))
+        (when (string-match "^~app[/\\\\]" ret)
+          (setq ret (replace-match usb-app-dir t t ret)))
+        
+        (when (string-match "^~data[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Data/")) t t ret)))
+        
+        (when (string-match "^~nsi[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Other/source/nsi/")) t t ret)))
+        (when (string-match "^~ahk[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Other/source/ahk/")) t t ret)))
+        (when (string-match "^~other[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Other/")) t t ret)))
+        
+        (when (string-match "^~start[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Data/start/")) t t ret)))
+        (when (string-match "^~ini[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Data/ini/")) t t ret)))
+        (when (string-match "^~src[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Data/src/")) t t ret)))
+        (when (string-match "^~snip\\(pet\\)?s?[/\\\\]" ret)
+          (setq ret (replace-match
+                     (expand-file-name
+                      (concat usb-app-dir "../Data/snippets/")) t t ret)))
+        (when (string-match "^~use?rs?[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir
+                                            "../Data/start/user/")) t t ret)))
+        (when (string-match "^~shared?[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Data/start/shared/")) t t ret)))
+        (when (string-match "^~system[/\\\\]" ret)
+          (setq ret (replace-match (expand-file-name
+                                    (concat usb-app-dir "../Data/start/system/")) t t ret)))
+        (when (and (eq system-type 'windows-nt)
+                   (getenv "TEMP")
+                   (file-readable-p (getenv "TEMP"))
+                   (string-match "^/tmp/" ret))
+          (setq ret (replace-match (concat (expand-file-name (getenv "TEMP")) "/") t t ret)))
+        (when (and (getenv "MYDOC")
+                   (string-match "^~mydoc[/\\\\]" ret))
+          (setq ret (replace-match (concat (expand-file-name (getenv "MYDOC")) "/") t t ret)))
+        ;; Fake link of el-get/package/elpa to ~elpa
+        (when (string-match "/el-get/package/elpa/" ret)
+          (setq ret (replace-match "/elpa/" t t ret)))
+        (cond
+         ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
+               (getenv "MYDOC")
+               (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
+          (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox") t t ret)))
+         (t ret))
+        (symbol-value 'ret))))
   
   ;; Modified from cygwin-mount.
   (defun ep-usb-file-name-handler (operation name &rest args)
@@ -271,14 +294,13 @@ EmacsPortableApp.exe launcher.
                         inhibit-file-name-handlers)))
           (inhibit-file-name-operation operation))
       (apply operation args)))
-  
   ;; Make abbreviate choose ~usb so that when saving recent files, this is also saved.
   (setq directory-abbrev-alist `((,(concat "\\`"
                                            (expand-file-name (getenv "HOME")))
                                   . "~")
                                  (,(concat "\\`"
                                            (expand-file-name (getenv "OHOME")
-                                                                     ))
+                                                             ))
                                   . "~h/")
                                  (,(concat "\\`"
                                            (expand-file-name (concat usb-app-dir "site-lisp/")))
@@ -326,6 +348,18 @@ EmacsPortableApp.exe launcher.
                                            (expand-file-name
                                             (concat usb-app-dir "../Data/start/system/")))
                                   . "~system/")
+                                 ,@(mapcar
+                                    (lambda(x)
+                                      `(,(format "\\`%s/"
+                                                 (expand-file-name x (concat usb-app-dir "../Data/start"))) .
+                                                 ,(format "~%s/"
+                                                          (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
+                                                              (match-string 1 x) x))))
+                                    (remove-if
+                                     (lambda(x)
+                                       (string-match (format "^%s$"
+                                                             (regexp-opt '("." ".." "user" "shared" "system") 'paren)) x))
+                                     (directory-files (expand-file-name (concat usb-app-dir "../Data/start")))))
                                  (,(concat "\\`"
                                            (expand-file-name
                                             (concat usb-app-dir "../Data/start/")))
@@ -407,9 +441,9 @@ EmacsPortableApp.exe launcher.
                 "~elpa/"
                 "~el-get/"
                 "~h/"
-                "~rcp/"
-                "~kick/"
-                
+                ,@(mapcar (lambda(x)
+                            (format "~%s/" (nth 0 x)))
+                          ep-start-dirs)
                 ))
          (reg (concat "^"
                       (regexp-opt (append lst
