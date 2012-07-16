@@ -1699,7 +1699,6 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_DownloadVersion
     SetCtlColors $hCtl_download_DownloadVersion 0x000000 0xFFFFFF
     ${NSD_OnChange} $hCtl_download_DownloadVersion CheckMac
-    Call SetupVersions
     
     ; === Label1 (type: Label) ===
     ${NSD_CreateLabel} 12u 19u 32u 13u "Version"
@@ -1739,9 +1738,9 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_Startup
     
     ; === DropList1 (type: DropList) ===
-    ${NSD_CreateDropList} 179u 17u 104u 12u ""
-    Pop $hCtl_download_DropList1
-    SetCtlColors $hCtl_download_DropList1 0x000000 0xFFFFFF
+    ${NSD_CreateDropListSorted} 179u 17u 104u 12u ""
+    Pop $hCtl_download_Startup
+    SetCtlColors $hCtl_download_Startup 0x000000 0xFFFFFF
     
     ; === Label2 (type: Label) ===
     ${NSD_CreateLabel} 152u 17u 23u 13u "Script"
@@ -1811,6 +1810,8 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_Dict
     SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
     Call SetupFontDownload
+  
+    Call SetupDownloadMirrors
   FunctionEnd
   
   
@@ -1825,30 +1826,6 @@ From http://nsis.sourceforge.net/Explode
 #+END_SRC
 *** Helper Functions
 **** Setup Functions
-**** Setup Emacs Versions for Download
-#+BEGIN_SRC nsis
-  Function SetupVersions
-    EnumINI::SectionNames "${mirror}"
-    Pop $R0
-    StrCmp $R0 "error" done
-    loop:
-      IntCmp $R0 "0" done done 0
-      Pop $R1
-      EnumINI::KeyExist "${mirror}" $R1 "win"
-      Pop $R2
-      StrCmp $R2 "1" 0 next
-      ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R1
-    next:
-      IntOp $R0 $R0 - 1
-      Goto loop
-    done:
-      ${NSD_CB_AddString} $hCtl_download_DownloadVersion "(Select)"
-      ${NSD_CB_SelectString} $hCtl_download_DownloadVersion "(Select)"
-      ClearErrors
-  FunctionEnd
-  
-#+END_SRC
-
 **** Setup Fonts Available for Download
 #+BEGIN_SRC nsis
   Function SetupFontDownload
@@ -1867,6 +1844,32 @@ From http://nsis.sourceforge.net/Explode
   FunctionEnd
 #+END_SRC
 
+**** Setup Startup Scripts available for download
+Startup scripts available for download.
+#+BEGIN_SRC nsis
+  Function SetupDownloadMirrors
+    EnumINI::SectionNames "${mirror}"
+    Pop $R0
+    ${If} $R0 != "error"
+      ${ForEach} $R1 $R0 1 - 1
+        Pop $R2
+        StrCpy $0 $R2 8
+        ${If} $0 == "startup:"
+          StrCpy $0 $R2 "" 8
+          ${NSD_CB_AddString} $hCtl_download_Startup $0
+        ${EndIf}
+        EnumINI::KeyExist "${mirror}" $R2 "win"
+        Pop $R3
+        ${If} $R3  == "1"
+          ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R2
+        ${EndIf}
+      ${Next}
+    ${EndIf}
+    ${NSD_CB_AddString} $hCtl_download_Startup "(Select)"
+    ${NSD_CB_SelectString} $hCtl_download_Startup "(Select)"
+  FunctionEnd
+  
+#+END_SRC
 **** Are all the GnuWin32 Components available
 #+BEGIN_SRC nsis
   Function enablegw32
