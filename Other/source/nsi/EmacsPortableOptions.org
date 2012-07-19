@@ -1991,6 +1991,7 @@ FunctionEnd
 * Single section for installing
 #+BEGIN_SRC nsis
   Section "Components"
+    Call Find7z
     ${If} $option_assoc == "1"
       md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
       Pop $R0

@@ -27,47 +27,50 @@ Allows NSIS to call emacs for batch processing.
     Push $R8
     Push $R9
     StrCpy "$R6" "$EXEDIR"
+    ${If} $usbs == ""
+      StrCpy $usbs $EXEDIR 2
+    ${EndIf}
     DetailPrint "Looking for locally installed 7-Zip."
     ReadRegStr $R0 HKLM "SOFTWARE\7-Zip" "Path"
     ClearErrors
     IfFileExists "$R0\7zG.exe" 0 +3
     GetFullPathName /SHORT $R0  "$R0\7zG.exe"
     Goto found_7z
-
+  
     DetailPrint "Looking For 7zG at $R6\..\7-ZipPortable\App\7-zip\7zG.exe"
     IfFileExists "$R6\..\7-ZipPortable\App\7-zip\7zG.exe" 0 +3
     GetFullPathName /SHORT $R0  "$R6\..\7-ZipPortable\App\7-zip\7zG.exe"
     Goto found_7z
-
+  
     DetailPrint "Looking For 7zG at $R6\..\..\7-ZipPortable\App\7-zip\7zG.exe"
     IfFileExists "$R6\..\..\7-ZipPortable\App\7-zip\7zG.exe" 0 +3
     GetFullPathName /SHORT $R0  "$R6\..\..\7-ZipPortable\App\7-zip\7zG.exe"
     Goto found_7z
-
+  
     EnumINI::Section "$EXEDIR\App\ini\paths.ini" "portable.dirs"
     Pop $R8
     DetailPrint "Looking For 7zG portable.dirs, $EXEDIR, $R8"
     StrCmp $R8 "error" not_found
     loop_7z:
-        IntCmp $R8 "0" not_found not_found 0 
-        Pop $R9
-        DetailPrint "Looking For 7zG at $usbs\$R9\7-ZipPortable\App\7-zip\7zG.exe"
-        IfFileExists "$usbs\$R9\7-ZipPortable\App\7-zip\7zG.exe" 0 +3
-        GetFullPathName /SHORT $R0  "$usbs\$R9\7-ZipPortable\App\7-zip\7zG.exe"
-        Goto finalize
-        DetailPrint "Looking For 7zG at $usbs\$R9\7Zip\App\7-Zip\x86\7zG.exe"
-        IfFileExists "$usbs\$R9\7Zip\App\7-Zip\x86\7zG.exe" 0 +3
-        GetFullPathName /SHORT $R0  "$usbs\$R9\7Zip\App\7-Zip\x86\7zG.exe"
-        Goto finalize
-        IntOp $R8 $R8 - 1
-        Goto loop_7z
+      IntCmp $R8 "0" not_found not_found 0 
+      Pop $R9
+      DetailPrint "Looking For 7zG at $usbs\$R9\7-ZipPortable\App\7-zip\7zG.exe"
+      IfFileExists "$usbs\$R9\7-ZipPortable\App\7-zip\7zG.exe" 0 +3
+      GetFullPathName /SHORT $R0  "$usbs\$R9\7-ZipPortable\App\7-zip\7zG.exe"
+      Goto finalize
+      DetailPrint "Looking For 7zG at $usbs\$R9\7Zip\App\7-Zip\x86\7zG.exe"
+      IfFileExists "$usbs\$R9\7Zip\App\7-Zip\x86\7zG.exe" 0 +3
+      GetFullPathName /SHORT $R0  "$usbs\$R9\7Zip\App\7-Zip\x86\7zG.exe"
+      Goto finalize
+      IntOp $R8 $R8 - 1
+      Goto loop_7z
     finalize:
-        IntOp $R8 $R8 - 1
+      IntOp $R8 $R8 - 1
     finalize_loop:
-        IntCmp $R8 "0" found_7z found_7z 0 
-        Pop $R9
-        IntOp $R8 $R8 - 1
-        Goto finalize_loop
+      IntCmp $R8 "0" found_7z found_7z 0 
+      Pop $R9
+      IntOp $R8 $R8 - 1
+      Goto finalize_loop
     found_7z:
       StrCpy $exe_7z $R0
     already_found:
