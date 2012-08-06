@@ -83,12 +83,19 @@ This sets up the Emacs Path and environment.
     StrCpy $3 ""
     FindFirst $0 $1 $2
     loop:
+      StrCmp $1 "." loop
+      StrCmp $1 ".." loop
       StrCmp $1 "" done
+      DetailPrint "$\t$1"
       StrCpy $3 "$1$3"
       FindNext $0 $1
       Goto loop
     done:
       FindClose $0
+      DetailPrint "String: $3 ($2)"
+      StrCmp $3 "" 0 +3
+      Push $3
+      Goto ret
       StrCmp $GetMD5EP "" 0 +3
       md5dll::GetMD5File "$EPEXE\EmacsPortableApp.exe"
       Pop $GetMD5EP
@@ -96,6 +103,7 @@ This sets up the Emacs Path and environment.
       md5dll::GetMD5File "$EPEXE\App\ini\paths.ini"
       Pop $GetMD5PT
       md5dll::GetMD5String "$GetMD5EP$GetMD5PT$3"
+    ret:
       Exch
       Pop $3
       Exch
@@ -146,7 +154,10 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     ; $8    "drive type"    (FDD HDD ...)
     DetailPrint "Checking Drive $9 ($EPEXE\App\ini\paths.ini)"
     StrCpy $globalMD5 ""
-    ${GetMD5} "$9" $R3 
+    ${GetMD5} "$9*.*" $R3
+    StrCmp "$R3" "" 0 +3
+    DetailPrint "Nothing On Drive."
+    Goto done_portable
     DetailPrint "MD5: $R3"
     ReadIniStr $R4 "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5"
     ${If} $R4 == "$R3"
@@ -161,7 +172,6 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     DeleteIniSec "$EPEXE\Data\ini\portable-cache.ini" "portable"
     WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5" "$R3"
     WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive" "$9"
-    
     
     ## Now look for each portable Directory.
     StrCpy $R8 ""
@@ -617,6 +627,7 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
       ReadIniStr $R1 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
       IfFileExists "$R1$R0" 0 not_found
       StrCpy "$usb" "$R1"
+      StrCpy "$usbs" "$R1" -1
       Goto change_file
     not_found:
       Push $R0
