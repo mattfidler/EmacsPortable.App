@@ -68,8 +68,8 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 * Increase defaults
 Increase default =max-lisp-eval-depth=
 #+BEGIN_SRC emacs-lisp
-(setq max-lisp-eval-depth 10000)
-(setq max-specpdl-size 10000)
+(setq max-lisp-eval-depth 15000)
+(setq max-specpdl-size 15000)
 #+END_SRC
 
 * Get the major and minor versions of emacs
