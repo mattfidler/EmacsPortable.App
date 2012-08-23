@@ -136,13 +136,13 @@ EmacsPortableApp.exe launcher.
     (save-match-data
       (let ((ret name)
             (case-fold-search t))
+  
+        (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
+          (setq ret (replace-match usb-drive-letter t t ret)))
         
         (if (and (string-match ep-start-reg ret)
                  (assoc (match-string 1 ret) ep-start-dirs))
             (setq ret (replace-match (concat (cdr (assoc (match-string 1 ret) ep-start-dirs)) "/") t t ret))
-          
-          (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
-            (setq ret (replace-match usb-drive-letter t t ret)))
           
           (when (and (eq system-type 'windows-nt)
                      (getenv "TEMP")
@@ -152,9 +152,11 @@ EmacsPortableApp.exe launcher.
           (cond
            ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
                  (getenv "MYDOC")
-                 (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
-            (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox") t t ret)))
+                 (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox\\")))
+            (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox\\") t t ret)))
            (t ret)))
+        (while (string-match "//+" ret)
+          (setq ret (replace-match "/" t t ret)))
         (symbol-value 'ret))))
   
   ;; Modified from cygwin-mount.
@@ -213,16 +215,16 @@ EmacsPortableApp.exe launcher.
                       (string-match (format "^%s$"
                                             (regexp-opt '("." "..") 'paren)) x)))
                 (directory-files (expand-file-name (concat usb-app-dir "../Data/start")))))))
-  
+    
     (when (and (getenv "OHOME") (not (string= "" (getenv "OHOME"))) (file-exists-p (getenv "OHOME")))
       (add-to-list 'ep-start-dirs `("h" . ,(expand-file-name (getenv "OHOME")))))
-  
+    
     (when (getenv "MYDOC")
       (add-to-list 'ep-start-dirs `("mydoc" . ,(expand-file-name (getenv "MYDOC")))))
-  
+    
     (when (file-exists-p (concat usb-drive-letter "PortableApps"))
       (add-to-list 'ep-start-dirs `("pa" . ,(expand-file-name (concat usb-drive-letter "PortableApps")))))
-  
+    
     (if (file-exists-p (concat usb-drive-letter "Documents/"))
         (add-to-list 'ep-start-dirs `("doc" . ,(expand-file-name (concat usb-drive-letter "Documents"))))
       (when (file-exists-p (concat usb-drive-letter "LiberKey/MyDocuments"))
@@ -231,13 +233,13 @@ EmacsPortableApp.exe launcher.
     (when (boundp 'custom-theme-directory)
       (add-to-list 'ep-start-dirs `("themes" . ,custom-theme-directory))
       (add-to-list 'ep-start-dirs `("theme" . ,custom-theme-directory)))
-  
+    
     (when (boundp 'package-user-dir)
       (add-to-list 'ep-start-dirs `("elpa" . ,package-user-dir)))
-  
+    
     (when (boundp 'el-get-dir)
       (add-to-list 'ep-start-dirs `("el-get" . ,el-get-dir)))
-  
+    
     (when (boundp 'yas/snippet-dirs)
       (let ((snips (if (listp yas/snippet-dirs)
                        (nth 0 yas/snippet-dirs)
@@ -246,7 +248,7 @@ EmacsPortableApp.exe launcher.
         (add-to-list 'ep-start-dirs `("snip" . ,snips))
         (add-to-list 'ep-start-dirs `("snippets" . ,snips))
         (add-to-list 'ep-start-dirs `("snippet" . ,snips))))
-  
+    
     (mapc
      (lambda(x)
        (unless (assoc (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
@@ -260,7 +262,7 @@ EmacsPortableApp.exe launcher.
         (or (string-match "^[.]+$" x)
             (not (file-directory-p (expand-file-name x "~/.emacs.d")))))
       (directory-files (expand-file-name "~/.emacs.d"))))
-  
+    
     (setq ep-start-reg
           (format "^~%s[/\\\\]"
                   (regexp-opt
@@ -270,7 +272,7 @@ EmacsPortableApp.exe launcher.
                     ep-start-dirs) 'paren)))
     ;; Make abbreviate choose ~usb so that when saving recent files, this
     ;; is also saved.
-    (setq directory-abbrev-alist 
+    (setq directory-abbrev-alist
           `((,(concat "\\`"
                       (expand-file-name (getenv "HOME"))) . "~")
             (,(concat "\\`" usb-drive-letter) . "~usb/")
@@ -284,45 +286,43 @@ EmacsPortableApp.exe launcher.
                        (getenv "MYDOC")
                        (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
                   (concat "\\`" (expand-file-name (concat (getenv "MYDOC") "\\My Dropbox")))
-                "\\`~/Dropbox") . "~/Dropbox")))
-  
-     (setq directory-abbrev-alist 
-           (sort directory-abbrev-alist 
-                 '(lambda(x y) 
-                    (> (length (car x)) (length (car y))))))
-  (let* ((lst `(
-                "usb:/"
-                "~/Dropbox"
-                "~/dropbox"
-                "/tmp/"
-                ,@(mapcar (lambda(x)
-                            (format "~%s/" (nth 0 x)))
-                          ep-start-dirs)
-                ))
-         (reg (concat "^"
-                      (regexp-opt (append lst
-                                          (mapcar (lambda(x)
-                                                    (upcase x))
-                                                  lst)) 't))))
-    (or (assoc reg file-name-handler-alist)
-        (setq file-name-handler-alist
-              (cons `(,reg . ep-usb-file-name-handler)
-                    file-name-handler-alist)))
-    (or (assoc "[~/\\\\]el-get[/\\\\]package[/\\\\]elpa[/\\\\]" file-name-handler-alist)
-        (setq file-name-handler-alist
-              (cons `("[~/\\\\]el-get[/\\\\]package[/\\\\]elpa[/\\\\]" . ep-usb-file-name-handler)
-                    file-name-handler-alist)))
-    (when t
-      (mapc (lambda(test)
-              (message "%s\t%s\t%s\t%s\t%s" test
-                       (expand-file-name test) (abbreviate-file-name (expand-file-name test))
-                       (expand-file-name (concat test "dummy")) (abbreviate-file-name (concat (expand-file-name test) "dummy"))))
-            lst)))
+                "\\`~/Dropbox/") . "~/Dropbox/")))
+    
+    (setq directory-abbrev-alist 
+          (sort directory-abbrev-alist 
+                '(lambda(x y) 
+                   (> (length (car x)) (length (car y))))))
+    (let* ((lst `("~usb/"
+                  "usb:/"
+                  "~/Dropbox"
+                  "~/dropbox"
+                  "/tmp/"
+                  ,@(mapcar (lambda(x)
+                              (format "~%s/" (nth 0 x)))
+                            ep-start-dirs)
+                  ))
+           (reg (concat "^"
+                        (regexp-opt (append lst
+                                            (mapcar (lambda(x)
+                                                      (upcase x))
+                                                    lst)) 't))))
+      (setq file-name-handler-alist
+            (remove-if (lambda(x) (eq (cdr x) 'ep-usb-file-name-handler)) file-name-handler-alist))
+      (setq file-name-handler-alist
+            (cons `(,reg . ep-usb-file-name-handler)
+                  file-name-handler-alist))
+      (when t
+        (mapc (lambda(test)
+                (message "%s\t%s\t%s\t%s\t%s" test
+                         (expand-file-name test) (abbreviate-file-name (expand-file-name test))
+                         (expand-file-name (concat test "dummy")) (abbreviate-file-name (concat (expand-file-name test) "dummy"))))
+              lst)))
     nil)
   (ep-rebuild-aliases)
   (eval-after-load 'yasnippet (ep-rebuild-aliases))
   (eval-after-load 'el-get (ep-rebuild-aliases))
   (eval-after-load 'package (ep-rebuild-aliases))  
+  
 #+end_src
 **** TODO Add Custom abbreviations
 *** Recent Files
