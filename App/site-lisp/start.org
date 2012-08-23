@@ -131,12 +131,18 @@ EmacsPortableApp.exe launcher.
   (setq ep-start-dirs nil)
   (setq ep-start-reg "^~~~~~~~~~~$")
   ;; On windows convert ~/Dropbox to %MY Documents% dropbox
+  
+  (defcustom EmacsPortable-aliases nil
+    "Emacs Portable custom aliaess.  For example you my wish to have ~/org/ be aliased to ~org/ Directory Alias=org and Actual Directory=~/org/"
+    :type '(alist :key-type (string :tag "Directory Alias") :value-type (directory :tag "Actual Directory"))
+    :group 'EmacsPortable)
+  
   (defun ep-usb-convert-file-name (name)
     "Converts a usb filename to a regular file-name"
     (save-match-data
       (let ((ret name)
             (case-fold-search t))
-  
+        
         (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
           (setq ret (replace-match usb-drive-letter t t ret)))
         
@@ -202,6 +208,11 @@ EmacsPortableApp.exe launcher.
             ("start" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/start/"))))
             ("ini" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/ini/"))))
             ("src" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/src/"))))
+            ,@(mapcar
+               (lambda(x)
+                 `(,(replace-regexp-in-string "^~*\\(.*?\\)[/\\]*$" "\\1" (car x))
+                   . ,(expand-file-name (cdr x))))
+               EmacsPortable-aliases)
             ,@(mapcar
                (lambda(x)
                  `(,(format "%s"
@@ -332,32 +343,36 @@ like mac vs pc file names do not affect the loading of files, and the
 files are saved per computer. 
 
 This also attempts to speed up the recent files cleanup list by
-[[http://stackoverflow.com/questions/2068697/emacs-is-slow-opening-recent-files][ignoring remote computer entries]];
+[[http://stackoverflow.com/questions/2068697/emacs-is-slow-opening-recent-files][ignoring remote computer entries]]
 :PROPERTIES:
 :ID: e0e982b9-0651-4505-906c-ecb4c71d1a84
 :END:
 #+begin_src emacs-lisp
-    (defcustom EmacsPortable-start-recentf 't
-      "* Enables Recent Files starting"
-      :type 'boolean
-      :group 'EmacsPortable)
-    
-    (when EmacsPortable-start-recentf
-      (condition-case err
-          (progn
-            (setq recentf-keep '(file-remote-p file-readable-p))
-            (setq recentf-auto-cleanup 'mode)
-            (setq recentf-max-menu-items 20)
-            (setq recentf-max-saved-items 1000)
-            (setq recentf-save-file (concat usb-site-lisp-dir "../Data/saves/recent-files-" system-name))
-            (require 'recentf)
-            (setq recentf-menu-filter 'recentf-arrange-by-mode)
-            (setq recentf-filename-handlers (quote (abbreviate-file-name)))
-            ;; recentf-expand-file-name
-            (recentf-mode 1))
-        (error nil)))
-    (ep-m "Recentf")
-    
+  (defgroup EmacsPortable nil
+    "EmacsPortable Customization Group"
+    :group 'emacs)
+  
+  (defcustom EmacsPortable-start-recentf 't
+    "* Enables Recent Files starting"
+    :type 'boolean
+    :group 'EmacsPortable)
+  
+  (when EmacsPortable-start-recentf
+    (condition-case err
+        (progn
+          (setq recentf-keep '(file-remote-p file-readable-p))
+          (setq recentf-auto-cleanup 'mode)
+          (setq recentf-max-menu-items 20)
+          (setq recentf-max-saved-items 1000)
+          (setq recentf-save-file (concat usb-site-lisp-dir "../Data/saves/recent-files-" system-name))
+          (require 'recentf)
+          (setq recentf-menu-filter 'recentf-arrange-by-mode)
+          (setq recentf-filename-handlers (quote (abbreviate-file-name)))
+          ;; recentf-expand-file-name
+          (recentf-mode 1))
+      (error nil)))
+  (ep-m "Recentf")
+  
 #+end_src
 
 * Fancy Splash-screen to show EmacsPortable.app instead of Emacs

@@ -101,6 +101,8 @@ In addition to these aliases, the following aliases are also defined:
 - =~snip=, =~snips=, =~snippets=, =~snippet=, is an alias for
   yasnippets snippets.
 
+Custom aliases may be added by customizing =EmacsPortable-aliases=.
+
 ** Font installation, if needed
 Will install specific fonts, if needed.
 *** STARTED Allow Mac to install specific fonts.
