@@ -18,6 +18,26 @@ Allows NSIS to call emacs for batch processing.
   !endif
   
 #+END_SRC
+* Find Git
+#+BEGIN_SRC nsis
+  var exe_git
+  Function FindGit
+    Push $R0
+    Push $R6
+    Push $R8
+    Push $R9
+  
+    StrCpy "$R6" "$EXEDIR"
+    ${If} $usbs == ""
+      StrCpy $usbs $EXEDIR 2
+    ${EndIf}
+    Pop $R9
+    Pop $R8
+    Pop $R6
+    Pop $R0
+  FunctionEnd
+#+END_SRC
+
 * Find 7zip
 #+BEGIN_SRC nsis
   var exe_7z

@@ -1258,11 +1258,8 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       StrCmp $option_q "" 0 start_emacs
       ${emacsclient_setup}
       ${If} $option_help == "1"
-        ${ExecHide} '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"' "$home" $R1
-        ${If} $R1 == "0"
-          SetOutPath $home
-          Exec '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"'
-        ${EndIf}
+        SetOutPath $home
+        Exec '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"'
         ClearErrors
         FileOpen $0 "$TEMP\ep\emacs-help.txt" r
         ${DoUntil} ${Errors}
@@ -1279,11 +1276,8 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
         MessageBox MB_OK|MB_ICONQUESTION "$R2"
       ${ElseIf} $option_colorsync == ""
         ##${StrRep} $emacs $emacs '"' '""'
-        ${ExecHide} '"$cmd" $cmd_args' "$home" $R1
-        ${If} $R1 == "0"
-          SetOutPath $home
-          Exec '"$cmd" $cmd_args'
-        ${EndIf}
+        SetOutPath $home
+        Exec '"$cmd" $cmd_args'
       ${Else}
         HideWindow
         ExecWait "$emacs"

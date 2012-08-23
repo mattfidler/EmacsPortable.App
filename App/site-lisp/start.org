@@ -1,4 +1,4 @@
-#+title: EmacsPortable.app startup
+#+title: EmacsPortable.App Startup
 #+AUTHOR: Matthew L. Fidler
 * Start EmacsPortable.App Startup timers
 This creates a timer to figure out how much time it takes to load EmacsPortable.App
@@ -64,7 +64,6 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
   
 #+END_SRC
 
-
 * Increase defaults
 Increase default =max-lisp-eval-depth=
 #+BEGIN_SRC emacs-lisp
@@ -118,23 +117,6 @@ This sets the variables for EmacsPortable.App
   
 #+END_SRC
 * Paths and load-path
-** Set package directory, autoload file and custom file.
-#+BEGIN_SRC emacs-lisp
-  (setq autoload-file (expand-file-name
-                       (concat usb-site-lisp-dir "../Data/saves/loaddefs.el")))
-  (setq package-user-dir (expand-file-name
-                          (concat usb-app-dir "../Data/lisp/elpa")))
-  (setq custom-file (expand-file-name
-                     (concat usb-site-lisp-dir "../Data/saves/custom.el")))
-#+END_SRC
-** Add Path to Java if exists
-:PROPERTIES:
-:ID: a0a4e48f-1a05-4c30-a596-efcb90d5f395
-:END:
-If Java is available under =%USB%:/PortableApps/CommonFiles/Java/bin=,
-add it to path.
-Moved path-checking for Java to the [[./source/nsi/EmacsPortableApp.nsi][EmacsPortable Startup script.]]
-
 ** Recent Files
 *** Setup Path Aliases 
 :PROPERTIES:
@@ -146,29 +128,8 @@ EmacsPortableApp.exe launcher.
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Emacs Portable USB drive can be coded usb:/ or ~usb/
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-  (setq ep-start-dirs
-        (mapcar
-         (lambda(x)
-           `(,(format "%s"
-                      (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
-                          (match-string 1 x) x)) .
-                          ,(format "%s/"
-                                   (expand-file-name x (concat usb-app-dir "../Data/start")))))
-         (remove-if
-          (lambda(x)
-            (string-match (format "^%s$"
-                                  (regexp-opt '("." ".." "user" "shared" "system") 'paren)) x))
-          (directory-files (expand-file-name (concat usb-app-dir "../Data/start"))))))
-  
-  (setq ep-start-reg
-        (format "^~%s[/\\\\]"
-                (regexp-opt
-                 (mapcar
-                  (lambda(x)
-                    (nth 0 x))
-                  ep-start-dirs) 'paren)))
-  
+  (setq ep-start-dirs nil)
+  (setq ep-start-reg "^~~~~~~~~~~$")
   ;; On windows convert ~/Dropbox to %MY Documents% dropbox
   (defun ep-usb-convert-file-name (name)
     "Converts a usb filename to a regular file-name"
@@ -176,94 +137,24 @@ EmacsPortableApp.exe launcher.
       (let ((ret name)
             (case-fold-search t))
         
-        (when (and (string-match ep-start-reg ret)
-                   (assoc (match-string 1 ret) ep-start-dirs))
-          (setq ret (cdr (assoc (match-string 1 ret) ep-start-dirs))))
-        
-        (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
-          (setq ret (replace-match usb-drive-letter t t ret)))
-        
-        (when (string-match "^~pa[/\\\\]" ret)
-          (setq ret (replace-match (concat usb-drive-letter "PortableApps/") t t ret)))
-        
-        (when (string-match "^~doc[/\\\\]" ret)
-          (setq ret (replace-match (concat usb-drive-letter "Documents/") t t ret)))
-        
-        (when (string-match "^~[h~][/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (getenv "OHOME")) t t ret)))
-        (when (string-match "^~ep[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../")) t t ret)))
-        (when (string-match "^~themes?[/\\\\]" ret)
-          (setq ret
-                (replace-match (concat usb-app-dir "../Data/themes/")
-                               t t ret)))
-        (when (string-match "^~elpa[/\\\\]" ret)
-          (setq ret (replace-match (concat usb-app-dir "../Data/lisp/elpa/") t t ret)))
-        
-        (when (string-match "^~el-get[/\\\\]" ret)
-          (setq ret (replace-match (concat usb-app-dir "../Data/lisp/el-get/") t t ret)))
-        
-        (when (string-match "^~site-lisp[/\\\\]" ret)
-          (setq ret (replace-match (concat usb-app-dir "site-lisp/") t t ret)))
-        (when (string-match "^~app[/\\\\]" ret)
-          (setq ret (replace-match usb-app-dir t t ret)))
-        
-        (when (string-match "^~data[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Data/")) t t ret)))
-        
-        (when (string-match "^~nsi[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Other/source/nsi/")) t t ret)))
-        (when (string-match "^~ahk[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Other/source/ahk/")) t t ret)))
-        (when (string-match "^~other[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Other/")) t t ret)))
-        
-        (when (string-match "^~start[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Data/start/")) t t ret)))
-        (when (string-match "^~ini[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Data/ini/")) t t ret)))
-        (when (string-match "^~src[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Data/src/")) t t ret)))
-        (when (string-match "^~snip\\(pet\\)?s?[/\\\\]" ret)
-          (setq ret (replace-match
-                     (expand-file-name
-                      (concat usb-app-dir "../Data/snippets/")) t t ret)))
-        (when (string-match "^~use?rs?[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir
-                                            "../Data/start/user/")) t t ret)))
-        (when (string-match "^~shared?[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Data/start/shared/")) t t ret)))
-        (when (string-match "^~system[/\\\\]" ret)
-          (setq ret (replace-match (expand-file-name
-                                    (concat usb-app-dir "../Data/start/system/")) t t ret)))
-        (when (and (eq system-type 'windows-nt)
-                   (getenv "TEMP")
-                   (file-readable-p (getenv "TEMP"))
-                   (string-match "^/tmp/" ret))
-          (setq ret (replace-match (concat (expand-file-name (getenv "TEMP")) "/") t t ret)))
-        (when (and (getenv "MYDOC")
-                   (string-match "^~mydoc[/\\\\]" ret))
-          (setq ret (replace-match (concat (expand-file-name (getenv "MYDOC")) "/") t t ret)))
-        ;; Fake link of el-get/package/elpa to ~elpa
-        (when (string-match "/el-get/package/elpa/" ret)
-          (setq ret (replace-match "/elpa/" t t ret)))
-        (cond
-         ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
-               (getenv "MYDOC")
-               (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
-          (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox") t t ret)))
-         (t ret))
+        (if (and (string-match ep-start-reg ret)
+                 (assoc (match-string 1 ret) ep-start-dirs))
+            (setq ret (replace-match (concat (cdr (assoc (match-string 1 ret) ep-start-dirs)) "/") t t ret))
+          
+          (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
+            (setq ret (replace-match usb-drive-letter t t ret)))
+          
+          (when (and (eq system-type 'windows-nt)
+                     (getenv "TEMP")
+                     (file-readable-p (getenv "TEMP"))
+                     (string-match "^/tmp/" ret))
+            (setq ret (replace-match (concat (expand-file-name (getenv "TEMP")) "/") t t ret)))
+          (cond
+           ((and (eq system-type 'windows-nt) (string-match "~/[Dd]ropbox" ret)
+                 (getenv "MYDOC")
+                 (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
+            (setq ret (replace-match (concat (getenv "MYDOC") "\\My Dropbox") t t ret)))
+           (t ret)))
         (symbol-value 'ret))))
   
   ;; Modified from cygwin-mount.
@@ -294,153 +185,116 @@ EmacsPortableApp.exe launcher.
                         inhibit-file-name-handlers)))
           (inhibit-file-name-operation operation))
       (apply operation args)))
-  ;; Make abbreviate choose ~usb so that when saving recent files, this is also saved.
-  (setq directory-abbrev-alist `((,(concat "\\`"
-                                           (expand-file-name (getenv "HOME")))
-                                  . "~")
-                                 (,(concat "\\`"
-                                           (expand-file-name (getenv "OHOME")
-                                                             ))
-                                  . "~h/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "site-lisp/")))
-                                  . "~site-lisp/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "../Data/lisp/elpa/")))
-                                  . "~elpa/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "../Data/lisp/el-get/")))
-                                  . "~el-get/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "site-lisp/")))
-                                  . "~site-lisp/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Other/source/nsi/")))
-                                  . "~nsi/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Other/source/ahk/")))
-                                  . "~ahk/")
-                                 
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Other/")))
-                                  . "~other/")
-                                 
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/start/user/")))
-                                  . "~user/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/start/shared/")))
-                                  . "~shared/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/themes/")))
-                                  . "~themes/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/snippets/")))
-                                  . "~snips/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/start/system/")))
-                                  . "~system/")
-                                 ,@(mapcar
-                                    (lambda(x)
-                                      `(,(format "\\`%s/"
-                                                 (expand-file-name x (concat usb-app-dir "../Data/start"))) .
-                                                 ,(format "~%s/"
-                                                          (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
-                                                              (match-string 1 x) x))))
-                                    (remove-if
-                                     (lambda(x)
-                                       (string-match (format "^%s$"
-                                                             (regexp-opt '("." ".." "user" "shared" "system") 'paren)) x))
-                                     (directory-files (expand-file-name (concat usb-app-dir "../Data/start")))))
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/start/")))
-                                  . "~start/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/ini/")))
-                                  . "~ini/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../Data/src/")))
-                                  . "~src/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "../Data/lisp/kicker/")))
-                                  . "~kick/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "../Data/lisp/kicker/rcp/")))
-                                  . "~rcp/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat usb-app-dir "/")))
-                                  . "~app/")
-                                 (,(concat "\\`"
-                                           (expand-file-name (concat
-                                                              usb-app-dir "../Data/") ))
-                                  . "~data/")
-                                 (,(concat "\\`"
-                                           (expand-file-name
-                                            (concat usb-app-dir "../")))
-                                  . "~ep/")
-                                 
-                                 (,(concat "\\`" usb-drive-letter "PortableApps/") . "~pa/")
-                                 (,(concat "\\`" usb-drive-letter "Documents/") . "~doc/")
-                                 (,(concat "\\`" usb-drive-letter) . "~usb/")
-                                 (,(if (and (getenv "MYDOC")
-                                            (file-readable-p (getenv "MYDOC")))
-                                       (concat "\\`"
-                                               (expand-file-name (getenv "MYDOC")) "/")
-                                     "~mydoc/") . "~mydoc/")
-                                 (,(if (and (eq system-type 'windows-nt)
-                                            (getenv "TEMP")
-                                            (file-readable-p (getenv "TEMP")))
-                                       (concat (expand-file-name (getenv "TEMP")) "")
-                                     "/tmp/") . "/tmp/")
-                                 (,(if (and (eq system-type 'windows-nt)
-                                            (getenv "MYDOC")
-                                            (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
-                                       (concat "\\`" (expand-file-name (concat (getenv "MYDOC") "\\My Dropbox")))
-                                     "\\`~/Dropbox") . "~/Dropbox")))
   
+  (defun ep-rebuild-aliases ()
+    "A function to rebuild the Emacs Portable aliases.  Should be loaded after package, el-get, and yasnippet."
+    (interactive)
+    (setq ep-start-dirs
+          `(("ep" . ,(expand-file-name (concat usb-app-dir "../")))
+            ("site-lisp" . ,(expand-file-name (concat usb-app-dir "site-lisp/")))
+            ("app" . ,(expand-file-name usb-app-dir))
+            ("data" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data"))))
+            ("nsi" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Other/source/nsi/"))))
+            ("ahk" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Other/source/ahk/"))))
+            ("other" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Other/"))))
+            ("start" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/start/"))))
+            ("ini" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/ini/"))))
+            ("src" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/src/"))))
+            ,@(mapcar
+               (lambda(x)
+                 `(,(format "%s"
+                            (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
+                                (match-string 1 x) x)) .
+                                ,(format "%s/"
+                                         (expand-file-name x (concat usb-app-dir "../Data/start")))))
+               (remove-if
+                (lambda(x)
+                  (or (not (file-directory-p (expand-file-name x (concat usb-app-dir "../Data/start"))))
+                      (string-match (format "^%s$"
+                                            (regexp-opt '("." "..") 'paren)) x)))
+                (directory-files (expand-file-name (concat usb-app-dir "../Data/start")))))))
+  
+    (when (and (getenv "OHOME") (not (string= "" (getenv "OHOME"))) (file-exists-p (getenv "OHOME")))
+      (add-to-list 'ep-start-dirs `("h" . ,(expand-file-name (getenv "OHOME")))))
+  
+    (when (getenv "MYDOC")
+      (add-to-list 'ep-start-dirs `("mydoc" . ,(expand-file-name (getenv "MYDOC")))))
+  
+    (when (file-exists-p (concat usb-drive-letter "PortableApps"))
+      (add-to-list 'ep-start-dirs `("pa" . ,(expand-file-name (concat usb-drive-letter "PortableApps")))))
+  
+    (if (file-exists-p (concat usb-drive-letter "Documents/"))
+        (add-to-list 'ep-start-dirs `("doc" . ,(expand-file-name (concat usb-drive-letter "Documents"))))
+      (when (file-exists-p (concat usb-drive-letter "LiberKey/MyDocuments"))
+        (add-to-list 'ep-start-dirs `("doc" . ,(expand-file-name (concat usb-drive-letter "LiberKey/MyDocuments"))))))
+    
+    (when (boundp 'custom-theme-directory)
+      (add-to-list 'ep-start-dirs `("themes" . ,custom-theme-directory))
+      (add-to-list 'ep-start-dirs `("theme" . ,custom-theme-directory)))
+  
+    (when (boundp 'package-user-dir)
+      (add-to-list 'ep-start-dirs `("elpa" . ,package-user-dir)))
+  
+    (when (boundp 'el-get-dir)
+      (add-to-list 'ep-start-dirs `("el-get" . ,el-get-dir)))
+  
+    (when (boundp 'yas/snippet-dirs)
+      (let ((snips (if (listp yas/snippet-dirs)
+                       (nth 0 yas/snippet-dirs)
+                     yas/snippet-dirs)))
+        (add-to-list 'ep-start-dirs `("snips" . ,snips))
+        (add-to-list 'ep-start-dirs `("snip" . ,snips))
+        (add-to-list 'ep-start-dirs `("snippets" . ,snips))
+        (add-to-list 'ep-start-dirs `("snippet" . ,snips))))
+  
+    (mapc
+     (lambda(x)
+       (unless (assoc (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
+                          (match-string 1 x) x) ep-start-dirs)
+         (add-to-list 'ep-start-dirs
+                      `(,(if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
+                             (match-string 1 x) x) .
+                             ,(expand-file-name x "~/.emacs.d")))))
+     (remove-if
+      (lambda(x)
+        (or (string-match "^[.]+$" x)
+            (not (file-directory-p (expand-file-name x "~/.emacs.d")))))
+      (directory-files (expand-file-name "~/.emacs.d"))))
+  
+    (setq ep-start-reg
+          (format "^~%s[/\\\\]"
+                  (regexp-opt
+                   (mapcar
+                    (lambda(x)
+                      (nth 0 x))
+                    ep-start-dirs) 'paren)))
+    ;; Make abbreviate choose ~usb so that when saving recent files, this
+    ;; is also saved.
+    (setq directory-abbrev-alist 
+          `((,(concat "\\`"
+                      (expand-file-name (getenv "HOME"))) . "~")
+            (,(concat "\\`" usb-drive-letter) . "~usb/")
+            ,@(mapcar (lambda(x) `(,(concat "\\`" (regexp-quote (replace-regexp-in-string "[/]*$" "/" (cdr x)))) . ,(concat "~" (car x) "/"))) ep-start-dirs)
+            (,(if (and (eq system-type 'windows-nt)
+                       (getenv "TEMP")
+                       (file-readable-p (getenv "TEMP")))
+                  (replace-regexp-in-string "[/]*$" "/" (expand-file-name (getenv "TEMP")))
+                "/tmp/") . "/tmp/")
+            (,(if (and (eq system-type 'windows-nt)
+                       (getenv "MYDOC")
+                       (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
+                  (concat "\\`" (expand-file-name (concat (getenv "MYDOC") "\\My Dropbox")))
+                "\\`~/Dropbox") . "~/Dropbox")))
+  
+     (setq directory-abbrev-alist 
+           (sort directory-abbrev-alist 
+                 '(lambda(x y) 
+                    (> (length (car x)) (length (car y))))))
   (let* ((lst `(
                 "usb:/"
                 "~/Dropbox"
                 "~/dropbox"
-                "~ahk/"
-                "~app/"
-                "~data/"
-                "~ep/"
-                "~ini/"
-                "~start/"
-                "~nsi/"
-                "~sk/"
-                "~snip/"
-                "~snippets/"
-                "~snips/"
-                "~src/"
-                "~system/"
-                "~theme/"
-                "~themes/"
-                "~usb/"
-                "~user/"
-                "~users/"
-                "~other/"
-                "~site-lisp/" 
                 "/tmp/"
-                "~mydoc/"
-                "~shared/"
-                "~pa/"
-                "~doc/"
-                "~elpa/"
-                "~el-get/"
-                "~h/"
                 ,@(mapcar (lambda(x)
                             (format "~%s/" (nth 0 x)))
                           ep-start-dirs)
@@ -464,7 +318,11 @@ EmacsPortableApp.exe launcher.
                        (expand-file-name test) (abbreviate-file-name (expand-file-name test))
                        (expand-file-name (concat test "dummy")) (abbreviate-file-name (concat (expand-file-name test) "dummy"))))
             lst)))
-  
+    nil)
+  (ep-rebuild-aliases)
+  (eval-after-load 'yasnippet (ep-rebuild-aliases))
+  (eval-after-load 'el-get (ep-rebuild-aliases))
+  (eval-after-load 'package (ep-rebuild-aliases))  
 #+end_src
 **** TODO Add Custom abbreviations
 *** Recent Files
@@ -620,7 +478,6 @@ work correctly.
   (setq ido-default-file-method 'selected-window)
   (setq ido-default-buffer-method 'selected-window)
 #+end_src
-
 
 * Start the Emacs Server
 #+BEGIN_SRC emacs-lisp
@@ -846,16 +703,6 @@ ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
   
 #+END_SRC
 
-* EmacsPortable.App loader script
-:PROPERTIES:
-:ID: 35b325b3-dcd1-42cf-921f-ff98f8bb22d0
-:END:
-This starts the pseudo-daemon.  If you are running Windows it:
-1. Waits for the server to start
-2. Changes the name of the current frame to
-   =___EmacsPortableDaemon_%version%___=
-3. Starts up the nsis psudo-loading bar.
-
 * Needed starting settings
 ** Frame name
 :PROPERTIES:
@@ -863,22 +710,23 @@ This starts the pseudo-daemon.  If you are running Windows it:
 :END:
 #+begin_src emacs-lisp
   (if (eq system-type 'windows-nt)
-      (setq frame-title-format (list (with-temp-buffer
-                                       (insert "Emacs")
-                                       (insert (if (string= (downcase (substring usb-drive-letter 0 1))
-                                                            (downcase (substring data-directory 0 1)))
-                                                   (concat "Portable@"
-                                                           (downcase (substring usb-drive-letter 0 1)))
-                                                 "Local"
-                                                 ))
-                                       (insert "-")
-                                       (insert emacs-ver)
-                                       (insert " %b")
-                                       (buffer-substring (point-min) (point-max))
-                                       )
-                                     '(buffer-file-name ": %f")))
+      (setq frame-title-format
+            (list (with-temp-buffer
+                    (insert "Emacs")
+                    (insert (if (string= (downcase (substring usb-drive-letter 0 1))
+                                         (downcase (substring data-directory 0 1)))
+                                (concat "Portable@"
+                                        (downcase (substring usb-drive-letter 0 1)))
+                              "Local"
+                              ))
+                    (insert "-")
+                    (insert emacs-ver)
+                    (insert " %b")
+                    (buffer-substring (point-min) (point-max))
+                    )
+                  '(buffer-file-name ": %f")))
     (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
-
+  
 #+end_src
 * Miscellaneous
 ** Spell Checking
@@ -900,10 +748,7 @@ what firefox and open office use.
         (setq ispell-program-name (executable-find "hunspell"))
         ;;(setq rw-hunspell-dicpath-list (list (getenv "DICPATH")))
         (rw-hunspell-setup))
-    (error nil))
-  
-   
-  
+    (error nil))  
 #+end_src
 *** Flyspell
 :PROPERTIES:
@@ -1007,7 +852,6 @@ the implementation
                        `("\\`/\\([^[/:]\\{2,\\}\\|[^/]\\{2,\\}]\\):" . tramp-file-name-handler)))))
     
 #+END_SRC
-
 * Fix Proxy settings for various programs
 #+BEGIN_SRC emacs-lisp
   (defun refresh-proxy (&optional process event)
@@ -1044,13 +888,6 @@ the implementation
             (shell-command-to-string (concat "git config --global --unset http.proxy"))))))
   (refresh-proxy)
   
-#+END_SRC
-* Add el-get support
-El-get is a very nice package management system that allows you to
-keep current with bleeding edge software.  
-#+BEGIN_SRC emacs-lisp
-  (setq el-get-dir (expand-file-name (concat usb-app-dir "../Data/lisp/el-get/")))
-  (add-to-list 'load-path (concat el-get-dir "el-get/"))
 #+END_SRC
 * Start a shared startup-script, if present.
 Start the appropriate startup script

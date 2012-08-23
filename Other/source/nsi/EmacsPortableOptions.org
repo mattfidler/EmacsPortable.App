@@ -22,6 +22,9 @@ This provides an interface to the Emacs Startup options
   Var download_emacs_version
   Var download_mac
   Var download_font
+  Var download_startup
+  Var download_use 
+  
 #+END_SRC
 ** Include files
 #+BEGIN_SRC nsis
@@ -1809,8 +1812,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_CreateDropList} 198u 105u 85u 12u ""
     Pop $hCtl_download_Dict
     SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
-    Call SetupFontDownload
-  
+    Call SetupFontDownload  
     Call SetupDownloadMirrors
   FunctionEnd
   
@@ -1950,7 +1952,10 @@ FunctionEnd
     ${NSD_GetText}  $hCtl_download_DownloadVersion $download_emacs_version
     ${NSD_GetState}  $hCtl_download_DownloadMac $download_mac
     ${NSD_GetText}  $hCtl_download_Font $download_font
+    ${NSD_GetText} $hCtl_download_Startup $download_startup
+    ${NSD_GetText} $hCtl_download_Use $download_use
   FunctionEnd
+  
 #+END_SRC
 *** Download Functions
 **** Download Emacs
@@ -2011,6 +2016,49 @@ FunctionEnd
     ${If} $option_download == "1"
       Call Find7z
       Call downloadEmacs
+      ${If} $download_startup != "(Select)"
+        DetailPrint "Attempting to Download $download_startup"
+        ReadINIStr $R0 "$EXEDIR\App\ini\mirrors.ini" "startup:$download_startup" "url"
+        StrCpy $R1 $R0 10 8
+        DetailPrint "Checking for github #1, $R0, $R1"
+        ## Handle github repositories
+        ${IfNot} $R1 == "github.com"
+          StrCpy $R1 $R0 10 7
+          DetailPrint "Checking for github #2, $R1"
+        ${EndIf}
+        ${If} $R1 == "github.com"
+          StrCpy $R1 $R0 "" -1
+          ${If} $R1 == "/" # Take off trailing /
+            StrCpy $R0 $R0 -1
+          ${EndIf}
+          ${If} $download_use == "Git"
+            Detailprint "github repository: $R0.git"
+          ${ElseIf} $download_use == "Zip"
+            Detailprint "github repository: $R0/zipball/master"
+            SetOutPath "$TEMP\ep\start"
+            Inetc::get "$R0/zipball/master" "$TEMP\ep\start\start.zip"
+            ExecWait '"$exe_7z" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+            Delete "$TEMP\ep\start\start.zip"
+            FindFirst $0 $1 $TEMP\ep\start\*.*
+            loop_start:
+              StrCmp $1 "" done_start
+              StrCmp $1 "." next_start
+              StrCmp $1 ".." next_start
+              DetailPrint $1
+              StrCpy $R1 $1
+            next_start:
+              FindNext $0 $1
+              Goto loop_start
+            done_start:
+              FindClose $0
+              RmDir /r "$EXEDIR\Data\start\$download_startup"
+              SetOutPath $EXEDIR\Data\start\$download_startup
+              CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
+              RmDir /r "$TEMP\ep\start"
+          ${EndIf}
+          
+        ${EndIf}
+      ${EndIf}
       ${If} $download_font != "(Select)"
         DetailPrint "Attempting To Download $download_font"
         ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
