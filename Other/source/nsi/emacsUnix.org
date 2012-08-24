@@ -26,10 +26,11 @@ Modern UI2 user interface
 #+BEGIN_SRC nsis
 !include "MUI2.nsh"
 !include "EmacsDownloadShared.nsh"
+var EPEXE
 #+END_SRC
 ** Defines
 #+BEGIN_SRC nsis
-!define mirror $EXEDIR\App\ini\mirrors.ini
+!define mirror $EPEXE\App\ini\mirrors.ini
 #+END_SRC
 ** Headers and Plugins
 #+BEGIN_SRC nsis
@@ -69,23 +70,51 @@ OutFile "..\..\..\App\eps\download-unix.exe"
 * Sections
 ** Lisp-generated sections
 #+BEGIN_SRC nsis
-!include "emacsdownload-gw32.nsi"
-!include "emacsdownload-ezwin.nsi"
-!insertmacro InsertAddEZW
+  SectionGroup "Add Unix Programs" sec_add_unix_programs ; Collapsed
+    ; Description:
+    ; These are unix programs you can use to support EmacsPortable.App
+    !include "emacsdownload-gw32.nsi"
+    !include "emacsdownload-ezwin.nsi"
+    !insertmacro InsertAddEZW
+  SectionGroupEnd ; sec_add_unix_program
+  
+  SectionGroup "Remove Installed Unix Programs" sec_remove_installed_unix_programs ; Collapsed
+    ; Description:
+    ; Remove Installed Unix Programs
+    !include "emacsdownload-rgw32.nsi"
+    !include "emacsdownload-rezwin.nsi"
+  SectionGroupEnd ; sec_remove_installed_unix_programss
+  
+  
 #+END_SRC
 ** Section Descriptions 
 #+BEGIN_SRC nsis
+  ;--------------------------------
+  ;Description(s)
+  LangString DESC_sec_add_unix_programs ${LANG_ENGLISH} "These are unix programs you can use to support EmacsPortable.App"
+  LangString DESC_sec_remove_installed_unix_programs ${LANG_ENGLISH} "Remove Installed Unix Programs"
+  
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_installed_unix_programs} $(DESC_sec_remove_installed_unix_programs)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_add_unix_programs} $(DESC_sec_add_unix_programs)
+    
     ${GW32_DESC}
     ${GW32E_DESC}
+    ${RGW32_DESC}
     ${EZWIN_DESC}
     ${EZWINE_DESC}
+    ${REZWIN_DESC}
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
 #+END_SRC
 * Functions
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
+    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+  
     IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
     GetFullPathName /SHORT $INSTDIR "..\.."
     Goto +2
@@ -95,5 +124,7 @@ OutFile "..\..\..\App\eps\download-unix.exe"
     Delete "$TEMP\ep\unix-download.ini"
     ${G32_INI}
     ${EZWIN_INI}
+    ${RREZWIN_INI}
+    ${RG32_INI}
   FunctionEnd
 #+END_SRC

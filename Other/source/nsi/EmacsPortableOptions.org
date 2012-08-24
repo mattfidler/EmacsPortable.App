@@ -17,7 +17,6 @@ This provides an interface to the Emacs Startup options
 ** Definitions and Variables
 #+BEGIN_SRC nsis
   !define TEMP1 $R0 ;Temp variable
-  !define mirror $INSTDIR\App\ini\mirrors.ini
   Var EPEXE 
   Var download_emacs_version
   Var download_mac
@@ -155,11 +154,11 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
 #+BEGIN_SRC nsis
   ;Order of pages
   Page custom fnc_startup_options_Show fnc_startup_options_Validate
+  Page custom fnc_download_Show fnc_download_Validate
   Page custom fnc_assocs_Show fnc_assocs_Validate
   Page custom fnc_proxy_Show fnc_proxy_Validate
   Page custom fnc_behavior_Show fnc_behavior_Validate
   Page custom fnc_visuals_Show fnc_visuals_Validate
-  Page custom fnc_download_Show fnc_download_Validate
   !insertmacro MUI_PAGE_INSTFILES
   ##!insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
@@ -576,6 +575,7 @@ From http://nsis.sourceforge.net/Explode
       
       ; === StartupScript (type: DropList) ===
       ${NSD_CreateDropListSorted} 190u 17u 94u 12u ""
+  
       Pop $hCtl_behavior_StartupScript
       SetCtlColors $hCtl_behavior_StartupScript 0x000000 0xFFFFFF
   
@@ -1714,24 +1714,6 @@ From http://nsis.sourceforge.net/Explode
     
     SetOutPath "$TEMP\ep"
     File "unix-download.ini"  
-    ; === GroupBox2 (type: GroupBox) ===
-    ${NSD_CreateGroupBox} 8u 54u 131u 68u "Unix Utilities Download"
-    Pop $hCtl_download_GroupBox2
-    
-    ; === GnuWin32Utils (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 12u 65u 123u 14u "Download GnuWin32 Utilities"
-    Pop $hCtl_download_GnuWin32Utils
-    
-    ##Call enablegw32
-    
-    ; === EZWinUtils (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 12u 82u 123u 14u "Download EZWin Utilities"
-    Pop $hCtl_download_EZWinUtils
-    
-    ; === LinkToSelect (type: Link) ===
-    ${NSD_CreateLink} 12u 97u 123u 20u "Select individual Unix components"
-    Pop $hCtl_download_LinkToSelect
-    ${NSD_OnClick} $hCtl_download_LinkToSelect SelectUnixComponents
     
     ; === VLine1 (type: VLine) ===
     ${NSD_CreateVLine} 143u 7u 1u 115u ""
@@ -1780,36 +1762,36 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_UseLabel
     
     ; === CompileTools (type: GroupBox) ===
-    ${NSD_CreateGroupBox} 148u 54u 139u 24u "EmacsPortable.App Compile Tools"
+    ${NSD_CreateGroupBox} 8u 54u 131u 24u "EmacsPortable.App Compile Tools"
     Pop $hCtl_download_CompileTools
     
     ; === NSIS (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 152u 64u 42u 14u "NSIS"
+    ${NSD_CreateCheckbox} 12u 64u 42u 14u "NSIS"
     Pop $hCtl_download_NSIS
     
     ; === CheckBox1 (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 198u 64u 56u 14u "AutoHotKey"
+    ${NSD_CreateCheckbox} 58u 64u 56u 14u "AutoHotKey"
     Pop $hCtl_download_CheckBox1
     
     ; === SpellGroup (type: GroupBox) ===
-    ${NSD_CreateGroupBox} 148u 81u 139u 41u "Fonts and Spelling Download"
+    ${NSD_CreateGroupBox} 8u 82u 131u 41u "Fonts and Spelling Download"
     Pop $hCtl_download_SpellGroup
     
     ; === DropList3 (type: DropList) ===
-    ${NSD_CreateDropListSorted} 188u 90u 96u 12u ""
+    ${NSD_CreateDropListSorted} 47u 91u 88u 12u ""
     Pop $hCtl_download_Font
     SetCtlColors $hCtl_download_Font 0x000000 0xFFFFFF
     
     ; === Label4 (type: Label) ===
-    ${NSD_CreateLabel} 155u 92u 20u 13u "Font"
+    ${NSD_CreateLabel} 14u 92u 20u 13u "Font"
     Pop $hCtl_download_Label4
     
     ; === Label5 (type: Label) ===
-    ${NSD_CreateLabel} 155u 107u 39u 13u "Dictionary"
+    ${NSD_CreateLabel} 14u 108u 39u 13u "Dictionary"
     Pop $hCtl_download_Label5
     
     ; === ComboBox1 (type: ComboBox) ===
-    ${NSD_CreateDropList} 198u 105u 85u 12u ""
+    ${NSD_CreateDropList} 58u 106u 77u 12u ""
     Pop $hCtl_download_Dict
     SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
     Call SetupFontDownload  
@@ -1850,7 +1832,7 @@ From http://nsis.sourceforge.net/Explode
 Startup scripts available for download.
 #+BEGIN_SRC nsis
   Function SetupDownloadMirrors
-    EnumINI::SectionNames "${mirror}"
+    EnumINI::SectionNames "$INSTDIR\App\ini\startup.ini"
     Pop $R0
     ${If} $R0 != "error"
       ${ForEach} $R1 $R0 1 - 1
@@ -1860,7 +1842,7 @@ Startup scripts available for download.
           StrCpy $0 $R2 "" 8
           ${NSD_CB_AddString} $hCtl_download_Startup $0
         ${EndIf}
-        EnumINI::KeyExist "${mirror}" $R2 "win"
+        EnumINI::KeyExist "$INSTDIR\App\ini\startup.ini" $R2 "win"
         Pop $R3
         ${If} $R3  == "1"
           ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R2
@@ -1955,7 +1937,6 @@ FunctionEnd
     ${NSD_GetText} $hCtl_download_Startup $download_startup
     ${NSD_GetText} $hCtl_download_Use $download_use
   FunctionEnd
-  
 #+END_SRC
 *** Download Functions
 **** Download Emacs
@@ -1997,7 +1978,9 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Section "Components"
     ${SetEnv}
-    Call Find7z
+    ${SetupProxy}
+    Call Find7z  
+    
     ${If} $option_assoc == "1"
       md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
       Pop $R0
@@ -2007,6 +1990,7 @@ FunctionEnd
         ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
       ${EndIf}
     ${EndIf}
+    
     ${If} $option_proxy == "1"
       IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
       app_exists:
@@ -2014,12 +1998,13 @@ FunctionEnd
       noapp:
         ClearErrors
     ${EndIf}
+    
     ${If} $option_download == "1"
       Call Find7z
       Call downloadEmacs
       ${If} $download_startup != "(Select)"
         DetailPrint "Attempting to Download $download_startup"
-        ReadINIStr $R0 "$EXEDIR\App\ini\mirrors.ini" "startup:$download_startup" "url"
+        ReadINIStr $R0 "$EXEDIR\App\ini\startup.ini" "startup:$download_startup" "url"
         StrCpy $R1 $R0 10 8
         DetailPrint "Checking for github #1, $R0, $R1"
         ## Handle github repositories
@@ -2068,9 +2053,67 @@ FunctionEnd
               CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
               RmDir /r "$TEMP\ep\start"
           ${EndIf}
-          
+        ${Else}
+          StrCpy $R1 $R0 "" -4
+          DetailPrint "Checking for zip/git, $R0, $R1"
+          ${If} $R1 == ".zip"
+            Detailprint "zip file: $R0"
+            SetOutPath "$TEMP\ep\start"
+            Inetc::get "$R0" "$TEMP\ep\start\start.zip"
+            ExecWait '"$exe_7z" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+            Delete "$TEMP\ep\start\start.zip"
+            FindFirst $0 $1 $TEMP\ep\start\*.*
+            StrCpy $R1 ""
+            StrCpy $R2 ""
+            loop_start_zip:
+              StrCmp $1 "" done_start_zip
+              StrCmp $1 "." next_start_zip
+              StrCmp $1 ".." next_start_zip
+              DetailPrint $1
+              ${IfNot} $R1 == ""
+                StrCpy $R2 "multiple files"
+              ${EndIf}
+              StrCpy $R1 $1
+            next_start_zip:
+              FindNext $0 $1
+              Goto loop_start_zip
+            done_start_zip:
+              FindClose $0
+              RmDir /r "$EXEDIR\Data\start\$download_startup"
+              SetOutPath $EXEDIR\Data\start\$download_startup
+              ${If} $R2 == ""
+                ## Single Directory
+                CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
+              ${Else}
+                CopyFiles /SILENT "$TEMP\ep\start\*.*" "$EXEDIR\Data\start\$download_startup"
+              ${EndIf}
+              RmDir /r "$TEMP\ep\start"
+          ${ElseIf} $R1 == ".git"
+            ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
+              SetOutPath "$EXEDIR\Data\start\$download_startup"
+              Detailprint "git pull"
+              ExecWait 'cmd /c "git pull"'
+            ${Else}
+              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                RmDir /r "$EXEDIR\Data\start\$download_startup"
+              ${EndIf}
+              SetOutPath "$EXEDIR\Data\start"
+              ExecWait 'cmd /c "git clone $R0 $EXEDIR\Data\start\$download_startup --depth 1"'
+            ${EndIf}
+          ${Else}
+            DetailPrint "Assume this is a single file, like a .emacs file."
+            
+            RmDir /r "$EXEDIR\Data\start\$download_startup"
+            SetOutPath "$EXEDIR\Data\start"
+            ${Explode} $0 "/" "$R0"
+            ${For} $1 1 $0
+              Pop $2
+            ${Next}
+            Inetc::get "$R0" "$EXEDIR\Data\start\$download_startup\$2"
+          ${EndIf}
         ${EndIf}
       ${EndIf}
+      
       ${If} $download_font != "(Select)"
         DetailPrint "Attempting To Download $download_font"
         ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
@@ -2133,6 +2176,8 @@ FunctionEnd
             ${EndIf}
         ${EndIf}
       ${EndIf}
+      
+      
       WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
           "Version" "$download_emacs_version"
       ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"

@@ -1,14 +1,14 @@
 ;;; emacsdownload-gw32.el --- Generate GnuWin32 NSI
 ;; 
 ;; Filename: emacsdownload-gw32.el
-;; Description: 
+;; Description:
 ;; Author: Matthew L. Fidler
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed May 16 15:27:52 2012 (-0500)
+;; Last-Updated: Fri Aug 24 00:02:20 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 86
+;;     Update #: 97
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -50,8 +50,7 @@
 ;;; Code:
 
 (let ((gw32-emacs-suggested
-       '(
-         ("Arc" "used by archive-mode to edit .arc files.")
+       '(("Arc" "used by archive-mode to edit .arc files.")
          ("Bzip2" "used by Emacs to automatically decompress .bz2 files.")
          ("BsdTar" "used by tar-mode to edit tar files.")
          ("CompFace" "used by gnus to display XFace headers in messages.")
@@ -92,7 +91,7 @@
              (format "%s\n${ifSecNotRO} ${sec_gw32e_%s} skip_gw32e_group_ro"
                      ini2 pkg))
        (setq ret
-             (format "%s\nSection /o \"%s\" sec_gw32e_%s\n!insertmacro setg32down \"%s\"\nSectionEnd\nLangString DESC_sec_gw32e_%s ${LANG_ENGLISH} \"%s - %s\""
+             (format "%s\nSection /o \"%s\" sec_gw32e_%s\n!insertmacro g32down \"%s\"\nSectionEnd\nLangString DESC_sec_gw32e_%s ${LANG_ENGLISH} \"%s - %s\""
                      ret pkg-d pkg pkg pkg pkg-d desc))
        (setq dt
              (format "%s\n!insertmacro MUI_DESCRIPTION_TEXT ${sec_gw32e_%s} $(DESC_sec_gw32e_%s)"
@@ -116,7 +115,7 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
 %s\n!macroend" ret dt))
   ;; Now get all gnuwin32 packages listed in the mirrors.ini
   (with-temp-buffer
-    (insert-file-contents "../../../App/ini/mirrors.ini")
+    (insert-file-contents "../../../App/ini/gw32-install.ini")
     (let ((sec "")
           (sec-cnt 0)
           (txt "")
@@ -149,7 +148,7 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
         (setq sec-cnt (+ sec-cnt 1))
         (setq sec
               (format
-               "%s\nSection /o \"%s\" sec_gw32_%s\n!insertmacro setg32down \"%s\"\nSectionEnd"
+               "%s\nSection /o \"%s\" sec_gw32_%s\n!insertmacro g32down \"%s\"\nSectionEnd"
                sec id (downcase id)  (downcase id)))
         (setq ini2
               (format "%s\n${ifSecNotRO} ${sec_gw32_%s} skip_gw32_group_ro"
@@ -184,14 +183,27 @@ LangString DESC_sec_gw32e_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests t
     (while (re-search-forward "gw32" nil t)
       (replace-match "rgw32"))
     (goto-char (point-min))
-    (while (re-search-forward "!insertmacro setg32down" nil t)
+    (while (re-search-forward "!insertmacro g32down" nil t)
       (replace-match "${g32rm}"))
     (goto-char (point-min))
     (while (re-search-forward "G32_INI" nil t)
       (replace-match "RG32_INI"))
     (goto-char (point-min))
     (while (re-search-forward "g32installed" nil t)
-      (replace-match "g32removed"))))
+      (replace-match "g32removed"))
+    (goto-char (point-min))
+    (when (re-search-forward "SectionGroup" nil t)
+      (let ((one (match-beginning 0)))
+        (goto-char (point-min))
+        (when (re-search-forward "SectionGroupEnd" nil t)
+          (end-of-line)
+          (delete-region one (point)))))
+    (goto-char (point-min)) 
+    (while (re-search-forward ".*sec_rgw32e_.*" nil t)
+      (replace-match ""))
+    (goto-char (point-min))
+    (when (re-search-forward "SectionGroup \"All GnuWin32 Utilities\"" nil t)
+      (replace-match "SectionGroup \"Remove GnuWin32 Utilities\""))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

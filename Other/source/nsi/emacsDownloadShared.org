@@ -6,7 +6,7 @@
 #+BEGIN_SRC nsis
   !define getEmacsWin `!insertmacro getEmacsWin`
   !macro getEmacsWin VER
-    ReadINIStr $R0 "${mirror}" "${VER}" "win"
+    ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${VER}" "win"
     inetc::get  $R0 "$TEMP\emacs.zip"
     ## Some emacs releases (Like Emacs 24.1-rc) extract to a different version.
     ZipDLL::extractall "$TEMP\emacs.zip" "$INSTDIR\App\install"
@@ -32,7 +32,7 @@
         Call Find7z
         Pop $R0
         ${If} $R0 != ""
-          ReadINIStr $R1 "${mirror}" "${VER}" "mac"
+          ReadINIStr $R1 "$INSTDIR\App\ini\gw32-install.ini" "${VER}" "mac"
           ${IfNot} ${FileExists} "$TEMP\emacsMac\EmacsMac.dmg"
             SetOutPath "$TEMP\emacsMac"
             inetc::get $R1 "$TEMP\emacsMac\emacsMac.dmg"
@@ -174,9 +174,9 @@ it alone when OTHER_SEC is read-only.
 ** Portable App Macro
 #+BEGIN_SRC nsis
   !macro installPortableApp WHAT
-    ReadINIStr $R0 "${mirror}" "${WHAT}" "url"
+    ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${WHAT}" "url"
     IfErrors end
-    ReadINIStr $R9 "${mirror}" "${WHAT}" "type"
+    ReadINIStr $R9 "$INSTDIR\App\ini\gw32-install.ini" "${WHAT}" "type"
     IfErrors exe_type
     StrCpy $R9 ".$R9"
     Goto use_inetc
@@ -237,7 +237,7 @@ it alone when OTHER_SEC is read-only.
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
       ${PathIfExist} "$INSTDIR\App\gw32"
     wget:
-      ReadINIStr $R0 "${mirror}" "${WHAT}" "url"
+      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${WHAT}" "url"
       ExecWait "$INSTDIR\App\gw32\wget.exe $R0 -O$TEMP\portable$R9"
       IfFileExists "$TEMP\portable$R9" found 0
       DetailPrint "Could not get file with wget either, skipping."
@@ -247,14 +247,14 @@ it alone when OTHER_SEC is read-only.
       StrCmp "$R9" ".zip" is_zip
       Goto end
     is_zip:
-      ReadINIStr $R0 "${mirror}" "${WHAT}" "out"
+      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${WHAT}" "out"
       ClearErrors
       SetOutPath "$PA\$R0"
       ZipDll::extractall "$TEMP\portable.zip"  "$PA\$R0"
       Delete "$TEMP\portable.zip"
       Goto end
     is_7z:
-      ReadINIStr $R0 "${mirror}" "${WHAT}" "out"
+      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${WHAT}" "out"
       ClearErrors
       SetOutPath "$PA\$R0"
       Nsis7z::ExtractWithDetails "$TEMP\portable.7z" "Installing package ${WHAT}..."
@@ -292,7 +292,7 @@ it alone when OTHER_SEC is read-only.
     StrCmp "$PA" "" 0 download
     MessageBox MB_OK "Cannot Install ${NAME} Plugin; Can't determine PortableApps Location."
     download:
-      ReadINIStr $R0 "${mirror}" "nsis:${NAME}" "url"
+      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "nsis:${NAME}" "url"
       inetc::get $R0 "$TEMP\${NAME}.zip"
       ZipDLL::extractall "$TEMP\${NAME}.zip" "$PA\NSISPortableANSI\App\NSIS"
       Delete "$TEMP\${NAME}.zip"
@@ -322,9 +322,9 @@ it alone when OTHER_SEC is read-only.
     IntOp $0 $0 & ${SF_SELECTED}
     StrCmp "0" $0 zip git
     zip:
-      ReadIniStr $R1 "${mirror}" "${VAL}" "ver"
-      ReadIniStr $R0 "${mirror}" "${VAL}" "base"
-      ReadIniStr $R2 "${mirror}" "${VAL}" "ext"
+      ReadIniStr $R1 "$INSTDIR\App\ini\gw32-install.ini" "${VAL}" "ver"
+      ReadIniStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${VAL}" "base"
+      ReadIniStr $R2 "$INSTDIR\App\ini\gw32-install.ini" "${VAL}" "ext"
       inetc::get "$R0$R1$R2" "$TEMP\${VAL}.zip"
       IfFileExists "$TEMP\${VAL}.zip" +3 0
       DetailPrint "Could not Download ${VAL}, skipping."
@@ -333,15 +333,15 @@ it alone when OTHER_SEC is read-only.
       Delete "$TEMP\${VAL}.zip"
       Goto end
     git:
-      ReadIniStr $R0 "${mirror}" "${VAL}" "git"
-      ReadIniStr $R1 "${mirror}" "${VAL}" "gitout"
+      ReadIniStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${VAL}" "git"
+      ReadIniStr $R1 "$INSTDIR\App\ini\gw32-install.ini" "${VAL}" "gitout"
       IfErrors 0 +3
       ClearErrors
       Goto zip
       ClearErrors
       DetailPrint "$PG clone $R0 ${OUT}\$R1"
       ExecWait "$PG clone $R0 ${OUT}\$R1"
-      ReadIniStr "$R0" "${mirror}" "${VAL}" "github"
+      ReadIniStr "$R0" "$INSTDIR\App\ini\gw32-install.ini" "${VAL}" "github"
       IfErrors end
       ExecWait "$PG remote add --track master github $R0"
       Goto end
@@ -363,14 +363,14 @@ it alone when OTHER_SEC is read-only.
   !macroend
   
   !macro g32down WHAT
-    ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "bin.exe"
+    ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.exe"
     IfErrors g32_zip
     SetOutPath "$INSTDIR\App\gw32\bin"
     inetc::get /CONNECTTIMEOUT 30 $R0 "$INSTDIR\App\gw32\bin\${WHAT}.exe"
     WriteIniStr "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin" "${WHAT}.exe" "1"
     Goto g32_exit
     g32_zip:
-      ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "bin.zip"
+      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.zip"
       IfErrors g32_download
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
@@ -380,7 +380,7 @@ it alone when OTHER_SEC is read-only.
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
       RmDir /r "$TEMP\ep-gw32"
       Delete "$TEMP\${WHAT}-bin.zip" 
-      ReadINIStr $R0 "${mirror}" "gw32:${WHAT}" "dep.zip"
+      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "gw32:${WHAT}" "dep.zip"
       IfErrors g32_exit
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
@@ -583,7 +583,7 @@ This removes a gnuwin32 package.
   
   !macro ezwindown WHAT
     ClearErrors
-    ReadIniStr $R0 "${mirror}" "ezw:${WHAT}" "ver"
+    ReadIniStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "ezw:${WHAT}" "ver"
     IfErrors ezwin_exit 
     inetc::get /CONNECTTIMEOUT 30 \
         "http://downloads.sourceforge.net/project/ezwinports/${WHAT}-$R0-bin.zip" \
@@ -655,9 +655,9 @@ This removes a gnuwin32 package.
 
 *** EzWindows Add/Remove/Exists
 #+BEGIN_SRC nsis
-  !define ezwinrm `!insertmacro g32rm  "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
+  !define ezwinrm `!insertmacro g32rm "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
   !define ezwininstalled `!insertmacro g32installed "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
-  !define ezwinremoved `!insertmacro g32removed "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
+  !define rezwinremoved `!insertmacro g32removed "ezwin" "$INSTDIR\App\ini\ezwin.ini" "$INSTDIR\App\ezwin"`
   
 #+END_SRC
 

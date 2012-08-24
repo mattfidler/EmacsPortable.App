@@ -969,7 +969,7 @@ https://bitbucket.org/phromo/w32-fullscreen/downloads
   (defvar ep-maximize-frame-cached nil)
   (defvar ep-maximize-frame-cache nil)
   (defun ep-maximize-frame (frame)
-    "Maximizes frame, when selected in EmacsPortableApp.ini"
+    "Maximizes FRAME, when selected in EmacsPortableApp.ini"
     (interactive (list (selected-frame)))
     (when (or (and ep-maximize-frame-cached ep-maximize-frame-cache)
               (and (not ep-maximize-frame-cached)

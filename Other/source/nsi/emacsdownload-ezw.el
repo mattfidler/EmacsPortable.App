@@ -1,14 +1,14 @@
 ;;; emacsdownload-ezw.el --- Download Eli Zaretskii's windows builds
 ;; 
 ;; Filename: emacsdownload-ezw.el
-;; Description: 
+;; Description:
 ;; Author: Matthew L. Fidler
 ;; Maintainer: 
 ;; Created: Thu Jan 26 16:33:22 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed May 16 15:31:14 2012 (-0500)
+;; Last-Updated: Fri Aug 24 00:24:20 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 19
+;;     Update #: 26
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -76,7 +76,7 @@
              (format "%s\n${ifSecNotRO} ${sec_ezwine_%s} skip_ezwine_group_ro"
                      ini2 pkg))
        (setq ret
-             (format "%s\nSection /o \"%s\" sec_ezwine_%s\n!insertmacro setezwindown \"%s\"\nSectionEnd\nLangString DESC_sec_ezwine_%s ${LANG_ENGLISH} \"%s - %s\""
+             (format "%s\nSection /o \"%s\" sec_ezwine_%s\n!insertmacro ezwindown \"%s\"\nSectionEnd\nLangString DESC_sec_ezwine_%s ${LANG_ENGLISH} \"%s - %s\""
                      ret pkg-d pkg pkg pkg pkg-d desc))
        (setq dt
              (format "%s\n!insertmacro MUI_DESCRIPTION_TEXT ${sec_ezwine_%s} $(DESC_sec_ezwine_%s)"
@@ -100,7 +100,7 @@ LangString DESC_sec_ezwine_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests 
 %s\n!macroend" ret dt))
   ;; Now get all gnuwin32 packages listed in the mirrors.ini
   (with-temp-buffer
-    (insert-file-contents "../../../App/ini/mirrors.ini")
+    (insert-file-contents "../../../App/ini/gw32-install.ini")
     (let ((sec "")
           (sec-cnt 0)
           (txt "")
@@ -135,7 +135,7 @@ LangString DESC_sec_ezwine_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests 
               (concat fn "\nPush \"" (downcase id) "\""))
         (setq sec
               (format
-               "%s\nSection /o \"%s\" sec_ezwin_%s\n!insertmacro setezwindown \"%s\"\nSectionEnd"
+               "%s\nSection /o \"%s\" sec_ezwin_%s\n!insertmacro ezwindown \"%s\"\nSectionEnd"
                sec id (downcase id)  (downcase id)))
         (setq ini2
               (format "%s\n${ifSecNotRO} ${sec_ezwin_%s} skip_ezwin_group_ro"
@@ -183,7 +183,19 @@ LangString DESC_sec_ezwine_grp ${LANG_ENGLISH} \"The Emacs Windows FAQ suggests 
       (replace-match "REZWIN_INI"))
     (goto-char (point-min))
     (while (re-search-forward "ezwininstalled" nil t)
-      (replace-match "ezwinremoved"))))
+      (replace-match "ezwinremoved"))
+    (goto-char (point-min))
+    (when (re-search-forward "SectionGroup" nil t)
+      (let ((one (match-beginning 0)))
+        (goto-char (point-min))
+        (when (re-search-forward "SectionGroupEnd" nil t)
+          (end-of-line)
+          (delete-region one (point)))))
+    (goto-char (point-min)) 
+    (while (re-search-forward ".*sec_rezwine_.*" nil t)
+      (replace-match ""))
+    (when (re-search-forward "SectionGroup \".*\"" nil t)
+      (replace-match "SectionGroup \"Remove EZWinPorts Utilities\""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; emacsdownload-ezw.el ends here
