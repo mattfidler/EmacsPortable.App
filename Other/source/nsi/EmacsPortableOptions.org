@@ -1996,6 +1996,7 @@ FunctionEnd
 * Single section for installing
 #+BEGIN_SRC nsis
   Section "Components"
+    ${SetEnv}
     Call Find7z
     ${If} $option_assoc == "1"
       md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
@@ -2033,6 +2034,17 @@ FunctionEnd
           ${EndIf}
           ${If} $download_use == "Git"
             Detailprint "github repository: $R0.git"
+            ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
+              SetOutPath "$EXEDIR\Data\start\$download_startup"
+              Detailprint "git pull"
+              ExecWait 'cmd /c "git pull"'
+            ${Else}
+              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                RmDir /r "$EXEDIR\Data\start\$download_startup"
+              ${EndIf}
+              SetOutPath "$EXEDIR\Data\start"
+              ExecWait 'cmd /c "git clone $R0.git $EXEDIR\Data\start\$download_startup --depth 1"'
+            ${EndIf}
           ${ElseIf} $download_use == "Zip"
             Detailprint "github repository: $R0/zipball/master"
             SetOutPath "$TEMP\ep\start"
@@ -2073,18 +2085,18 @@ FunctionEnd
             SetOutPath "$EXEDIR\App\fonts"
             ExecWait '"$exe_7z" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
             Delete "$TEMP\ep\font.zip"
-          ${Else}
-            DetailPrint "Raw"
+            ${Else}
+              DetailPrint "Raw"
             Push $R0
             ${Explode} $R1 "/" $R0
             ${If} $R1 != "0"
               Pop $R2
               IntOp $R1 $R1 - 1
-              ${For} $1 1 $R1
-                Pop $R2
-              ${Next}
-              Pop $R0
-              DetailPrint "URL: $R0"
+                ${For} $1 1 $R1
+                  Pop $R2
+                ${Next}
+                Pop $R0
+                DetailPrint "URL: $R0"
               DetailPrint "Should save to $EXEDIR\App\fonts\$R2"
               inetc::get $R0 "$EXEDIR\App\fonts\$R2"
             ${EndIf}

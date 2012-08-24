@@ -734,12 +734,6 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
   FunctionEnd
 #+END_SRC
 
-** Setup Path Variables
-#+BEGIN_SRC nsis  
-  Function SetupPath
-    ## Setup the path
-  FunctionEnd  
-#+END_SRC
 ** Add To Environment
 #+BEGIN_SRC nsis
   !macro AddToEnvironment
@@ -759,7 +753,6 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
         Personal
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MYDOC", "$0").r0'
     ;; Add Server file to environment
-    Call SetupPath
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_SERVER_FILE", "$server_file").r0'
     ;; Add environment sections before loading.
     IfFileExists "$EXEDIR\Data\ini\Environment.ini" 0 done_1
