@@ -2241,7 +2241,7 @@ FunctionEnd
       ${EndIf}
     ${Else}
       ## mirrors.ini not found.  Download EmacsPortableApp
-      SetOutPath "$EXEDIR\App"
+      SetOutPath "$EXEDIR\App\ahk"
       SetOutPath "$TEMP\ep\ep"
       Inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" "$TEMP\ep\ep\epa.zip"
       ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\epa.zip" -o"$TEMP\ep\ep"'
@@ -2261,6 +2261,17 @@ FunctionEnd
         CopyFiles /SILENT "$TEMP\ep\ep\$R1\*.*" "$EXEDIR\"
         RmDir /r "$TEMP\ep\ep"
         SetOutPath "$TEMP\ep\ep"
+  
+        ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
+          ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" ahk url
+          ClearErrors
+          ${If} $0 != ""
+            Inetc::get "$0" "$TEMP\ep\ep\ahk.7z"
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\ahk.7z" -o"$EXEDIR\App\ahk"'
+            Delete "$TEMP\ep\ep\ahk.7z"
+          ${EndIf}
+        ${EndIf}
+        
         ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
           ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
           ClearErrors
