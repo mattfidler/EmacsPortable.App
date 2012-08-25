@@ -495,8 +495,10 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_startup_options_Show
-    Call fnc_startup_options_Create
-    nsDialogs::Show $hCtl_startup_options
+    ${If} ${FileExists} "$EXEDIR\App\ini\mirrors.ini"
+      Call fnc_startup_options_Create
+      nsDialogs::Show $hCtl_startup_options
+    ${EndIf}
   FunctionEnd
   
   Function fnc_startup_options_Validate
@@ -2021,220 +2023,255 @@ FunctionEnd
 * Single section for installing
 #+BEGIN_SRC nsis
   Section "Components"
-    ${SetEnv}
-    ${SetupProxy}
-    
-    ${If} $option_assoc == "1"
-      md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
-      Pop $R0
-      ${If} "$R0" != $assoc_md5
-        Call RemoveAssoc
-        Call RestoreAssoc
-        ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
-      ${EndIf}
-    ${EndIf}
-    
-    ${If} $option_proxy == "1"
-      IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
-      app_exists:
-        ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
-      noapp:
-        ClearErrors
-    ${EndIf}
-    
-    ${If} $option_download == "1"
-      Call downloadEmacs
-      ${If} $download_startup != "(Select)"
-        DetailPrint "Attempting to Download $download_startup"
-        ReadINIStr $R0 "$EXEDIR\App\ini\startup.ini" "startup:$download_startup" "url"
-        StrCpy $R1 $R0 10 8
-        DetailPrint "Checking for github #1, $R0, $R1"
-        ## Handle github repositories
-        ${IfNot} $R1 == "github.com"
-          StrCpy $R1 $R0 10 7
-          DetailPrint "Checking for github #2, $R1"
-        ${EndIf}
-        ${If} $R1 == "github.com"
-          StrCpy $R1 $R0 "" -1
-          ${If} $R1 == "/" # Take off trailing /
-            StrCpy $R0 $R0 -1
-          ${EndIf}
-          ${If} $download_use == "Git"
-            Detailprint "github repository: $R0.git"
-            ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
-              SetOutPath "$EXEDIR\Data\start\$download_startup"
-              Detailprint "git pull"
-              ExecWait 'cmd /c "git pull"'
-            ${Else}
-              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
-                RmDir /r "$EXEDIR\Data\start\$download_startup"
-              ${EndIf}
-              SetOutPath "$EXEDIR\Data\start"
-              ExecWait 'cmd /c "git clone $R0.git $EXEDIR\Data\start\$download_startup --depth 1"'
-            ${EndIf}
-          ${ElseIf} $download_use == "Zip"
-            Detailprint "github repository: $R0/zipball/master"
-            SetOutPath "$TEMP\ep\start"
-            Inetc::get "$R0/zipball/master" "$TEMP\ep\start\start.zip"
-            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
-            Delete "$TEMP\ep\start\start.zip"
-            FindFirst $0 $1 $TEMP\ep\start\*.*
-            loop_start:
-              StrCmp $1 "" done_start
-              StrCmp $1 "." next_start
-              StrCmp $1 ".." next_start
-              DetailPrint $1
-              StrCpy $R1 $1
-            next_start:
-              FindNext $0 $1
-              Goto loop_start
-            done_start:
-              FindClose $0
-              RmDir /r "$EXEDIR\Data\start\$download_startup"
-              SetOutPath $EXEDIR\Data\start\$download_startup
-              CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
-              RmDir /r "$TEMP\ep\start"
-          ${EndIf}
-        ${Else}
-          StrCpy $R1 $R0 "" -4
-          DetailPrint "Checking for zip/git, $R0, $R1"
-          ${If} $R1 == ".zip"
-            Detailprint "zip file: $R0"
-            SetOutPath "$TEMP\ep\start"
-            Inetc::get "$R0" "$TEMP\ep\start\start.zip"
-            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
-            Delete "$TEMP\ep\start\start.zip"
-            FindFirst $0 $1 $TEMP\ep\start\*.*
-            StrCpy $R1 ""
-            StrCpy $R2 ""
-            loop_start_zip:
-              StrCmp $1 "" done_start_zip
-              StrCmp $1 "." next_start_zip
-              StrCmp $1 ".." next_start_zip
-              DetailPrint $1
-              ${IfNot} $R1 == ""
-                StrCpy $R2 "multiple files"
-              ${EndIf}
-              StrCpy $R1 $1
-            next_start_zip:
-              FindNext $0 $1
-              Goto loop_start_zip
-            done_start_zip:
-              FindClose $0
-              RmDir /r "$EXEDIR\Data\start\$download_startup"
-              SetOutPath $EXEDIR\Data\start\$download_startup
-              ${If} $R2 == ""
-                ## Single Directory
-                CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
-              ${Else}
-                CopyFiles /SILENT "$TEMP\ep\start\*.*" "$EXEDIR\Data\start\$download_startup"
-              ${EndIf}
-              RmDir /r "$TEMP\ep\start"
-          ${ElseIf} $R1 == ".git"
-            ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
-              SetOutPath "$EXEDIR\Data\start\$download_startup"
-              Detailprint "git pull"
-              ExecWait 'cmd /c "git pull"'
-            ${Else}
-              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
-                RmDir /r "$EXEDIR\Data\start\$download_startup"
-              ${EndIf}
-              SetOutPath "$EXEDIR\Data\start"
-              ExecWait 'cmd /c "git clone $R0 $EXEDIR\Data\start\$download_startup --depth 1"'
-            ${EndIf}
-          ${Else}
-            DetailPrint "Assume this is a single file, like a .emacs file."
-            
-            RmDir /r "$EXEDIR\Data\start\$download_startup"
-            SetOutPath "$EXEDIR\Data\start"
-            ${Explode} $0 "/" "$R0"
-            ${For} $1 1 $0
-              Pop $2
-            ${Next}
-            Inetc::get "$R0" "$EXEDIR\Data\start\$download_startup\$2"
-          ${EndIf}
+    ${If} ${FileExists} "$EPEXE\App\ini\mirrors.ini"
+      ${SetEnv}
+      ${SetupProxy}
+      
+      ${If} $option_assoc == "1"
+        md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
+        Pop $R0
+        ${If} "$R0" != $assoc_md5
+          Call RemoveAssoc
+          Call RestoreAssoc
+          ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
         ${EndIf}
       ${EndIf}
       
-      ${If} $download_dict != "(Select)"
-        DetailPrint "Attempting to download dictionary $download_dict"
-        ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
-        DetailPrint "URL: $R0"
-        ClearErrors
-        ${If} $R0 != ""
-          inetc::get  $R0 "$TEMP\ep\dict.zip"
-          SetOutPath "$EPEXE\App\hunspell\epdic"
-          ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\dict.zip" -o$EPEXE\App\hunspell\epdic'
-          Delete "$TEMP\ep\dict.zip"
-        ${EndIf}
+      ${If} $option_proxy == "1"
+        IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
+        app_exists:
+          ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
+        noapp:
+          ClearErrors
       ${EndIf}
-      ${If} $download_font != "(Select)"
-        DetailPrint "Attempting To Download $download_font"
-        ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
-        DetailPrint "URL: $R0"
-        ClearErrors
-        ${If} $R0 != ""
-          StrCpy $R1 $R0 "" -3
-          ${If} $R1 == "zip"
-            DetailPrint "Zip"
-            SetOutPath "$TEMP\ep"
-            inetc::get  $R0 "$TEMP\ep\font.zip"
-            SetOutPath "$EXEDIR\App\fonts"
-            ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
-            Delete "$TEMP\ep\font.zip"
+      
+      ${If} $option_download == "1"
+        Call downloadEmacs
+        ${If} $download_startup != "(Select)"
+          DetailPrint "Attempting to Download $download_startup"
+          ReadINIStr $R0 "$EXEDIR\App\ini\startup.ini" "startup:$download_startup" "url"
+          StrCpy $R1 $R0 10 8
+          DetailPrint "Checking for github #1, $R0, $R1"
+          ## Handle github repositories
+          ${IfNot} $R1 == "github.com"
+            StrCpy $R1 $R0 10 7
+            DetailPrint "Checking for github #2, $R1"
+          ${EndIf}
+          ${If} $R1 == "github.com"
+            StrCpy $R1 $R0 "" -1
+            ${If} $R1 == "/" # Take off trailing /
+              StrCpy $R0 $R0 -1
+            ${EndIf}
+            ${If} $download_use == "Git"
+              Detailprint "github repository: $R0.git"
+              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
+                SetOutPath "$EXEDIR\Data\start\$download_startup"
+                Detailprint "git pull"
+                ExecWait 'cmd /c "git pull"'
+              ${Else}
+                ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                  RmDir /r "$EXEDIR\Data\start\$download_startup"
+                ${EndIf}
+                SetOutPath "$EXEDIR\Data\start"
+                ExecWait 'cmd /c "git clone $R0.git $EXEDIR\Data\start\$download_startup --depth 1"'
+              ${EndIf}
+            ${ElseIf} $download_use == "Zip"
+              Detailprint "github repository: $R0/zipball/master"
+              SetOutPath "$TEMP\ep\start"
+              Inetc::get "$R0/zipball/master" "$TEMP\ep\start\start.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+              Delete "$TEMP\ep\start\start.zip"
+              FindFirst $0 $1 $TEMP\ep\start\*.*
+              loop_start:
+                StrCmp $1 "" done_start
+                StrCmp $1 "." next_start
+                StrCmp $1 ".." next_start
+                DetailPrint $1
+                StrCpy $R1 $1
+              next_start:
+                FindNext $0 $1
+                Goto loop_start
+              done_start:
+                FindClose $0
+                RmDir /r "$EXEDIR\Data\start\$download_startup"
+                SetOutPath $EXEDIR\Data\start\$download_startup
+                CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
+                RmDir /r "$TEMP\ep\start"
+            ${EndIf}
+          ${Else}
+            StrCpy $R1 $R0 "" -4
+            DetailPrint "Checking for zip/git, $R0, $R1"
+            ${If} $R1 == ".zip"
+              Detailprint "zip file: $R0"
+              SetOutPath "$TEMP\ep\start"
+              Inetc::get "$R0" "$TEMP\ep\start\start.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+              Delete "$TEMP\ep\start\start.zip"
+              FindFirst $0 $1 $TEMP\ep\start\*.*
+              StrCpy $R1 ""
+              StrCpy $R2 ""
+              loop_start_zip:
+                StrCmp $1 "" done_start_zip
+                StrCmp $1 "." next_start_zip
+                StrCmp $1 ".." next_start_zip
+                DetailPrint $1
+                ${IfNot} $R1 == ""
+                  StrCpy $R2 "multiple files"
+                ${EndIf}
+                StrCpy $R1 $1
+              next_start_zip:
+                FindNext $0 $1
+                Goto loop_start_zip
+              done_start_zip:
+                FindClose $0
+                RmDir /r "$EXEDIR\Data\start\$download_startup"
+                SetOutPath $EXEDIR\Data\start\$download_startup
+                ${If} $R2 == ""
+                  ## Single Directory
+                  CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
+                ${Else}
+                  CopyFiles /SILENT "$TEMP\ep\start\*.*" "$EXEDIR\Data\start\$download_startup"
+                ${EndIf}
+                RmDir /r "$TEMP\ep\start"
+            ${ElseIf} $R1 == ".git"
+              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
+                SetOutPath "$EXEDIR\Data\start\$download_startup"
+                Detailprint "git pull"
+                ExecWait 'cmd /c "git pull"'
+              ${Else}
+                ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                  RmDir /r "$EXEDIR\Data\start\$download_startup"
+                ${EndIf}
+                SetOutPath "$EXEDIR\Data\start"
+                ExecWait 'cmd /c "git clone $R0 $EXEDIR\Data\start\$download_startup --depth 1"'
+              ${EndIf}
+            ${Else}
+              DetailPrint "Assume this is a single file, like a .emacs file."
+              
+              RmDir /r "$EXEDIR\Data\start\$download_startup"
+              SetOutPath "$EXEDIR\Data\start"
+              ${Explode} $0 "/" "$R0"
+              ${For} $1 1 $0
+                Pop $2
+              ${Next}
+              Inetc::get "$R0" "$EXEDIR\Data\start\$download_startup\$2"
+            ${EndIf}
+          ${EndIf}
+        ${EndIf}
+        
+        ${If} $download_dict != "(Select)"
+          DetailPrint "Attempting to download dictionary $download_dict"
+          ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
+          DetailPrint "URL: $R0"
+          ClearErrors
+          ${If} $R0 != ""
+            inetc::get  $R0 "$TEMP\ep\dict.zip"
+            SetOutPath "$EPEXE\App\hunspell\epdic"
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\dict.zip" -o$EPEXE\App\hunspell\epdic'
+            Delete "$TEMP\ep\dict.zip"
+          ${EndIf}
+        ${EndIf}
+        ${If} $download_font != "(Select)"
+          DetailPrint "Attempting To Download $download_font"
+          ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
+          DetailPrint "URL: $R0"
+          ClearErrors
+          ${If} $R0 != ""
+            StrCpy $R1 $R0 "" -3
+            ${If} $R1 == "zip"
+              DetailPrint "Zip"
+              SetOutPath "$TEMP\ep"
+              inetc::get  $R0 "$TEMP\ep\font.zip"
+              SetOutPath "$EXEDIR\App\fonts"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
+              Delete "$TEMP\ep\font.zip"
             ${Else}
               DetailPrint "Raw"
-            Push $R0
-            ${Explode} $R1 "/" $R0
-            ${If} $R1 != "0"
-              Pop $R2
-              IntOp $R1 $R1 - 1
+              Push $R0
+              ${Explode} $R1 "/" $R0
+              ${If} $R1 != "0"
+                Pop $R2
+                IntOp $R1 $R1 - 1
                 ${For} $1 1 $R1
                   Pop $R2
                 ${Next}
                 Pop $R0
                 DetailPrint "URL: $R0"
-              DetailPrint "Should save to $EXEDIR\App\fonts\$R2"
-              inetc::get $R0 "$EXEDIR\App\fonts\$R2"
-            ${EndIf}
-          ${EndIf}
-          ## Clean Up Font Directory
-          StrCpy $3 ""
-          FindFirst $0 $1 $EXEDIR\App\fonts\*.*
-          loop_fonts:
-            StrCmp $1 "" done_fonts
-            StrCpy $2 $1 "" -4
-            ${IfNot} $2 == ".fon"
-            ${AndIfNot} $2 == ".fnt"
-            ${AndIfNot} $2 == ".ttf"
-            ${AndIfNot} $2 == ".ttc"
-            ${AndIfNot} $2 == ".fot"
-            ${AndIfNot} $2 == ".otf"
-            ${AndIfNot} $2 == ".mmm"
-            ${AndIfNot} $2 == ".pfb"
-            ${AndIfNot} $2 == ".pfm"
-              ${If} ${DirExists} $1
-                RmDir /r $1
-              ${Else}
-                Delete $1
+                DetailPrint "Should save to $EXEDIR\App\fonts\$R2"
+                inetc::get $R0 "$EXEDIR\App\fonts\$R2"
               ${EndIf}
             ${EndIf}
-            FindNext $0 $1
-            Goto loop_fonts
-          done_fonts:
-            ClearErrors
-            ${If} $3 == ""
-              FindFirst $0 $1 $EXEDIR\App\fonts\*
-              StrCpy $3 "1"
-              Goto  loop_fonts
-            ${EndIf}
+            ## Clean Up Font Directory
+            StrCpy $3 ""
+            FindFirst $0 $1 $EXEDIR\App\fonts\*.*
+            loop_fonts:
+              StrCmp $1 "" done_fonts
+              StrCpy $2 $1 "" -4
+              ${IfNot} $2 == ".fon"
+              ${AndIfNot} $2 == ".fnt"
+              ${AndIfNot} $2 == ".ttf"
+              ${AndIfNot} $2 == ".ttc"
+              ${AndIfNot} $2 == ".fot"
+              ${AndIfNot} $2 == ".otf"
+              ${AndIfNot} $2 == ".mmm"
+              ${AndIfNot} $2 == ".pfb"
+              ${AndIfNot} $2 == ".pfm"
+                ${If} ${DirExists} $1
+                  RmDir /r $1
+                ${Else}
+                  Delete $1
+                ${EndIf}
+              ${EndIf}
+              FindNext $0 $1
+              Goto loop_fonts
+            done_fonts:
+              ClearErrors
+              ${If} $3 == ""
+                FindFirst $0 $1 $EXEDIR\App\fonts\*
+                StrCpy $3 "1"
+                Goto  loop_fonts
+              ${EndIf}
+          ${EndIf}
         ${EndIf}
+        
+        
+        WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+            "Version" "$download_emacs_version"
+        ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
       ${EndIf}
-      
-      
-      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
-          "Version" "$download_emacs_version"
-      ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
+    ${Else}
+      ## mirrors.ini not found.  Download EmacsPortableApp
+      SetOutPath "$EXEDIR\App"
+      SetOutPath "$TEMP\ep\ep"
+      Inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" "$TEMP\ep\ep\epa.zip"
+      ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\epa.zip" -o"$TEMP\ep\ep"'
+      Delete "$TEMP\ep\ep\epa.zip"
+      FindFirst $0 $1 $TEMP\ep\ep\*.*
+      loop_epa:
+        StrCmp $1 "" done_epa
+        StrCmp $1 "." next_epa
+        StrCmp $1 ".." next_epa
+        DetailPrint $1
+        StrCpy $R1 $1
+      next_epa:
+        FindNext $0 $1
+        Goto loop_epa
+      done_epa:
+        FindClose $0
+        CopyFiles /SILENT "$TEMP\ep\ep\$R1\*.*" "$EXEDIR\"
+        RmDir /r "$TEMP\ep\ep"
+        SetOutPath "$TEMP\ep\ep"
+        ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
+          ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
+          ClearErrors
+          ${If} $0 != ""
+            Inetc::get "$0" "$TEMP\ep\ep\NSIS.zip"
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.zip" -o"$EXEDIR\App"'
+            Delete "$TEMP\ep\ep\NSIS.zip"
+          ${EndIf}
+        ${EndIf}
+        Exec "$EXEDIR\EmacsOptions.exe"
+        SetAutoClose true
     ${EndIf}
   SectionEnd
   
