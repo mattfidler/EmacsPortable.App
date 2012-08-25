@@ -582,6 +582,18 @@ installed, type
 bzr branch --stacked bzr://bzr.savannah.gnu.org/emacs/trunk emacs-bzr
 #+END_SRC
 
+* NSIS configuration
+EmacsPortable.App is built with NSIS with the following options:
+- NSIS 2.46
+- Large String Support http://nsis.sourceforge.net/Special_Builds#Large_strings
+- EnumINI http://nsis.sourceforge.net/EnumINI_plug-in
+- Inetc http://nsis.sourceforge.net/Inetc_plug-in
+- Execdos http://nsis.sourceforge.net/ExecDos_plug-in
+- Blowfish++ http://nsis.sourceforge.net/mediawiki/images/a/a7/BlowfishDLL.7z
+- MD5 http://nsis.sourceforge.net/MD5_plugin
+- XML http://nsis.sourceforge.net/XML_plug-in
+- FindProcDLL http://nsis.sourceforge.net/FindProcDLL_plug-in
+- LoadingBar UI http://nsis.sourceforge.net/LoadingBar_UI
 * EmacsPortable.App Wish List/TODO list
 ** TODO Add Mac Support of Daemon Mode
 [2011-12-14 Wed 21:48]

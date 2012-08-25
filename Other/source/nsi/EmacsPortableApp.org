@@ -454,10 +454,12 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       StrCmp "$1" "" not_running 0
       StrCpy $1 $1 "" 6
       ${If} $2 != ""
+      ${AndIfNot} ${FileExists} "$EXEDIR\EmacsPortableApp-$2.exe"
         CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$2.exe"
         StrCpy $3 "1"
       ${EndIf}
       ${If} $3 != ""
+      ${AndIfNot} ${FileExists} "$EXEDIR\EmacsPortableApp-$1.exe"
         CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$1.exe"
       ${EndIf}
       FindProcDLL::FindProc "emacs-$1.exe"
@@ -467,9 +469,9 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       FindNext $0 $1
       Goto loop_find_running
     not_running:
-      ${If} ${FileExists} "$TEMP\ep\ep-rm.exe"
-        ExecWait "$TEMP\ep\ep-rm.exe"
-      ${EndIf}
+      ; ${If} ${FileExists} "$TEMP\ep\ep-rm.exe"
+      ;   ExecWait "$TEMP\ep\ep-rm.exe"
+      ; ${EndIf}
     already_running:
       
       ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
@@ -807,15 +809,13 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
         CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs_dir\${FILETO}"
         ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
           SetOutPath "$TEMP\ep"
-          ExecWait '"$R4" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}'
+          ExecWait '"$EXEDIR\App\7z\7zG.exe" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}'
         ${EndIf}
       ${EndIf}
     ${EndIf}
   !macroend
   
   Function CpDll
-    Call Find7z
-    Pop $R4
     StrCpy $R5 $TEMP 2
     IfFileExists "$EXEDIR\App\ini\copy.ini" 0 end_copy
     EnumINI::Section "$EXEDIR\App\ini\copy.ini" "copy"
@@ -843,25 +843,24 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     StrCmp "$R0" "0" extract_zip zip_binaries
   extract_zip:
     IfFileExists "$EXEDIR\App\emacs-$option_version\bare-bin.zip" 0 +3
-    ZipDLL::extractall "$EXEDIR\App\emacs-$option_version\bare-bin.zip" "$EXEDIR\App"
+    ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
     Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
     IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" 0 +3
-    ZipDLL::extractall "$EXEDIR\App\emacs-$option_version\ext-bin.zip" "$EXEDIR\App"
+    ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
     Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
     Goto end
   zip_binaries:
     IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" end
-    Call Find7z
     Pop $R0
-    DetailPrint "Using 7z at `$R0'"
+    
     StrCmp $R0 "" end found_7z
     found_7z:
       ## Now zip
       SetOutPath "$EXEDIR\App"
       DetailPrint "Zipping binary files"
       SetOutPath "$EXEDIR\App"
-      ExecWait '"$R0" a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X'
-      ExecWait '"$R0"  a -mx9 -tzip emacs-$option_version\ext-bin.zip \
+      ExecWait '"$EXEDIR\App\7z\7zG.exe" a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X'
+      ExecWait '"$EXEDIR\App\7z\7zG.exe"  a -mx9 -tzip emacs-$option_version\ext-bin.zip \
           emacs-$option_version\bin\emacsclient.exe \
           emacs-$option_version\bin\runemacs.exe \
           emacs-$option_version\bin\cmd*.exe \
@@ -1114,26 +1113,35 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
 * Callback Functions
 ** Initialization
 #+BEGIN_SRC nsis
-  Function .onInit
-    StrCpy "$INSTDIR" "$EXEDIR"
-    StrLen $R2 $EXEFILE
-    IntCmp 12 $R2 0 +3
-    Exec "$EXEDIR\EmacsPortableApp.exe"
-    Abort
-    ${GetWindowsVersion} $R0
-    ${If} $R0 == "7"
-      ;; Should Allow running hidden processes?
-      System::Call 'shell32::SetCurrentProcessExplicitAppUserModelID(w "GNU.Emacs")'
-    ${EndIf}
-    ${GetCmdOptions}
-    ${setupData}
-    SetOutPath "$TEMP\ep"
+  Function .onInit 
+    
   FunctionEnd
+  
 #+END_SRC
 
 * Main Script
 #+BEGIN_SRC nsis
-    Section "Main" sec_mainN
+  Section "Main" sec_mainN
+    StrCpy "$INSTDIR" "$EXEDIR"
+    StrLen $R2 $EXEFILE
+    ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+      ExecWait '"$EXEDIR\EmacsOptions.exe" /7z'
+    ${EndIf}
+    ${If} $R2  == 12
+      Exec "$EXEDIR\EmacsPortableApp.exe"
+    ${ElseIfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+      MessageBox MB_ICONEXCLAMATION|MB_OK "Cannot find 7zip.  Cannot run this program..."
+    ${Else}
+      ${GetWindowsVersion} $R0
+      ${If} $R0 == "7"
+        ;; Should Allow running hidden processes?
+        System::Call 'shell32::SetCurrentProcessExplicitAppUserModelID(w "GNU.Emacs")'
+      ${EndIf}
+      DetailPrint "Get Command Options"
+      ${GetCmdOptions}
+      DetailPrint "Setup Data"
+      ${setupData}
+      SetOutPath "$TEMP\ep"
       StrCpy $EPEXE $EXEDIR
       StrCmp $option_updateproxy "" 0 sync_proxy
       StrCpy "$emacs_dir" "$EXEDIR\App\emacs-$option_version\bin"
@@ -1287,8 +1295,9 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
         Goto end
       end:
         #
-    SectionEnd
-    
+    ${EndIf}
+  SectionEnd
+  
 #+END_SRC
 * Uninstall section
 This removes registry settings, fonts and other settings.

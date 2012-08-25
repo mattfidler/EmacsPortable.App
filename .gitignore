@@ -5,6 +5,8 @@ ehthumbs.db
 Icon?
 Thumbs.db
 # EmacsPortable Files to Ignore #
+/App/7z/*
+/App/NSIS/*
 /App/bin/*
 /App/fonts/*
 /App/gw32/*

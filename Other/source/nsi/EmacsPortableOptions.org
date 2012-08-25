@@ -23,7 +23,7 @@ This provides an interface to the Emacs Startup options
   Var download_font
   Var download_startup
   Var download_use 
-  
+  Var download_dict
 #+END_SRC
 ** Include files
 #+BEGIN_SRC nsis
@@ -417,6 +417,16 @@ From http://nsis.sourceforge.net/Explode
 *** Initialization Function
 #+BEGIN_SRC nsis
   Function .onInit
+    ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+      SetOutPath "$EXEDIR\App\7z"
+      File "..\..\..\App\7z\7zG.exe"
+      File "..\..\..\App\7z\7z.*"
+      File "..\..\..\App\7z\License.txt"
+    ${EndIf}
+    ${GetParameters} $0
+    ${GetOptions} $0 '/7z' $R0
+    IfErrors +2 0
+    Abort
     StrCpy $EPEXE $EXEDIR
     StrCpy $INSTDIR $EXEDIR
     ClearErrors
@@ -545,7 +555,7 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_behavior_Label1
     
     ; === DefaultVersion (type: DropList) ===
-    ${NSD_CreateDropListSorted} 70u 17u 51u 12u ""
+    ${NSD_CreateDropList} 70u 17u 51u 12u ""
     Pop $hCtl_behavior_DefaultVersion
     SetCtlColors $hCtl_behavior_DefaultVersion 0x000000 0xFFFFFF
   
@@ -1791,11 +1801,13 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_Label5
     
     ; === ComboBox1 (type: ComboBox) ===
-    ${NSD_CreateDropList} 58u 106u 77u 12u ""
+    ${NSD_CreateDropListSorted} 58u 106u 77u 12u ""
     Pop $hCtl_download_Dict
     SetCtlColors $hCtl_download_Dict 0x000000 0xFFFFFF
     Call SetupFontDownload  
-    Call SetupDownloadMirrors
+    Call SetupDownloadStartup
+    Call SetupDownloadEmacs
+    Call SetupDictDownload
   FunctionEnd
   
   
@@ -1809,7 +1821,7 @@ From http://nsis.sourceforge.net/Explode
   
 #+END_SRC
 *** Helper Functions
-**** Setup Functions
+
 **** Setup Fonts Available for Download
 #+BEGIN_SRC nsis
   Function SetupFontDownload
@@ -1828,10 +1840,47 @@ From http://nsis.sourceforge.net/Explode
   FunctionEnd
 #+END_SRC
 
+**** Setup Dictionaries Available for Download
+#+BEGIN_SRC nsis
+  Function SetupDictDownload
+    EnumINI::SectionNames "$EXEDIR\App\ini\dicts.ini"
+    Pop $R0
+    ${If} $R0 != "error"
+      ${ForEach} $R1 $R0 1 - 1
+        Pop $R2
+        ${NSD_CB_AddString} $hCtl_download_Dict $R2
+      ${Next}
+    ${EndIf}
+    ${NSD_CB_AddString} $hCtl_download_Dict "(Select)"
+    ${NSD_CB_SelectString} $hCtl_download_Dict "(Select)"
+   FunctionEnd
+  
+#+END_SRC
+**** Setup Functions for Emacs Version Available to Download
+Emacs Versions Available for Download
+#+BEGIN_SRC nsis
+  Function SetupDownloadEmacs 
+    EnumINI::SectionNames "$INSTDIR\App\ini\mirrors.ini"
+    Pop $R0
+    ${If} $R0 != "error"
+      ${ForEach} $R1 $R0 1 - 1
+        Pop $R2
+        ${IfNot} $R2 == "emacs"
+          ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R2
+        ${EndIf}
+      ${Next}
+    ${EndIf}
+    ${NSD_CB_AddString} $hCtl_download_DownloadVersion "(Select)"
+    ${NSD_CB_SelectString} $hCtl_download_DownloadVersion "(Select)"
+  FunctionEnd
+  
+    
+#+END_SRC
+
 **** Setup Startup Scripts available for download
 Startup scripts available for download.
 #+BEGIN_SRC nsis
-  Function SetupDownloadMirrors
+  Function SetupDownloadStartup
     EnumINI::SectionNames "$INSTDIR\App\ini\startup.ini"
     Pop $R0
     ${If} $R0 != "error"
@@ -1841,11 +1890,6 @@ Startup scripts available for download.
         ${If} $0 == "startup:"
           StrCpy $0 $R2 "" 8
           ${NSD_CB_AddString} $hCtl_download_Startup $0
-        ${EndIf}
-        EnumINI::KeyExist "$INSTDIR\App\ini\startup.ini" $R2 "win"
-        Pop $R3
-        ${If} $R3  == "1"
-          ${NSD_CB_AddString} $hCtl_download_DownloadVersion $R2
         ${EndIf}
       ${Next}
     ${EndIf}
@@ -1936,6 +1980,7 @@ FunctionEnd
     ${NSD_GetText}  $hCtl_download_Font $download_font
     ${NSD_GetText} $hCtl_download_Startup $download_startup
     ${NSD_GetText} $hCtl_download_Use $download_use
+    ${NSD_GetText}  $hCtl_download_Dict $download_dict
   FunctionEnd
 #+END_SRC
 *** Download Functions
@@ -1969,7 +2014,6 @@ FunctionEnd
 **** Download Function
 #+BEGIN_SRC nsis
 Function DownloadFiles
-  Call Find7z
   Call downloadEmacs
 FunctionEnd
 #+END_SRC
@@ -1979,7 +2023,6 @@ FunctionEnd
   Section "Components"
     ${SetEnv}
     ${SetupProxy}
-    Call Find7z  
     
     ${If} $option_assoc == "1"
       md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
@@ -2000,7 +2043,6 @@ FunctionEnd
     ${EndIf}
     
     ${If} $option_download == "1"
-      Call Find7z
       Call downloadEmacs
       ${If} $download_startup != "(Select)"
         DetailPrint "Attempting to Download $download_startup"
@@ -2034,7 +2076,7 @@ FunctionEnd
             Detailprint "github repository: $R0/zipball/master"
             SetOutPath "$TEMP\ep\start"
             Inetc::get "$R0/zipball/master" "$TEMP\ep\start\start.zip"
-            ExecWait '"$exe_7z" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
             Delete "$TEMP\ep\start\start.zip"
             FindFirst $0 $1 $TEMP\ep\start\*.*
             loop_start:
@@ -2060,7 +2102,7 @@ FunctionEnd
             Detailprint "zip file: $R0"
             SetOutPath "$TEMP\ep\start"
             Inetc::get "$R0" "$TEMP\ep\start\start.zip"
-            ExecWait '"$exe_7z" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
             Delete "$TEMP\ep\start\start.zip"
             FindFirst $0 $1 $TEMP\ep\start\*.*
             StrCpy $R1 ""
@@ -2114,6 +2156,18 @@ FunctionEnd
         ${EndIf}
       ${EndIf}
       
+      ${If} $download_dict != "(Select)"
+        DetailPrint "Attempting to download dictionary $download_dict"
+        ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
+        DetailPrint "URL: $R0"
+        ClearErrors
+        ${If} $R0 != ""
+          inetc::get  $R0 "$TEMP\ep\dict.zip"
+          SetOutPath "$EPEXE\App\hunspell\epdic"
+          ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\dict.zip" -o$EPEXE\App\hunspell\epdic'
+          Delete "$TEMP\ep\dict.zip"
+        ${EndIf}
+      ${EndIf}
       ${If} $download_font != "(Select)"
         DetailPrint "Attempting To Download $download_font"
         ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
@@ -2126,7 +2180,7 @@ FunctionEnd
             SetOutPath "$TEMP\ep"
             inetc::get  $R0 "$TEMP\ep\font.zip"
             SetOutPath "$EXEDIR\App\fonts"
-            ExecWait '"$exe_7z" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
             Delete "$TEMP\ep\font.zip"
             ${Else}
               DetailPrint "Raw"

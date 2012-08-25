@@ -11,7 +11,7 @@ all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsDos.
 unix-download.ini: emacsdownload-gw32.nsi emacsdownload-ezwin.nsi
 	copy unix-download-gw32.ini +unix-download-ezw.ini  unix-download.ini
 
-EmacsUnix.nsi: emacsUnix.org emacsdownload-gw32.nsi emacsdownload-ezwin.nsi EmacsDownloadShared.nsh
+EmacsUnix.nsi: emacsUnix.org emacsdownload-gw32.nsi emacsdownload-ezwin.nsi EmacsDownloadShared.nsh EmacsCall.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsUnix.org)"
 
 EmacsEnv.nsh: EmacsEnv.org
@@ -109,13 +109,13 @@ EmacsCall.nsh: EmacsCall.org
 emacsproxy.nsh: emacsproxy.org 
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsproxy.org)"
 
-EmacsDownload-ezwin.nsi: emacsdownload-ezw.el ../../../App/ini/mirrors.ini
+EmacsDownload-ezwin.nsi: emacsdownload-ezw.el ../../../App/ini/gw32-install.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-ezw.el
 
 EmacsDownload-pae.nsi: emacsdownload-pae.el ../../../App/ini/mirrors.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-pae.el
 
-emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/mirrors.ini
+emacsdownload-gw32.nsi: emacsdownload-gw32.el ../../../App/ini/gw32-install.ini
 	$(EMACS) -Q --batch -l ./emacsdownload-gw32.el
 
 install-net.nsi: install-net.org ${download_extras}

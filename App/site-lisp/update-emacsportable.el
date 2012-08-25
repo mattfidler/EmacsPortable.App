@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jun  7 16:07:47 2012 (-0500)
 ;; Version:
-;; Last-Updated: Mon Jun 11 08:45:04 2012 (-0500)
+;; Last-Updated: Fri Aug 24 14:41:24 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 26
+;;     Update #: 30
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -76,26 +76,18 @@
                    (get-mac-emacs-ver-from-buffer emacs-pretest "http://alpha.gnu.org/gnu/emacs/pretest/windows/emacs-")))
         
         (kill-buffer (current-buffer))))
-    (fix-mirrors.ini (nth 0 (reverse (sort emacs-vers 'string-lessp))) ret)))
+    (fix-mirrors.ini (nth 0 (sort emacs-vers 'string-lessp)) ret)))
 
 (defun fix-mirrors.ini (ver what)
   "Fix Mirrors.ini"
   (let ((mirrors.ini (concat usb-app-dir "ini/mirrors.ini"))
         pt)
     (with-temp-buffer
-      (insert-file-contents mirrors.ini)
+      (insert "[emacs]\ndefault.ver=")
+      (insert ver)
+      (insert what)
       (goto-char (point-min))
-      (while (re-search-forward "\\[[0-9.]+\\(?:-rc[0-9.]*\\)?\\]" nil t)
-        (delete-region (point-at-bol)
-                       (save-excursion
-                         (if (re-search-forward "^[ \t]*\\[" nil t)
-                             (point-at-bol)
-                           (point-at-eol)))))
-      (goto-char (point-min))
-      (when (re-search-forward "^ *default[.]ver *=" nil t)
-        (delete-region (point) (point-at-eol))
-        (insert ver)
-        (insert what))
+      (set-buffer-file-coding-system 'unix)
       (write-file mirrors.ini))))
 
 (defun get-mac-emacs-ver-from-buffer (known-versions prefix)
