@@ -6,20 +6,21 @@
 #+BEGIN_SRC nsis
   !define getEmacsWin `!insertmacro getEmacsWin`
   !macro getEmacsWin VER
-    ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "${VER}" "win"
+    ReadINIStr $R0 "$INSTDIR\App\ini\mirrors.ini" "${VER}" "win"
     inetc::get  $R0 "$TEMP\emacs.zip"
     ## Some emacs releases (Like Emacs 24.1-rc) extract to a different version.
-    ExecWait '"$EXEDIR\App\7z\7zg.exe" x "$TEMP\emacs.zip" -o"$INSTDIR\App\install"'
-    FindFirst $0 $1 $INSTDIR\App\install\emacs-*.*
+    SetOutPath "$TEMP\ep\em"
+    ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\emacs.zip" -o"$TEMP\ep\em"'
+    FindFirst $0 $1 $TEMP\ep\em\emacs-*.*
     loop_ver_emacs_win:
       StrCmp $1 "" done_ver_emacs_win
       IfFileExists "$INSTDIR\App\emacs-${VER}" +2 0 
-      Rename "$INSTDIR\App\install\$1" "$INSTDIR\App\emacs-${VER}"
+      CopyFiles "$TEMP\ep\em\$1" "$INSTDIR\App\emacs-${VER}"
       FindNext $0 $1
       Goto loop_ver_emacs_win
     done_ver_emacs_win:
       FindClose $0
-      RmDir /r "$INSTDIR\App\install"
+      RmDir /r "$TEMP\ep\em"
       Delete "$TEMP\emacs.zip"
   !macroend
   
@@ -30,7 +31,7 @@
         DetailPrint "Mac OS Binaries already found."
       ${Else}
         ${If} $R0 != ""
-          ReadINIStr $R1 "$INSTDIR\App\ini\gw32-install.ini" "${VER}" "mac"
+          ReadINIStr $R1 "$INSTDIR\App\ini\mirrors.ini" "${VER}" "mac"
           ${IfNot} ${FileExists} "$TEMP\emacsMac\EmacsMac.dmg"
             SetOutPath "$TEMP\emacsMac"
             inetc::get $R1 "$TEMP\emacsMac\emacsMac.dmg"
@@ -327,7 +328,7 @@ it alone when OTHER_SEC is read-only.
       IfFileExists "$TEMP\${VAL}.zip" +3 0
       DetailPrint "Could not Download ${VAL}, skipping."
       Goto +2
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\${VAL}.zip" -o"${OUT}"'
+      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${VAL}.zip" -o"${OUT}"'
       Delete "$TEMP\${VAL}.zip"
       Goto end
     git:
@@ -354,38 +355,38 @@ it alone when OTHER_SEC is read-only.
 *** GnuWin32 Utilities Download
 #+BEGIN_SRC nsis
   !macro  g32exist WHAT GO
-    IfFileExists "$INSTDIR\App\ini\gw32.ini" 0 g32exist_skip
+    IfFileExists "$EPEXE\App\ini\gw32.ini" 0 g32exist_skip
     
     g32exist_skip:
       ClearErrors
   !macroend
   
   !macro g32down WHAT
-    ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.exe"
+    ReadINIStr $R0 "$EPEXE\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.exe"
     IfErrors g32_zip
-    SetOutPath "$INSTDIR\App\gw32\bin"
-    inetc::get /CONNECTTIMEOUT 30 $R0 "$INSTDIR\App\gw32\bin\${WHAT}.exe"
-    WriteIniStr "$INSTDIR\App\ini\gw32.ini" "${WHAT}.bin" "${WHAT}.exe" "1"
+    SetOutPath "$EPEXE\App\gw32\bin"
+    inetc::get /CONNECTTIMEOUT 30 $R0 "$EPEXE\App\gw32\bin\${WHAT}.exe"
+    WriteIniStr "$EPEXE\App\ini\gw32.ini" "${WHAT}.bin" "${WHAT}.exe" "1"
     Goto g32_exit
     g32_zip:
-      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.zip"
+      ReadINIStr $R0 "$EPEXE\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.zip"
       IfErrors g32_download
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
-
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
+      
+      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
       RmDir /r "$TEMP\ep-gw32"
       Delete "$TEMP\${WHAT}-bin.zip" 
-      ReadINIStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "gw32:${WHAT}" "dep.zip"
+      ReadINIStr $R0 "$EPEXE\App\ini\gw32-install.ini" "gw32:${WHAT}" "dep.zip"
       IfErrors g32_exit
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
       RmDir /r "$TEMP\ep-gw32"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
-      SetOutPath "$INSTDIR\App\gw32"
+      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
+      SetOutPath "$EPEXE\App\gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "dep"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
@@ -398,8 +399,8 @@ it alone when OTHER_SEC is read-only.
           "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
       RmDir /r "$TEMP\ep-gw32"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
-      SetOutPath "$INSTDIR\App\gw32"
+      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
+      SetOutPath "$EPEXE\App\gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW" 
@@ -410,8 +411,8 @@ it alone when OTHER_SEC is read-only.
           "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
       RmDir /r "$TEMP\ep-gw32"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
-      SetOutPath "$INSTDIR\App\gw32"
+      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
+      SetOutPath "$EPEXE\App\gw32"
       StrCpy $R1 "dep"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
       RmDir /r "$TEMP\ep-gw32"
@@ -426,14 +427,16 @@ it alone when OTHER_SEC is read-only.
     StrCpy "$R5" "$R9" "" $0
     StrCmp $R6 "" is_dir is_file
     is_dir:
-      CreateDirectory "$INSTDIR\App\gw32\$R5"
+      DetailPrint "Create Directory $R5"
+      CreateDirectory "$EPEXE\App\gw32\$R5"
       Goto end
     is_file:
-      WriteINIStr "$INSTDIR\App\ini\gw32.ini" "$R0.$R1" "$R5" "1"
+      WriteINIStr "$EPEXE\App\ini\gw32.ini" "$R0.$R1" "$R5" "1"
       StrCmp "$R1" "dep" 0 skip_dep
-      WriteINIStr "$INSTDIR\App\ini\gw32.ini" "$R5" "$R0" "1"
+      WriteINIStr "$EPEXE\App\ini\gw32.ini" "$R5" "$R0" "1"
     skip_dep:
-      CopyFiles /SILENT "$TEMP\ep-gw32\$R5" "$INSTDIR\App\gw32\$R4"
+      DetailPrint "Copy File $R5 to $R4"
+      CopyFiles /SILENT "$TEMP\ep-gw32\$R5" "$EPEXE\App\gw32\$R4"
     end:
       ClearErrors
       StrCpy $0 1
@@ -574,23 +577,23 @@ This removes a gnuwin32 package.
 ** EzWindows Ports
 *** EzWindows Download 
 #+BEGIN_SRC nsis
-  !macro  ezwinexist WHAT GO              
-    IfFileExists "$INSTDIR\App\ini\ezwin.ini" 0 ezwinexist_skip
+  !macro  ezwinexist WHAT GO
+    IfFileExists "$EPEXE\App\ini\ezwin.ini" 0 ezwinexist_skip
     ezwinexist_skip:
       ClearErrors
   !macroend
   
   !macro ezwindown WHAT
     ClearErrors
-    ReadIniStr $R0 "$INSTDIR\App\ini\gw32-install.ini" "ezw:${WHAT}" "ver"
+    ReadIniStr $R0 "$EPEXE\App\ini\gw32-install.ini" "ezw:${WHAT}" "ver"
     IfErrors ezwin_exit 
     inetc::get /CONNECTTIMEOUT 30 \
         "http://downloads.sourceforge.net/project/ezwinports/${WHAT}-$R0-bin.zip" \
         "$TEMP\${WHAT}-bin.zip" 
     IfFileExists "$TEMP\${WHAT}-bin.zip" 0 ezwin_exit
     RmDir /r "$TEMP\ep\ezwin"
-    ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-ezwin"'
-    SetOutPath "$INSTDIR\App\ezwin"
+    ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-ezwin"'
+    SetOutPath "$EPEXE\App\ezwin"
     StrCpy $R0 "${WHAT}"
     ${Locate} "$TEMP\ep-ezwin" "" "AddEZW"
     Sleep 5
@@ -607,13 +610,13 @@ This removes a gnuwin32 package.
       StrCpy "$R5" "$R9" "" $R2
       StrCmp $R6 "" is_dir is_file
       is_dir:
-        CreateDirectory "$INSTDIR\App\ezwin\$R5"
+        CreateDirectory "$EPEXE\App\ezwin\$R5"
         Goto end
       is_file:
-        IfFileExists "$INSTDIR\App\ezwin\$R5" found_file new_file
+        IfFileExists "$EPEXE\App\ezwin\$R5" found_file new_file
       found_file:
-        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R0.dep" "$R5" "1"
-        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R5" "$R0" "1"
+        WriteINIStr "$EPEXE\App\ini\ezwin.ini" "$R0.dep" "$R5" "1"
+        WriteINIStr "$EPEXE\App\ini\ezwin.ini" "$R5" "$R0" "1"
         ## Look for the same file in one of the binary sections
         Call PushEZW
         Pop $R1
@@ -621,21 +624,21 @@ This removes a gnuwin32 package.
         IntCmp $R1 0 end end 0
         Pop $R2
         StrCmp "$R2" "$R0" next_iter
-        EnumINI::SectionExist "$INSTDIR\App\ini\ezwin.ini" "$R2.bin"
+        EnumINI::SectionExist "$EPEXE\App\ini\ezwin.ini" "$R2.bin"
         Pop $R3
         IntCmp "$R3" "0" next_iter
-        EnumINI::KeyExist "$INSTDIR\App\ini\ezwin.ini" "$R2.bin" "$R5"
+        EnumINI::KeyExist "$EPEXE\App\ini\ezwin.ini" "$R2.bin" "$R5"
         Pop $R3
         IntCmp "$R3" "0" next_iter
-        DeleteIniStr "$INSTDIR\App\ini\ezwin.ini" "$R2.bin" "$R5"
-        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R2.dep" "$R5" "1"
-        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R5" "$R2" "1"
+        DeleteIniStr "$EPEXE\App\ini\ezwin.ini" "$R2.bin" "$R5"
+        WriteINIStr "$EPEXE\App\ini\ezwin.ini" "$R2.dep" "$R5" "1"
+        WriteINIStr "$EPEXE\App\ini\ezwin.ini" "$R5" "$R2" "1"
       next_iter:
         IntOp $R1 $R1 - 1
         Goto loop_look_bin
       new_file:
-        WriteINIStr "$INSTDIR\App\ini\ezwin.ini" "$R0.bin" "$R5" "1" 
-        CopyFiles /SILENT "$TEMP\ep-ezwin\$R5" "$INSTDIR\App\ezwin\$R4"
+        WriteINIStr "$EPEXE\App\ini\ezwin.ini" "$R0.bin" "$R5" "1" 
+        CopyFiles /SILENT "$TEMP\ep-ezwin\$R5" "$EPEXE\App\ezwin\$R4"
       end:
         ClearErrors
         Push $R5

@@ -24,9 +24,9 @@ AutoCloseWindow true
 ** User Interface
 Modern UI2 user interface
 #+BEGIN_SRC nsis
+var EPEXE
 !include "MUI2.nsh"
 !include "EmacsDownloadShared.nsh"
-var EPEXE
 #+END_SRC
 ** Defines
 #+BEGIN_SRC nsis
@@ -85,6 +85,12 @@ OutFile "..\..\..\App\eps\download-unix.exe"
     !include "emacsdownload-rezwin.nsi"
   SectionGroupEnd ; sec_remove_installed_unix_programss
   
+  Section "-hidden section"
+    ${If} ${FileExists} "$EXEDIR\..\..\EmacsBuild.exe"
+      Delete "$EXEDIR\..\..\EmacsBuild.exe"
+      Exec "$EXEDIR\..\..\EmacsOptions.exe /all"
+    ${EndIf}
+  SectionEnd
   
 #+END_SRC
 ** Section Descriptions 
@@ -110,21 +116,24 @@ OutFile "..\..\..\App\eps\download-unix.exe"
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
-    Goto +2
+    IfFileExists "$EXEDIR\..\..\EmacsOptions.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
+    Goto found_epexe
+    
+    IfFileExists "$EXEDIR\..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
+    Goto found_epexe
+    
+    
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-  
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $INSTDIR "..\.."
-    Goto +2
-    ReadINIStr $INSTDIR "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-    ClearErrors
-    SetOutPath "$TEMP\ep"
-    Delete "$TEMP\ep\unix-download.ini"
-    ${G32_INI}
-    ${EZWIN_INI}
-    ${RREZWIN_INI}
-    ${RG32_INI}
+    found_epexe:
+      
+      StrCpy $INSTDIR $EPEXE
+      SetOutPath "$TEMP\ep"
+      Delete "$TEMP\ep\unix-download.ini"
+      ${G32_INI}
+      ${EZWIN_INI}
+      ${RREZWIN_INI}
+      ${RG32_INI}
   FunctionEnd
 #+END_SRC

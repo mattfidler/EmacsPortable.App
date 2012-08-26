@@ -153,6 +153,9 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
 ** NSIS Pages
 #+BEGIN_SRC nsis
   ;Order of pages
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE licPre
+  !insertmacro MUI_PAGE_LICENSE "..\gpl-3.0.rtf"
+  
   Page custom fnc_startup_options_Show fnc_startup_options_Validate
   Page custom fnc_download_Show fnc_download_Validate
   Page custom fnc_assocs_Show fnc_assocs_Validate
@@ -164,6 +167,18 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
   !insertmacro MUI_LANGUAGE "English"
   
 #+END_SRC
+** Abort Built-in license file
+Don't display the license page when 
+#+BEGIN_SRC nsis
+  Function licPre
+    ## Is there only one file in the directory, if so show the licence page.
+    ${If} ${FileExists} "$EXEDIR\App\site-lisp\site-start.el"
+      Abort ; Licence page should not be shown.
+    ${EndIf}
+  FunctionEnd
+  
+#+END_SRC
+
 * Macros
 ** Read/Write Macros
 #+BEGIN_SRC nsis  
@@ -417,20 +432,22 @@ From http://nsis.sourceforge.net/Explode
 *** Initialization Function
 #+BEGIN_SRC nsis
   Function .onInit
+    ${GetParameters} $0
+    ${GetOptions} $0 '/7z' $R0
+    IfErrors next 0
     ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
       SetOutPath "$EXEDIR\App\7z"
       File "..\..\..\App\7z\7zG.exe"
       File "..\..\..\App\7z\7z.*"
       File "..\..\..\App\7z\License.txt"
     ${EndIf}
-    ${GetParameters} $0
-    ${GetOptions} $0 '/7z' $R0
-    IfErrors +2 0
     Abort
-    StrCpy $EPEXE $EXEDIR
-    StrCpy $INSTDIR $EXEDIR
-    ClearErrors
+    next:
+      StrCpy $EPEXE $EXEDIR
+      StrCpy $INSTDIR $EXEDIR
+      ClearErrors
   FunctionEnd  
+  
 #+END_SRC
 *** Exit Function
 #+BEGIN_SRC nsis
@@ -453,6 +470,7 @@ From http://nsis.sourceforge.net/Explode
   Var option_behavior
   Var option_visual
   Var option_download
+  Var option_build
   
   
   ; dialog create function
@@ -495,19 +513,57 @@ From http://nsis.sourceforge.net/Explode
   
   ; dialog show function
   Function fnc_startup_options_Show
-    ${If} ${FileExists} "$EXEDIR\App\ini\mirrors.ini"
-      Call fnc_startup_options_Create
-      nsDialogs::Show $hCtl_startup_options
+    StrCpy $option_download ""
+    StrCpy $option_build ""
+    ${If} $EXEFILE == "EmacsBuild.exe"
+      StrCpy $option_build "1"
+    ${Else}
+      ${If} ${FileExists} "$EXEDIR\App\ini\mirrors.ini"
+        StrCpy $2 ""
+        FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+        loop_emacs:
+          StrCmp $1 "" done_emacs
+          StrCpy $2 "1"
+          FindNext $0 $1
+          Goto loop_emacs
+        done_emacs:
+          ${If} $2 == "1"
+            ## Now see if EmacsPortableApp.exe exists
+            ${If} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
+              ${GetParameters} $0
+              ${GetOptions} $0 '/all' $R0
+              ${If} ${Errors}
+                ClearErrors
+                ${setupData}
+                Call fnc_startup_options_Create
+                nsDialogs::Show $hCtl_startup_options
+              ${Else}
+                ${setupData}
+                StrCpy $option_assoc "1"
+                StrCpy $option_proxy "1"
+                StrCpy $option_visual "1"
+                StrCpy $option_behavior "1"
+              ${EndIf}
+            ${Else}
+              CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$EXEDIR\EmacsBuild.exe"
+              StrCpy $option_build "1"
+            ${EndIf}
+          ${Else}
+            StrCpy $option_download "1"
+          ${EndIf}
+      ${EndIf}
     ${EndIf}
   FunctionEnd
   
   Function fnc_startup_options_Validate
-    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 0 $option_assoc
-    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 1 $option_proxy
-    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
-    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
-    ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
-    StrCpy $option_startup "1"
+    ${If} $option_download == ""
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 0 $option_assoc
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 1 $option_proxy
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
+      StrCpy $option_startup "1"
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
@@ -2023,266 +2079,459 @@ FunctionEnd
 * Single section for installing
 #+BEGIN_SRC nsis
   Section "Components"
-    ${If} ${FileExists} "$EPEXE\App\ini\mirrors.ini"
-      ${SetEnv}
-      ${SetupProxy}
-      
-      ${If} $option_assoc == "1"
-        md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
-        Pop $R0
-        ${If} "$R0" != $assoc_md5
-          Call RemoveAssoc
-          Call RestoreAssoc
-          ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
+    ${If} $option_build == ""
+      ${If} ${FileExists} "$EPEXE\App\ini\mirrors.ini"
+        ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+          SetOutPath "$EXEDIR\App\7z"
+          File "..\..\..\App\7z\7zG.exe"
+          File "..\..\..\App\7z\7z.*"
+          File "..\..\..\App\7z\License.txt"
         ${EndIf}
-      ${EndIf}
-      
-      ${If} $option_proxy == "1"
-        IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
-        app_exists:
-          ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
-        noapp:
-          ClearErrors
-      ${EndIf}
-      
-      ${If} $option_download == "1"
-        Call downloadEmacs
-        ${If} $download_startup != "(Select)"
-          DetailPrint "Attempting to Download $download_startup"
-          ReadINIStr $R0 "$EXEDIR\App\ini\startup.ini" "startup:$download_startup" "url"
-          StrCpy $R1 $R0 10 8
-          DetailPrint "Checking for github #1, $R0, $R1"
-          ## Handle github repositories
-          ${IfNot} $R1 == "github.com"
-            StrCpy $R1 $R0 10 7
-            DetailPrint "Checking for github #2, $R1"
+        ${SetEnv}
+        ${SetupProxy}
+        
+        ${If} $option_assoc == "1"
+          md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
+          Pop $R0
+          ${If} "$R0" != $assoc_md5
+            Call RemoveAssoc
+            Call RestoreAssoc
+            ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
           ${EndIf}
-          ${If} $R1 == "github.com"
-            StrCpy $R1 $R0 "" -1
-            ${If} $R1 == "/" # Take off trailing /
-              StrCpy $R0 $R0 -1
+        ${EndIf}
+        
+        ${If} $option_proxy == "1"
+          IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
+          app_exists:
+            ExecWait '"$EXEDIR\EmacsPortableApp.exe" /UPDATEPROXY'
+          noapp:
+            ClearErrors
+        ${EndIf}
+        
+        ${If} $option_download == "1"
+          Call downloadEmacs
+          ${If} $download_startup != "(Select)"
+            DetailPrint "Attempting to Download $download_startup"
+            ReadINIStr $R0 "$EXEDIR\App\ini\startup.ini" "startup:$download_startup" "url"
+            StrCpy $R1 $R0 10 8
+            DetailPrint "Checking for github #1, $R0, $R1"
+            ## Handle github repositories
+            ${IfNot} $R1 == "github.com"
+              StrCpy $R1 $R0 10 7
+              DetailPrint "Checking for github #2, $R1"
             ${EndIf}
-            ${If} $download_use == "Git"
-              Detailprint "github repository: $R0.git"
-              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
-                SetOutPath "$EXEDIR\Data\start\$download_startup"
-                Detailprint "git pull"
-                ExecWait 'cmd /c "git pull"'
-              ${Else}
-                ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
-                  RmDir /r "$EXEDIR\Data\start\$download_startup"
-                ${EndIf}
-                SetOutPath "$EXEDIR\Data\start"
-                ExecWait 'cmd /c "git clone $R0.git $EXEDIR\Data\start\$download_startup --depth 1"'
+            ${If} $R1 == "github.com"
+              StrCpy $R1 $R0 "" -1
+              ${If} $R1 == "/" # Take off trailing /
+                StrCpy $R0 $R0 -1
               ${EndIf}
-            ${ElseIf} $download_use == "Zip"
-              Detailprint "github repository: $R0/zipball/master"
-              SetOutPath "$TEMP\ep\start"
-              Inetc::get "$R0/zipball/master" "$TEMP\ep\start\start.zip"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
-              Delete "$TEMP\ep\start\start.zip"
-              FindFirst $0 $1 $TEMP\ep\start\*.*
-              loop_start:
-                StrCmp $1 "" done_start
-                StrCmp $1 "." next_start
-                StrCmp $1 ".." next_start
-                DetailPrint $1
-                StrCpy $R1 $1
-              next_start:
-                FindNext $0 $1
-                Goto loop_start
-              done_start:
-                FindClose $0
-                RmDir /r "$EXEDIR\Data\start\$download_startup"
-                SetOutPath $EXEDIR\Data\start\$download_startup
-                CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
-                RmDir /r "$TEMP\ep\start"
-            ${EndIf}
-          ${Else}
-            StrCpy $R1 $R0 "" -4
-            DetailPrint "Checking for zip/git, $R0, $R1"
-            ${If} $R1 == ".zip"
-              Detailprint "zip file: $R0"
-              SetOutPath "$TEMP\ep\start"
-              Inetc::get "$R0" "$TEMP\ep\start\start.zip"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
-              Delete "$TEMP\ep\start\start.zip"
-              FindFirst $0 $1 $TEMP\ep\start\*.*
-              StrCpy $R1 ""
-              StrCpy $R2 ""
-              loop_start_zip:
-                StrCmp $1 "" done_start_zip
-                StrCmp $1 "." next_start_zip
-                StrCmp $1 ".." next_start_zip
-                DetailPrint $1
-                ${IfNot} $R1 == ""
-                  StrCpy $R2 "multiple files"
+              ${If} $download_use == "Git"
+                Detailprint "github repository: $R0.git"
+                ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
+                  SetOutPath "$EXEDIR\Data\start\$download_startup"
+                  Detailprint "git pull"
+                  ExecWait 'cmd /c "git pull"'
+                ${Else}
+                  ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                    RmDir /r "$EXEDIR\Data\start\$download_startup"
+                  ${EndIf}
+                  SetOutPath "$EXEDIR\Data\start"
+                  ExecWait 'cmd /c "git clone $R0.git $EXEDIR\Data\start\$download_startup --depth 1"'
                 ${EndIf}
-                StrCpy $R1 $1
-              next_start_zip:
-                FindNext $0 $1
-                Goto loop_start_zip
-              done_start_zip:
-                FindClose $0
-                RmDir /r "$EXEDIR\Data\start\$download_startup"
-                SetOutPath $EXEDIR\Data\start\$download_startup
-                ${If} $R2 == ""
-                  ## Single Directory
+              ${ElseIf} $download_use == "Zip"
+                Detailprint "github repository: $R0/zipball/master"
+                SetOutPath "$TEMP\ep\start"
+                Inetc::get "$R0/zipball/master" "$TEMP\ep\start\start.zip"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+                Delete "$TEMP\ep\start\start.zip"
+                FindFirst $0 $1 $TEMP\ep\start\*.*
+                loop_start:
+                  StrCmp $1 "" done_start
+                  StrCmp $1 "." next_start
+                  StrCmp $1 ".." next_start
+                  DetailPrint $1
+                  StrCpy $R1 $1
+                next_start:
+                  FindNext $0 $1
+                  Goto loop_start
+                done_start:
+                  FindClose $0
+                  RmDir /r "$EXEDIR\Data\start\$download_startup"
+                  SetOutPath $EXEDIR\Data\start\$download_startup
                   CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
-                ${Else}
-                  CopyFiles /SILENT "$TEMP\ep\start\*.*" "$EXEDIR\Data\start\$download_startup"
-                ${EndIf}
-                RmDir /r "$TEMP\ep\start"
-            ${ElseIf} $R1 == ".git"
-              ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
-                SetOutPath "$EXEDIR\Data\start\$download_startup"
-                Detailprint "git pull"
-                ExecWait 'cmd /c "git pull"'
-              ${Else}
-                ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                  RmDir /r "$TEMP\ep\start"
+              ${EndIf}
+            ${Else}
+              StrCpy $R1 $R0 "" -4
+              DetailPrint "Checking for zip/git, $R0, $R1"
+              ${If} $R1 == ".zip"
+                Detailprint "zip file: $R0"
+                SetOutPath "$TEMP\ep\start"
+                Inetc::get "$R0" "$TEMP\ep\start\start.zip"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\start\start.zip" -o$TEMP\ep\start'
+                Delete "$TEMP\ep\start\start.zip"
+                FindFirst $0 $1 $TEMP\ep\start\*.*
+                StrCpy $R1 ""
+                StrCpy $R2 ""
+                loop_start_zip:
+                  StrCmp $1 "" done_start_zip
+                  StrCmp $1 "." next_start_zip
+                  StrCmp $1 ".." next_start_zip
+                  DetailPrint $1
+                  ${IfNot} $R1 == ""
+                    StrCpy $R2 "multiple files"
+                  ${EndIf}
+                  StrCpy $R1 $1
+                next_start_zip:
+                  FindNext $0 $1
+                  Goto loop_start_zip
+                done_start_zip:
+                  FindClose $0
                   RmDir /r "$EXEDIR\Data\start\$download_startup"
-                ${EndIf}
-                SetOutPath "$EXEDIR\Data\start"
-                ExecWait 'cmd /c "git clone $R0 $EXEDIR\Data\start\$download_startup --depth 1"'
-              ${EndIf}
-            ${Else}
-              DetailPrint "Assume this is a single file, like a .emacs file."
-              
-              RmDir /r "$EXEDIR\Data\start\$download_startup"
-              SetOutPath "$EXEDIR\Data\start"
-              ${Explode} $0 "/" "$R0"
-              ${For} $1 1 $0
-                Pop $2
-              ${Next}
-              Inetc::get "$R0" "$EXEDIR\Data\start\$download_startup\$2"
-            ${EndIf}
-          ${EndIf}
-        ${EndIf}
-        
-        ${If} $download_dict != "(Select)"
-          DetailPrint "Attempting to download dictionary $download_dict"
-          ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
-          DetailPrint "URL: $R0"
-          ClearErrors
-          ${If} $R0 != ""
-            inetc::get  $R0 "$TEMP\ep\dict.zip"
-            SetOutPath "$EPEXE\App\hunspell\epdic"
-            ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\dict.zip" -o$EPEXE\App\hunspell\epdic'
-            Delete "$TEMP\ep\dict.zip"
-          ${EndIf}
-        ${EndIf}
-        ${If} $download_font != "(Select)"
-          DetailPrint "Attempting To Download $download_font"
-          ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
-          DetailPrint "URL: $R0"
-          ClearErrors
-          ${If} $R0 != ""
-            StrCpy $R1 $R0 "" -3
-            ${If} $R1 == "zip"
-              DetailPrint "Zip"
-              SetOutPath "$TEMP\ep"
-              inetc::get  $R0 "$TEMP\ep\font.zip"
-              SetOutPath "$EXEDIR\App\fonts"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
-              Delete "$TEMP\ep\font.zip"
-            ${Else}
-              DetailPrint "Raw"
-              Push $R0
-              ${Explode} $R1 "/" $R0
-              ${If} $R1 != "0"
-                Pop $R2
-                IntOp $R1 $R1 - 1
-                ${For} $1 1 $R1
-                  Pop $R2
-                ${Next}
-                Pop $R0
-                DetailPrint "URL: $R0"
-                DetailPrint "Should save to $EXEDIR\App\fonts\$R2"
-                inetc::get $R0 "$EXEDIR\App\fonts\$R2"
-              ${EndIf}
-            ${EndIf}
-            ## Clean Up Font Directory
-            StrCpy $3 ""
-            FindFirst $0 $1 $EXEDIR\App\fonts\*.*
-            loop_fonts:
-              StrCmp $1 "" done_fonts
-              StrCpy $2 $1 "" -4
-              ${IfNot} $2 == ".fon"
-              ${AndIfNot} $2 == ".fnt"
-              ${AndIfNot} $2 == ".ttf"
-              ${AndIfNot} $2 == ".ttc"
-              ${AndIfNot} $2 == ".fot"
-              ${AndIfNot} $2 == ".otf"
-              ${AndIfNot} $2 == ".mmm"
-              ${AndIfNot} $2 == ".pfb"
-              ${AndIfNot} $2 == ".pfm"
-                ${If} ${DirExists} $1
-                  RmDir /r $1
+                  SetOutPath $EXEDIR\Data\start\$download_startup
+                  ${If} $R2 == ""
+                    ## Single Directory
+                    CopyFiles /SILENT "$TEMP\ep\start\$R1\*.*" "$EXEDIR\Data\start\$download_startup"
+                  ${Else}
+                    CopyFiles /SILENT "$TEMP\ep\start\*.*" "$EXEDIR\Data\start\$download_startup"
+                  ${EndIf}
+                  RmDir /r "$TEMP\ep\start"
+              ${ElseIf} $R1 == ".git"
+                ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup\.git"
+                  SetOutPath "$EXEDIR\Data\start\$download_startup"
+                  Detailprint "git pull"
+                  ExecWait 'cmd /c "git pull"'
                 ${Else}
-                  Delete $1
+                  ${If} ${FileExists} "$EXEDIR\Data\start\$download_startup"
+                    RmDir /r "$EXEDIR\Data\start\$download_startup"
+                  ${EndIf}
+                  SetOutPath "$EXEDIR\Data\start"
+                  ExecWait 'cmd /c "git clone $R0 $EXEDIR\Data\start\$download_startup --depth 1"'
+                ${EndIf}
+              ${Else}
+                DetailPrint "Assume this is a single file, like a .emacs file."
+                
+                RmDir /r "$EXEDIR\Data\start\$download_startup"
+                SetOutPath "$EXEDIR\Data\start"
+                ${Explode} $0 "/" "$R0"
+                ${For} $1 1 $0
+                  Pop $2
+                ${Next}
+                Inetc::get "$R0" "$EXEDIR\Data\start\$download_startup\$2"
+              ${EndIf}
+            ${EndIf}
+          ${EndIf}
+          
+          ${If} $download_dict != "(Select)"
+            DetailPrint "Attempting to download dictionary $download_dict"
+            ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
+            DetailPrint "URL: $R0"
+            ClearErrors
+            ${If} $R0 != ""
+              inetc::get  $R0 "$TEMP\ep\dict.zip"
+              SetOutPath "$EPEXE\App\hunspell\epdic"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\dict.zip" -o$EPEXE\App\hunspell\epdic'
+              Delete "$TEMP\ep\dict.zip"
+            ${EndIf}
+          ${EndIf}
+          ${If} $download_font != "(Select)"
+            DetailPrint "Attempting To Download $download_font"
+            ReadINIStr $R0 "$EXEDIR\App\ini\fonts.ini" "fonts.download" "$download_font"
+            DetailPrint "URL: $R0"
+            ClearErrors
+            ${If} $R0 != ""
+              StrCpy $R1 $R0 "" -3
+              ${If} $R1 == "zip"
+                DetailPrint "Zip"
+                SetOutPath "$TEMP\ep"
+                inetc::get  $R0 "$TEMP\ep\font.zip"
+                SetOutPath "$EXEDIR\App\fonts"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
+                Delete "$TEMP\ep\font.zip"
+              ${Else}
+                DetailPrint "Raw"
+                Push $R0
+                ${Explode} $R1 "/" $R0
+                ${If} $R1 != "0"
+                  Pop $R2
+                  IntOp $R1 $R1 - 1
+                  ${For} $1 1 $R1
+                    Pop $R2
+                  ${Next}
+                  Pop $R0
+                  DetailPrint "URL: $R0"
+                  DetailPrint "Should save to $EXEDIR\App\fonts\$R2"
+                  inetc::get $R0 "$EXEDIR\App\fonts\$R2"
                 ${EndIf}
               ${EndIf}
-              FindNext $0 $1
-              Goto loop_fonts
-            done_fonts:
-              ClearErrors
-              ${If} $3 == ""
-                FindFirst $0 $1 $EXEDIR\App\fonts\*
-                StrCpy $3 "1"
-                Goto  loop_fonts
-              ${EndIf}
+              ## Clean Up Font Directory
+              StrCpy $3 ""
+              FindFirst $0 $1 $EXEDIR\App\fonts\*.*
+              loop_fonts:
+                StrCmp $1 "" done_fonts
+                StrCpy $2 $1 "" -4
+                ${IfNot} $2 == ".fon"
+                ${AndIfNot} $2 == ".fnt"
+                ${AndIfNot} $2 == ".ttf"
+                ${AndIfNot} $2 == ".ttc"
+                ${AndIfNot} $2 == ".fot"
+                ${AndIfNot} $2 == ".otf"
+                ${AndIfNot} $2 == ".mmm"
+                ${AndIfNot} $2 == ".pfb"
+                ${AndIfNot} $2 == ".pfm"
+                  ${If} ${DirExists} $1
+                    RmDir /r $1
+                  ${Else}
+                    Delete $1
+                  ${EndIf}
+                ${EndIf}
+                FindNext $0 $1
+                Goto loop_fonts
+              done_fonts:
+                ClearErrors
+                ${If} $3 == ""
+                  FindFirst $0 $1 $EXEDIR\App\fonts\*
+                  StrCpy $3 "1"
+                  Goto  loop_fonts
+                ${EndIf}
+            ${EndIf}
+          ${EndIf}
+          
+          WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+              "Version" "$download_emacs_version"
+          ${If} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
+            ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
+          ${Else}
+            Exec "$EXEDIR\EmacsOptions.exe"
+            SetAutoClose true
           ${EndIf}
         ${EndIf}
-        
-        
-        WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
-            "Version" "$download_emacs_version"
-        ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
-      ${EndIf}
-    ${Else}
-      ## mirrors.ini not found.  Download EmacsPortableApp
-      SetOutPath "$EXEDIR\App\ahk"
-      SetOutPath "$TEMP\ep\ep"
-      Inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" "$TEMP\ep\ep\epa.zip"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\epa.zip" -o"$TEMP\ep\ep"'
-      Delete "$TEMP\ep\ep\epa.zip"
-      FindFirst $0 $1 $TEMP\ep\ep\*.*
-      loop_epa:
-        StrCmp $1 "" done_epa
-        StrCmp $1 "." next_epa
-        StrCmp $1 ".." next_epa
-        DetailPrint $1
-        StrCpy $R1 $1
-      next_epa:
-        FindNext $0 $1
-        Goto loop_epa
-      done_epa:
-        FindClose $0
-        CopyFiles /SILENT "$TEMP\ep\ep\$R1\*.*" "$EXEDIR\"
-        RmDir /r "$TEMP\ep\ep"
+      ${Else}
+        ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+          SetOutPath "$EXEDIR\App\7z"
+          File "..\..\..\App\7z\7zG.exe"
+          File "..\..\..\App\7z\7z.*"
+          File "..\..\..\App\7z\License.txt"
+        ${EndIf}
+        ## mirrors.ini not found.  Download EmacsPortableApp
+        SetOutPath "$EXEDIR\App\ahk"
         SetOutPath "$TEMP\ep\ep"
+        Inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" "$TEMP\ep\ep\epa.zip"
+        ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\epa.zip" -o"$TEMP\ep\ep"'
+        Delete "$TEMP\ep\ep\epa.zip"
+        FindFirst $0 $1 $TEMP\ep\ep\*.*
+        loop_epa:
+          StrCmp $1 "" done_epa
+          StrCmp $1 "." next_epa
+          StrCmp $1 ".." next_epa
+          DetailPrint $1
+          StrCpy $R1 $1
+        next_epa:
+          FindNext $0 $1
+          Goto loop_epa
+        done_epa:
+          FindClose $0
+          CopyFiles /SILENT "$TEMP\ep\ep\$R1\*.*" "$EXEDIR\"
+          RmDir /r "$TEMP\ep\ep"
+          SetOutPath "$TEMP\ep\ep"
+          
+          ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
+            ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" ahk url
+            ClearErrors
+            ${If} $0 != ""
+              Inetc::get "$0" "$TEMP\ep\ep\ahk.7z"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\ahk.7z" -o"$EXEDIR\App\ahk"'
+              Delete "$TEMP\ep\ep\ahk.7z"
+            ${EndIf}
+          ${EndIf}
+          
+          ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
+            ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
+            ClearErrors
+            ${If} $0 != ""
+              Inetc::get "$0" "$TEMP\ep\ep\NSIS.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.zip" -o"$EXEDIR\App"'
+              Delete "$TEMP\ep\ep\NSIS.zip"
+            ${EndIf}
+          ${EndIf}
+          ## Add Make.exe
+          SetOutPath "$EXEDIR\App\gw32\share\locale\zh_CN\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\zh_CN\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\zh_CN\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\vi\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\vi\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\vi\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\uk\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\uk\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\uk\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\tr\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\tr\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\tr\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\sv\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\sv\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\sv\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\rw\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\rw\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\rw\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\ru\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\ru\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\ru\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\pt_BR\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\pt_BR\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\pt_BR\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\pl\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\pl\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\pl\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\nl\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\nl\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\nl\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\ko\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\ko\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\ko\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\ja\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\ja\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\ja\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\id\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\id\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\id\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\hr\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\hr\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\hr\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\he\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\he\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\he\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\gl\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\gl\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\gl\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\ga\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\ga\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\ga\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\fr\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\fr\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\fr\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\fi\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\fi\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\fi\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\es\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\es\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\es\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\de\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\de\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\de\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\da\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\da\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\da\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\share\locale\be\LC_MESSAGES"
+          File "..\..\..\App\gw32\share\locale\be\LC_MESSAGES\make.mo"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "share\locale\be\LC_MESSAGES\make.mo" "1"
+          SetOutPath "$EXEDIR\App\gw32\manifest"
+          File "..\..\..\App\gw32\manifest\make-3.81-bin.mft"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "manifest\make-3.81-bin.mft" "1"
+          SetOutPath "$EXEDIR\App\gw32\manifest"
+          File "..\..\..\App\gw32\manifest\make-3.81-bin.ver"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "manifest\make-3.81-bin.ver" "1"
+          SetOutPath "$EXEDIR\App\gw32\man\cat1"
+          File "..\..\..\App\gw32\man\cat1\make.1.txt"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "man\cat1\make.1.txt" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-GnuWin32.README"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-GnuWin32.README" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\ABOUT-NLS"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\ABOUT-NLS" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\AUTHORS"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\AUTHORS" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\ChangeLog"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\ChangeLog" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\COPYING"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\COPYING" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\INSTALL"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\INSTALL" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\NEWS"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\NEWS" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\README"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\README" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\tests"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\tests\ChangeLog"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\tests\ChangeLog" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\tests"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\tests\COPYING"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\tests\COPYING" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\tests"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\tests\NEWS"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\tests\NEWS" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\tests"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\tests\README"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\tests\README" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\tests\scripts\functions"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\tests\scripts\functions\warning"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\tests\scripts\functions\warning" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\po"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\po\ChangeLog"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\po\ChangeLog" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\glob"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\glob\ChangeLog"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\glob\ChangeLog" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81-src\config"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81-src\config\ChangeLog"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81-src\config\ChangeLog" "1"
+          SetOutPath "$EXEDIR\App\gw32\contrib\make\3.81\make-3.81"
+          File "..\..\..\App\gw32\contrib\make\3.81\make-3.81\check.log"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "contrib\make\3.81\make-3.81\check.log" "1"
+          SetOutPath "$EXEDIR\App\gw32\bin"
+          File "..\..\..\App\gw32\bin\make.exe"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "bin\make.exe" "1"
   
-        ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
-          ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" ahk url
-          ClearErrors
-          ${If} $0 != ""
-            Inetc::get "$0" "$TEMP\ep\ep\ahk.7z"
-            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\ahk.7z" -o"$EXEDIR\App\ahk"'
-            Delete "$TEMP\ep\ep\ahk.7z"
-          ${EndIf}
+          SetOutPath "$EXEDIR\App\gw32\manifest"
+          File "..\..\..\App\gw32\manifest\make-3.81-dep.mft"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.dep" "manifest\make-3.81-dep.mft" "1"
+          SetOutPath "$EXEDIR\App\gw32\manifest"
+          File "..\..\..\App\gw32\manifest\make-3.81-dep.ver"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.dep" "manifest\make-3.81-dep.ver" "1"
+          SetOutPath "$EXEDIR\App\gw32\bin"
+          File "..\..\..\App\gw32\bin\libiconv2.dll"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.dep" "bin\libiconv2.dll" "1"
+          SetOutPath "$EXEDIR\App\gw32\bin"
+          File "..\..\..\App\gw32\bin\libintl3.dll"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.dep" "bin\libintl3.dll" "1"
+          
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "manifest\make-3.81-dep.mft" "make" "1"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "manifest\make-3.81-dep.ver" "make" "1"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "bin\libiconv2.dll" "make" "1"
+          WriteIniStr "$EXEDIR\App\ini\gw32.ini" "bin\libintl3.dll" "make" "1"
+          
+          Exec "$EXEDIR\EmacsOptions.exe"
+          SetAutoClose true
+      ${EndIf}
+    ${ElseIf} $EXEFILE == "EmacsBuild.exe"
+      StrCpy $option_build ""
+      Delete "$EXEDIR\EmacsOptions.ene"
+      ${IfNot} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
+        StrCpy $option_build "1"
+      ${EndIf}
+      ${PathIfExist} "$EXEDIR\App\ahk\App\AutoHotkey\Compiler"
+      FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+      loop_emacs_build:
+        StrCmp $1 "" done_emacs_build
+        StrCpy $2 $1
+        FindNext $0 $1
+        Goto loop_emacs_build
+      done_emacs_build:
+        ExecWait 'cmd /c "cd $EXEDIR\Other\source\ahk && make all"'
+        ExecWait 'cmd /c "cd $EXEDIR\Other\source\nsi && $EXEDIR\App\gw32\bin\make.exe all EMACS=""$EXEDIR\App\$2\bin\emacs.exe"" MAKENSIS=""$EXEDIR\App\NSIS\makensis.exe"""'
+        ${If} $option_build == "1"
+          Exec "$EXEDIR\App\eps\download-unix.exe"
         ${EndIf}
-        
-        ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
-          ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
-          ClearErrors
-          ${If} $0 != ""
-            Inetc::get "$0" "$TEMP\ep\ep\NSIS.zip"
-            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.zip" -o"$EXEDIR\App"'
-            Delete "$TEMP\ep\ep\NSIS.zip"
-          ${EndIf}
-        ${EndIf}
-        Exec "$EXEDIR\EmacsOptions.exe"
         SetAutoClose true
+    ${Else}
+      Exec "$EXEDIR\EmacsBuild.exe"
+      SetAutoClose true
     ${EndIf}
   SectionEnd
   
