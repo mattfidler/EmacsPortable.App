@@ -2590,8 +2590,21 @@ FunctionEnd
           FindNext $0 $1
           Goto loop_emacs_build
         done_emacs_build:
-          ExecWait 'cmd /c "cd $EXEDIR\Other\source\ahk && make all"'
-          ExecWait 'cmd /c "cd $EXEDIR\Other\source\nsi && $EXEDIR\App\gw32\bin\make.exe all EMACS=""$EXEDIR\App\$2\bin\emacs.exe"" MAKENSIS=""$EXEDIR\App\NSIS\makensis.exe"""'
+          SetOutPath "$TEMP\ep\"
+          FileOpen $4 "$TEMP\ep\build.cmd" w
+          ${If} ${Errors}
+            DetailPrint "Error opening $TEMP\ep\build.cmd"
+          ${Else}
+            FileWrite $4 "@echo Build AHK$\r$\n" 
+            FileWrite $4 "@cd $EXEDIR\Other\source\ahk$\r$\n"
+            FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all$\r$\n"
+            FileWrite $4 "@echo Build NSI$\r$\n"
+            FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all EMACS=$\"$EXEDIR\App\$2\bin\emacs.exe$\" MAKENSIS=$\"$EXEDIR\App\NSIS\makensis.exe$\"$\r$\n"
+            FileWrite $4 "@pause$\r$\n"
+            FileClose $4
+            ExecDos::exec "cmd /c $\"$TEMP\ep\build.cmd$\""
+            Delete "$TEMP\ep\build.cmd"
+          ${EndIf}
           ${If} $option_build == "1"
             Exec "$EXEDIR\App\eps\download-unix.exe"
           ${EndIf}
