@@ -1827,8 +1827,6 @@ From http://nsis.sourceforge.net/Explode
     Pop $hCtl_download_DownloadMac
     ${NSD_Check} $hCtl_download_DownloadMac
     
-    SetOutPath "$TEMP\ep"
-    File "unix-download.ini"  
     
     ; === VLine1 (type: VLine) ===
     ${NSD_CreateVLine} 143u 7u 1u 115u ""
@@ -2591,19 +2589,25 @@ FunctionEnd
           Goto loop_emacs_build
         done_emacs_build:
           SetOutPath "$TEMP\ep\"
+          ClearErrors
           FileOpen $4 "$TEMP\ep\build.cmd" w
           ${If} ${Errors}
             DetailPrint "Error opening $TEMP\ep\build.cmd"
           ${Else}
+            FileWrite $4 "@path $EXEDIR\App\ahk\App\AutoHotkey\Compiler;%PATH%$\r$\n"
+            FileWrite $4 "@path $EXEDIR\App\nsis;%PATH%$\r$\n"
+            FileWrite $4 "@path $EXEDIR\App\$2\bin;%PATH%$\r$\n"
+            StrCpy $3 $EXEDIR 2
+            FileWrite $4 "@$3$\r$\n"
             FileWrite $4 "@echo Build AHK$\r$\n" 
             FileWrite $4 "@cd $EXEDIR\Other\source\ahk$\r$\n"
             FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all$\r$\n"
             FileWrite $4 "@echo Build NSI$\r$\n"
+            FileWrite $4 "@cd $EXEDIR\Other\source\nsi$\n"
             FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all EMACS=$\"$EXEDIR\App\$2\bin\emacs.exe$\" MAKENSIS=$\"$EXEDIR\App\NSIS\makensis.exe$\"$\r$\n"
             FileWrite $4 "@pause$\r$\n"
             FileClose $4
-            ExecDos::exec "cmd /c $\"$TEMP\ep\build.cmd$\""
-            Delete "$TEMP\ep\build.cmd"
+            ExecWait "cmd /c $\"$TEMP\ep\build.cmd$\""
           ${EndIf}
           ${If} $option_build == "1"
             Exec "$EXEDIR\App\eps\download-unix.exe"
