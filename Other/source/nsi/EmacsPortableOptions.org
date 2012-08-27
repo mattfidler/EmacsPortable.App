@@ -2134,8 +2134,8 @@ FunctionEnd
     ${Else}
       ${If} $option_build == ""
         ${If} ${FileExists} "$EPEXE\App\ini\mirrors.ini"
-          ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
-            SetOutPath "$EXEDIR\App\7z"
+          ${IfNot} ${FileExists} "$EPEXE\App\7z\7zG.exe"
+            SetOutPath "$EPEXE\App\7z"
             File "..\..\..\App\7z\7zG.exe"
             File "..\..\..\App\7z\7z.*"
             File "..\..\..\App\7z\License.txt"
@@ -2387,8 +2387,21 @@ FunctionEnd
             CopyFiles /SILENT "$TEMP\ep\ep\$R1\*.*" "$EXEDIR\"
             RmDir /r "$TEMP\ep\ep"
             SetOutPath "$TEMP\ep\ep"
-            ${If} ${FileExists} "$EXEDIR\App\site-lisp\site-start.el"
+            ${IfNot} ${FileExists} "$EPEXE\App\hunspell\bin\hunspell.exe"
+              ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" hunspell url
+              ClearErrors
+              ${If} $0 != ""
+                SetOutPath $TEMP\ep
+                Inetc::get "$0" "$TEMP\ep\hunspell.zip"
+                SetOutPath "$EXEDIR\App\hunspell\bin"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.zip" -o"$EXEDIR\App\hunspell\bin"'
+                SetOutPath "$EXEDIR\App\hunspell\epdic"
+                CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
+                Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
+              ${EndIf}
             ${EndIf}
+            
+            
             ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
               ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" ahk url
               ClearErrors
