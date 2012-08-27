@@ -111,6 +111,14 @@ Will install specific fonts, if needed.
 Under windows, debug mode starts =gdb= if found.  Additionally, if
 =App/gdbinit= is found, gdb sources this before running emacs.  You
 can download an appropriate gdbinit for emacs [[http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit][here]].
+* Using EmacsPortable.App before a release
+Under windows, you can do a net-install by using EmacsOptions.  This
+net install can be performed in two ways:
+1. Select the option for a network-based install
+2. Move the =EmacsOptions.exe= outside of the EmacsPortableApp
+   directory and run it.  This allows you to distribute the network
+   install file anywhere and allow other people to download/build
+   their own EmacsPortable.App.
 
 * Customizing and using your own packages
 The settings in EmacsPortable.app were originally fork of the literate
@@ -410,18 +418,13 @@ python is available to Emacs.  This is useful for installing Bazaar,
 which Emacs uses as its version control.
 ** Version control Software
 *** Bazaar
-I have created a portable Bazaar.  There are some reports of troubling
-errors. 
+I have created a portable Bazaar.  
 *** Subversion in Windows
 Not quite portable, but you can get the binaries [[http://www.visualsvn.com/downloads/][here]].
 
 Running in subversion from within EmacsPortable.App /is/ portable,
 though.  Emacs will set the =%AppData%= Environment variable to
 =Data/AppData= and set =%ALLUSERSPROFILE%= to =Data/AppData=
-
-
-
-
 
 ** SumatraPDF Portable
 Using AUCTeX inverse-search and forward search is supported with
@@ -572,7 +575,7 @@ Icons came from various places:
 - Dos Box/Terminal http://www.clker.com/clipart-3716.html
 - Wrench http://www.clker.com/clipart-3716.html
 - Screw Driver http://www.clker.com/clipart-14895.html
-* Bleeding edge emacs
+* Bleeding edge emacs (Not supported yet)
 These are notes to use the bleeding edge emacs.
 
 Goto the App directory, and under a command prompt that has bzr
