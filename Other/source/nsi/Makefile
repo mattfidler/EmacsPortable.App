@@ -79,7 +79,7 @@ EmacsRegistry.nsi: EmacsRegistry.org
 ../../../Emacs-Q.exe: Emacs-Q.nsi 
 	$(MAKENSIS) Emacs-Q.nsi
 
-../../../help.html: ../../../README.org
+../../../help.html: ../../../README.org ../../style.css
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-help)"
 
 EmacsDos.nsi: EmacsShortcuts.el

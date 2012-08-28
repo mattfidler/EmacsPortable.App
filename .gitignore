@@ -21,6 +21,7 @@ Thumbs.db
 /App/portable-starter-kit/*
 /EmacsPortableApp-*.exe
 /Data/*
+/tmp/*
 Readme.org_archive
 
 # Actual Emacs Files #

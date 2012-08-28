@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Wed Jun 13 08:33:15 2012 (-0500)
+;; Last-Updated: Tue Aug 28 14:09:58 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 78
+;;     Update #: 119
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -122,11 +122,55 @@
 (defun build-help ()
   "Builds the help.html from README.org"
   (interactive)
-  (let (str)
+  (let (str
+        (org-export-html-style-extra "<link href=\"http://fonts.googleapis.com/css?family=Oswald\" rel=\"stylesheet\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"Other/style.css\" type=\"text/css\" />")
+        (org-export-html-style-include-default nil)
+        (org-export-htmlize-output-type 'css)
+        (menu "")
+        p1 p2 p3)
     (find-file (concat build-dir "../../../README.org"))
-    (setq str (org-export-as-html 3 nil nil 'string nil (expand-file-name (concat build-dir "../../../"))))
+    (setq str (org-export-as-html 10 nil nil 'string nil (expand-file-name (concat build-dir "../../../"))))
     (with-temp-file (concat build-dir "../../../help.html")
-      (insert str))))
+      (insert str)
+      (goto-char (point-min))
+      ;; Change this to freecsstemplates.org
+      (goto-char (point-min))
+      (when (re-search-forward "<h1 class=\"title\">")
+        (goto-char (match-beginning 0))
+        (when (re-search-backward "<div id=\"content\">" nil t)
+          (replace-match "<div id=\"header-wrapper\"><div id=\"header\"><div id=\"logo\">")
+          (when (re-search-forward "</h1>" nil t)
+            (insert "<p>Run Emacs Portably on Windows and Mac OSX</p></div></div></div><div id=\"page\"><div id=\"page-bgtop\"><div id=\"page-bgbtm\"><div id=\"page-content\"><div id=\"ep\"><img src=\"Other/emacs-p-132.png\"/></div>")
+            (when (re-search-forward "<div id=\"outline-container-1\"" nil t)
+              (goto-char (match-beginning 0))
+              (insert "<div id=\"content\">"))
+            (when (re-search-forward "<div id=\"postamble\">" nil t)
+              (replace-match "</div></div></div></div><div id=\"footer\">" t t)))))
+      (goto-char (point-min))
+      (when (re-search-forward "id=\"table-of-contents\"" nil t)
+        (replace-match "id=\"sidebar\""))
+      (goto-char (point-min))
+      (setq p3 1)
+      (while (re-search-forward "<a href=\"#sec-\\([0-9]+\\)\">" nil t)
+        (setq p1 (+ 4 (point)))
+        (setq p2 (match-string 1))
+        (goto-char (match-beginning 0))
+        (insert "<h2>")
+        (when (re-search-forward "</a>" nil t)
+          (when (< p3 7)
+            (setq menu (format "%s<li><a href=\"#sec-%s\">%s</a></li>"
+                             menu p2 (replace-regexp-in-string "^[ \t]*[0-9]+[ \t]*" "" (buffer-substring p1 (match-beginning 0))))))
+          (setq p3 (+ p3 1))
+          (replace-match "</a></h2>")))
+      (setq menu (format "<div id=\"menu-wrapper\"><div id=\"menu\"><ul>%s</ul></div></div>"
+                         menu))
+      (goto-char (point-min))
+      (when (re-search-forward "<div id=\"page\">" nil t)
+        (goto-char (match-beginning 0))
+        (insert menu))
+      (goto-char (point-min))
+      (while (re-search-forward "<h2>Table of Contents</h2>" nil t)
+        (replace-match "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; build.el ends here

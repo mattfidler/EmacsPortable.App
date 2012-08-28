@@ -1,17 +1,40 @@
 #+TITLE: EmacsPortable.App
 #+AUTHOR: Matthew L. Fidler
-* EmacsPortable.App Introduction 
+* Introduction
 EmacsPortable.App attempts to make a portable version of Emacs that
 runs off a USB drive under either Windows, or Mac OSX.  
 
 To install before a release, please follow [[*Using%20EmacsPortable.App%20before%20a%20release][the directions for using
 EmacsPortable.App before a release]]. 
-* EmacsPortable.App Idiosyncrasies
-** Home Directory configuration
+* Download
+** Using Pre-releases
+Under windows, you can do a net-install by using EmacsOptions.  This
+net install can be performed in two ways:
+1. Select the option for a network-based install
+2. Move the =EmacsOptions.exe= outside of the EmacsPortableApp
+   directory and run it.  This allows you to distribute the network
+   install file anywhere and allow other people to download/build
+   their own EmacsPortable.App.
+* Configuration
+Since EmacsPortable.App tries to run portably, there are a few things
+that are changed from a standard emacs distribution:
+
+1. Home directory is allowed to change based on different computers
+   (USB is e:, f:, etc)
+   
+2. Directories that change can become aliases for convenience and to
+   allow recent files to save correctly (for instance ~usb for the usb
+   drive).
+   
+3. Install fonts on different computers to allow a favorite fond to be
+   used in emacs for all distributions.  In windows this is done by
+   making the font available to windows during the session.
+   
+** Home Directory
 The =HOME= Directory is where Emacs stores the =.emacs= file;  Other
 emacs programs also store information here. EmacsPortable.App has a
 few options for home directories
-*** USB home directory
+*** USB Alias
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
 #+BEGIN_SRC conf
   [EmacsPortableApp]
@@ -26,7 +49,7 @@ The advantage of this methodology is that under windows, Emacs can be
 copied to the hard-drive to speed up the run-time, and the
 initialization from the hard drive 
 
-*** EXEDIR home directory
+*** EXEDIR Alias
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
 #+BEGIN_SRC conf
   [EmacsPortableApp]
@@ -47,7 +70,7 @@ the home is set when that file exists.  For example:
 
 will set the home directory to =c:\= on Windows computers.  Currently,
 this is supported only on windows.
-*** System home directory
+*** System home
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry
 that doesn't start with either =EXEDIR:/= or =USB:/=, and doesn't
 exist then the
@@ -56,13 +79,13 @@ original home directory is maintained.
   [EmacsPortableApp]
   Home=Set as original
 #+END_SRC
-*** Selecting the Home directory with EmacsOptions.exe
+*** Changing Home 
 When using EmacsOptions.exe, you do not have to worry about selecting
 which type of file is used.  If you select a directory on the USB
 drive, the EmacsPortableApp is updated accordingly.  If you select
 location within the portable app directory, the =EXEDIR= is replaced.
 Note that any where else may change depending on the computer you use.
-** Emacs-only directory aliases
+** Emacs aliases
 Emacs has a list of "home" directory aliases.  The absolute
 directories are:
 |-------------+------------------------------+-------------------------------------|
@@ -103,39 +126,16 @@ In addition to these aliases, the following aliases are also defined:
 
 Custom aliases may be added by customizing =EmacsPortable-aliases=.
 
-** Font installation, if needed
+** Font installation
 Will install specific fonts, if needed.
 *** STARTED Allow Mac to install specific fonts.
-* Running EmacsPortable.App
-** Running Debug under windows
+
+* Starting Emacs
+** Running Debug
 Under windows, debug mode starts =gdb= if found.  Additionally, if
 =App/gdbinit= is found, gdb sources this before running emacs.  You
 can download an appropriate gdbinit for emacs [[http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit][here]].
-* Using EmacsPortable.App before a release
-Under windows, you can do a net-install by using EmacsOptions.  This
-net install can be performed in two ways:
-1. Select the option for a network-based install
-2. Move the =EmacsOptions.exe= outside of the EmacsPortableApp
-   directory and run it.  This allows you to distribute the network
-   install file anywhere and allow other people to download/build
-   their own EmacsPortable.App.
-
-* Customizing and using your own packages
-The settings in EmacsPortable.app were originally fork of the literate
-starter kit by [[https://github.com/eschulte][Eric Schulte]] (some of my documentation text is probably
-reminiscent of . Now my philosophy is a little more
-liberal in providing a customized emacs that does not include too much
-startup customizations, but allow you to pull your own startup
-customizations if you wish, or test out other people's startup
-settings.  
-
-The defaults built into the EmacsPortable.App are only the beginning
-of most users customization of Emacs to suite their needs.
-EmacsPortable.App provides provides a number of places for additional
-user and system specific customization.  These are designed in such a
-way that it will be easy for you to continue tracking your own
-personal customization inside EmacsPortable.App while retaining your
-ability to pull down general updates to EmacsPortable.App without conflict.
+* Customizing
 ** Startup Customization
 The =EmacsOptions.exe= allows you to set Emacs startup options via a
 GUI.  This is mirrored in the =Data/ini/EmacsPortable.ini= file.
@@ -184,106 +184,6 @@ EmacsPortable.App handles file associations in the following ways:
 - Registering Associations when running.
 When changing associations under windows, the Mac =Info.plist= xml
 file is also updated.
-** General Customization
-
-- git branch :: The first step to user-specific customization is (like
-                in any git project) to MAKE A BRANCH FOR YOUR LOCAL
-                CHANGES.  Save the master branch for pulling down new
-                versions of the starter kit, and save all of your
-                personal information in a personal branch.  That way
-                you never have to worry about accidentally =git
-                push='ing up a patch with all of your gnus email
-                passwords.
-
-- Overall EmacsPortable.App configuration :: Your personal
-     EmacsPortable.App configuration can be placed in the =Data/init=
-     directory.  This directory will be added to the load-path it any
-     elisp or org-mode w/embedded elisp files in it will be loaded.
-
-- User specific config :: Your personal configuration information can
-     be stored in a user-specific-config file in
-     =Data/init/user/$USER.org= or =Data/init/user/$USER.el=.  This is
-     the file named after your user with the extensions =.el= or
-     =.org= [2].  This should be your windows log-in name, or under a
-     mac if you're unsure of your user name evaluate the
-     following code block to find out.
-
-#+begin_src sh
-echo $USER
-#+end_src
-
-If your configuration starts to feel cramped in a single file
-(although with the nested headlines of an Org-mode file, that
-could take a while) and you want to stretch your config's legs,
-you can also create a directory named after your system user
-name, like =Data/init/user/$USER=.  If a such a directory exists,
-it will be added to the load-path, and any elisp or org-mode
-w/embedded elisp files in it will be loaded.
-
-- System specific config :: Finally, you may want to configure
-     different settings for different machines.  The Starter Kit will
-     look for a file named after the current hostname ending in =.el=
-     or =.org= in the =Data/init/system/= folder which will allow
-     host-specific configuration.  If you're unsure of your hostname
-     the following can be executed to find out.
-#+begin_src sh
-hostname
-#+end_src
-In windows, the hostname is found by right-clicking on
-my-computer and clicking on =Properties=.  After that, click on
-the =Computer Name= tab.  This should have two properties:
-
-*Full computer name:* bob.gnu.org
-
-*Domain:* gnu.org
-
-When the domain is removed from the Full computer name, the
-hostname is found.  In this case, the host-name is bob.
-
-If a specific setup for a host gets too cramped, you can also
-create a directory named after your system user name, like
-=Data/init/user/$USER=.  If a such a directory exists, it will be
-added to the load-path, and any elisp or org-mode w/embedded
-elisp files in it will be loaded.
-- Overall config :: If you wish to add literate/non-literate startup
-                    files, you may also put them in
-                    =Data/init/shared/=.  This should be loaded
-                    regardless of the user or system.
-** Installing Additional Libraries
-- Installing more elisp libraries :: The easiest way to install new
-libraries is through the Emacs Lisp Package Archive (see [[#emacs-lisp-package-archive][Emacs
-Lisp Package Archive]] below).  When a library is not available
-through ELPA, or the library is outdated for your tastes you have two
-options:
-1. You can grab it's source and place it directly in the =/Data/src=
-   directory.  Any packages found there will automatically be added
-   to your load-path when Emacs starts up, and are guaranteed not to
-   conflict with future updates.
-2. You can use el-get to install the package.
-
-Note that el-get allows you to be more up-to-date since it usually
-syncs with the software developer's repository.  This is good and bad,
-so beware the bleeding edge. As a consequence, this requires command
-line versions of =git= and other package managers to be available to
-el-get.  
-** Using Pre-installed libraries
-- Making use of the two pre-installed libraries :: By default the
-starter kit downloads and installs two generally helpful elisp
-libraries.
-- color-themes :: The starter-kit comes pre-bundled with a variety
-of color themes.  See [[file:starter-kit-misc.org::*Color%20Themes][Color Themes]] for instructions on how to
-change the colors used by Emacs.
-
-- Misc :: Some additional miscellaneous configuration and getting
-started suggestions
-- First see the [[http://www.gnu.org/software/emacs/manual/html_node/emacs/Customization.html#Customization][Customization]] node in the Emacs manual.  Available
-online or through the =info= command (run with =C-h i=).
-- =grep='ing through the =starter-kit-*= files in this directory
-can provide useful examples for how to do things like install
-major modes, define keybindings, etc..
-- read the following [[http://www.gnu.org/software/emacs/elisp/html_node/Key-Binding-Conventions.html][Key-Binding-Conventions]] before defining too
-many personal key bindings
-
 ** Load Path
 Load Path for source directory is in =Data/src=.
 ** Literate Initialization
@@ -292,9 +192,8 @@ When using EmacsPortable.App's startup mechanism, t
 2) User-based =.org=, =.el=, or =.elc= files in =Data/init/user=.
    
 3) System based =.org=, =.el= or =.elc= files in =Data/init/system=.
-** Home Directory
-
-* How EmacsPortable.App Works
+   
+* How It Works
 ** EmacsPortable.App Startup (Windows Only)
 The Pseudo-Daemon Start-up script among other things:
  - Opens Emacs
@@ -342,7 +241,30 @@ The dos version starts up emacs in a dos command prompt window. When
 trying to do anything with the =EmacsPortableDOS= command, it will
 attempt to do that command in the initial =DOS= box.  This is just a
 test environment, and is likely not very reasonable to use.
-* Using Specific Applications
+** Icons
+Icons came from various places:
+- [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
+- USB Icon
+  - http://www.clker.com/clipart-10031.html
+- Modified Lady Bug http://www.clker.com/clipart-23283.html
+- Modified Uninstall Icon (original at
+  http://findicons.com/icon/127390/trash_empty)
+- Dos Box/Terminal http://www.clker.com/clipart-3716.html
+- Wrench http://www.clker.com/clipart-3716.html
+- Screw Driver http://www.clker.com/clipart-14895.html
+** NSIS Configuration
+EmacsPortable.App is built with NSIS with the following options:
+- NSIS 2.46
+- Large String Support http://nsis.sourceforge.net/Special_Builds#Large_strings
+- EnumINI http://nsis.sourceforge.net/EnumINI_plug-in
+- Inetc http://nsis.sourceforge.net/Inetc_plug-in
+- Execdos http://nsis.sourceforge.net/ExecDos_plug-in
+- Blowfish++ http://nsis.sourceforge.net/mediawiki/images/a/a7/BlowfishDLL.7z
+- MD5 http://nsis.sourceforge.net/MD5_plugin
+- XML http://nsis.sourceforge.net/XML_plug-in
+- FindProcDLL http://nsis.sourceforge.net/FindProcDLL_plug-in
+- LoadingBar UI http://nsis.sourceforge.net/LoadingBar_UI
+* Applications Support
 ** Adding Paths (Windows Only)
 Most of the specific applications work by adding paths and changing
 environmental variables.  This is controlled by =App/ini/paths.ini=.
@@ -564,18 +486,7 @@ then:
 
 Therefore, you do not need to always manually edit proxy settings, and
 plink should work most of the time.
-* Icons
-Icons came from various places:
-- [[http://findicons.com/icon/93514/new_go_down?id=344599#][Download Icon]]
-- USB Icon
-  - http://www.clker.com/clipart-10031.html
-- Modified Lady Bug http://www.clker.com/clipart-23283.html
-- Modified Uninstall Icon (original at
-  http://findicons.com/icon/127390/trash_empty)
-- Dos Box/Terminal http://www.clker.com/clipart-3716.html
-- Wrench http://www.clker.com/clipart-3716.html
-- Screw Driver http://www.clker.com/clipart-14895.html
-* Bleeding edge emacs (Not supported yet)
+** Bleeding edge emacs (Not supported yet)
 These are notes to use the bleeding edge emacs.
 
 Goto the App directory, and under a command prompt that has bzr
@@ -585,25 +496,8 @@ installed, type
 bzr branch --stacked bzr://bzr.savannah.gnu.org/emacs/trunk emacs-bzr
 #+END_SRC
 
-* NSIS configuration
-EmacsPortable.App is built with NSIS with the following options:
-- NSIS 2.46
-- Large String Support http://nsis.sourceforge.net/Special_Builds#Large_strings
-- EnumINI http://nsis.sourceforge.net/EnumINI_plug-in
-- Inetc http://nsis.sourceforge.net/Inetc_plug-in
-- Execdos http://nsis.sourceforge.net/ExecDos_plug-in
-- Blowfish++ http://nsis.sourceforge.net/mediawiki/images/a/a7/BlowfishDLL.7z
-- MD5 http://nsis.sourceforge.net/MD5_plugin
-- XML http://nsis.sourceforge.net/XML_plug-in
-- FindProcDLL http://nsis.sourceforge.net/FindProcDLL_plug-in
-- LoadingBar UI http://nsis.sourceforge.net/LoadingBar_UI
-* EmacsPortable.App Wish List/TODO list
+
+* Wish list
 ** TODO Add Mac Support of Daemon Mode
 [2011-12-14 Wed 21:48]
-** TODO Add Mac Support of Portable Dictionaries 
-(should be the same between platforms)
-** TODO Make the proxy settings a little less finicky.
-** TODO Add XML to the NSIS downloads
-** TODO Add Large String support to the NSIS compiler.
-** TODO Add md5 to the NSIS downloads
-** TODO Add NotifyPlugin to the downloads.
+** TODO Mac Font Support
