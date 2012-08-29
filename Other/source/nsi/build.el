@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Thu Jan 19 19:13:25 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Tue Aug 28 14:09:58 2012 (-0500)
+;; Last-Updated: Tue Aug 28 19:34:53 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 119
+;;     Update #: 120
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility:
@@ -133,6 +133,7 @@
     (with-temp-file (concat build-dir "../../../help.html")
       (insert str)
       (goto-char (point-min))
+      ;; <div id=\"ep\"><img src=\"Other/emacs-p-132.png\"/></div>
       ;; Change this to freecsstemplates.org
       (goto-char (point-min))
       (when (re-search-forward "<h1 class=\"title\">")
@@ -140,7 +141,7 @@
         (when (re-search-backward "<div id=\"content\">" nil t)
           (replace-match "<div id=\"header-wrapper\"><div id=\"header\"><div id=\"logo\">")
           (when (re-search-forward "</h1>" nil t)
-            (insert "<p>Run Emacs Portably on Windows and Mac OSX</p></div></div></div><div id=\"page\"><div id=\"page-bgtop\"><div id=\"page-bgbtm\"><div id=\"page-content\"><div id=\"ep\"><img src=\"Other/emacs-p-132.png\"/></div>")
+            (insert "<p>Run Emacs Portably on Windows and Mac OSX</p></div></div></div><div id=\"page\"><div id=\"page-bgtop\"><div id=\"page-bgbtm\"><div id=\"page-content\">")
             (when (re-search-forward "<div id=\"outline-container-1\"" nil t)
               (goto-char (match-beginning 0))
               (insert "<div id=\"content\">"))

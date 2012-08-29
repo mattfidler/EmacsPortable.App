@@ -2,10 +2,7 @@
 #+AUTHOR: Matthew L. Fidler
 * Introduction
 EmacsPortable.App attempts to make a portable version of Emacs that
-runs off a USB drive under either Windows, or Mac OSX.  
-
-To install before a release, please follow [[*Using%20EmacsPortable.App%20before%20a%20release][the directions for using
-EmacsPortable.App before a release]]. 
+runs off a USB drive under either Windows, or Mac OSX.
 * Download
 ** Using Pre-releases
 Under windows, you can do a net-install by using EmacsOptions.  This
@@ -15,26 +12,88 @@ net install can be performed in two ways:
    directory and run it.  This allows you to distribute the network
    install file anywhere and allow other people to download/build
    their own EmacsPortable.App.
-* Configuration
-Since EmacsPortable.App tries to run portably, there are a few things
-that are changed from a standard emacs distribution:
+* Options
+** Associations
+EmacsPortable.App handles file associations in the following ways:
+- Associations through LiberKey
+- PortableApps.com specifictaion (when PortableApps supports association)
+- Registering Associations when running.
+When changing associations under windows, the Mac =Info.plist= xml
+file is also updated.
+** Proxy
+This allows proxy settings to be dynamically determined based on your
+location.  Your password is encrypted based on the location as well.
+This works on windows only.
 
-1. Home directory is allowed to change based on different computers
-   (USB is e:, f:, etc)
-   
-2. Directories that change can become aliases for convenience and to
-   allow recent files to save correctly (for instance ~usb for the usb
-   drive).
-   
-3. Install fonts on different computers to allow a favorite fond to be
-   used in emacs for all distributions.  In windows this is done by
-   making the font available to windows during the session.
-   
-** Home Directory
+EmacsPortable.App will setup the =HTTPS_PROXY=, =HTTP_PROXY= and
+=FTP_PROXY= based on the connection specific setup.
+To use a proxy, set it up with =EmacsOptions.exe=.
+
+This is sufficient for some packages, but not for =gnus=.
+
+The information is stored by the blowfish encryption algorithm.
+However the =HTTP_PROXY= environment variable will contain the
+password in clear text.
+
+When Putty Key is specified in this dialog, the putty key is loaded
+and Putty local or portable is started (depending on the options selected).
+** Behavior
+*** Launching Options 
+**** Emacs Version
+This selects the version of Emacs that EmacsPortable.App will be
+running.  This is useful if you run different versions of Emacs to
+test lisp code on multiple emacs versions.
+**** Startup Script
+Emacs allows you to select popular startup scripts for emacs startup.
+Once downloaded, you can use:
+- Prelude
+- Emacs 24 Starter Kit
+
+**** Pseudo Daemon
+The Pseudo-Daemon Start-up script among other things:
+ - Opens Emacs
+ - Renames the current Frame
+ - Creates a New frame
+ - Calls an external program (ahk) that hides the frame & puts an
+   Emacs icon in the task bar to allow this frame to be shown or
+   closed
+ - Once Emacs has started up, subsequent calls to the Emacs start-up script open a new frame.
+
+This allows you to "close" out of Emacs while maintaining a running Emacs.
+
+The startup script also sets the environment variable
+EMACS_SERVER_FILE to the temporary directory
+
+=$TEMP\ep\EmacsPortable.App-Server-$EMACS_VERSION\server=
+
+Subsequent calls to emacsclient.exe specify this server location.
+Therefore an emacs server can be run for each distinct emacs version
+
+More information about the startup is found in [[file:./App/site-lisp/site-start.org][site-start.org]]
+**** New frame on file open
+Create a new emacs "frame" on opening a new file.
+**** Debug startup
+Under windows, debug mode starts =gdb= if found.  Additionally, if
+=App/gdbinit= is found, gdb sources this before running emacs.  You
+can download an appropriate gdbinit for emacs [[http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit][here]].
+
+This is equivalent to using =EmacsDebug.exe=
+**** Unzip binaries and run from temporary directory
+Emacs binaries can be zipped to save space.  This requires that the
+emacs binaries are extracted to the temporary directory before
+running.  I have found that running emacs in this manner is faster
+than running it on the USB stick alone.  If not selected the binaries
+will run from the usb drive.  If you are running EmacsPortable.App locally
+**** Clean residual files
+When running portably, the unzipped binaries are stored in the
+temporary directory.  
+**** Home directory
 The =HOME= Directory is where Emacs stores the =.emacs= file;  Other
 emacs programs also store information here. EmacsPortable.App has a
 few options for home directories
-*** USB Alias
+
+*USB Alias*
+
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
 #+BEGIN_SRC conf
   [EmacsPortableApp]
@@ -49,7 +108,8 @@ The advantage of this methodology is that under windows, Emacs can be
 copied to the hard-drive to speed up the run-time, and the
 initialization from the hard drive 
 
-*** EXEDIR Alias
+*EXEDIR Alias*
+
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
 #+BEGIN_SRC conf
   [EmacsPortableApp]
@@ -60,7 +120,9 @@ EmacsPortable.App is run from.
 
 The advantage to this methodology is that you can drag and drop Emacs
 and all your customizations will be dragged with it.
-*** Home if Exists
+
+*Home if Exists*
+
 If the =Data/ini/EmacsPortableApp.ini= file contains a full path, then
 the home is set when that file exists.  For example:
 #+BEGIN_SRC conf
@@ -70,7 +132,9 @@ the home is set when that file exists.  For example:
 
 will set the home directory to =c:\= on Windows computers.  Currently,
 this is supported only on windows.
-*** System home
+
+*System home*
+
 If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry
 that doesn't start with either =EXEDIR:/= or =USB:/=, and doesn't
 exist then the
@@ -79,12 +143,81 @@ original home directory is maintained.
   [EmacsPortableApp]
   Home=Set as original
 #+END_SRC
-*** Changing Home 
+
+*Changing Home*
+ 
 When using EmacsOptions.exe, you do not have to worry about selecting
 which type of file is used.  If you select a directory on the USB
 drive, the EmacsPortableApp is updated accordingly.  If you select
 location within the portable app directory, the =EXEDIR= is replaced.
 Note that any where else may change depending on the computer you use.
+
+
+*** Integration Options
+**** Right-Click "Edit-With"
+This allows a right click to produce a "Edit with EmacsPortable.App"
+**** Org-protocol
+This registers Org-protocol and also associates org-protocol actions
+with adobe acrobat/adobe acrobat reader.
+**** Liberkey
+EmacsPortable.App will add LiberKey File associations when it locates
+LiberKey, and the LiberKey support is checked.  Note that you should
+restart LiberKey and make sure that the associations actually
+installed correctly.
+** Visual
+This allows the initial font/color and gemoetry options to be
+specified so that emacs will startup with these options enabled.
+
+
+These are called from the command line and do not affect the
+registry.
+
+In addition this tries to set an option to maximize new frames.
+** Download
+EmacsPortable.App updates 
+** Build EmacsPortable.App
+** Unix Components
+* Customizing
+** Startup Customization
+The =EmacsOptions.exe= allows you to set Emacs startup options via a
+GUI.  This is mirrored in the =Data/ini/EmacsPortable.ini= file. 
+
+*** Startup Font, Color, Geometry
+
+*** Setting Startup Environment variables
+By creating or editing an environment ini file at
+=Data/ini/Environment.ini=, startup environmental variables may be set.
+For example, if you use the =colemak= keyboard with the ergoemacs
+package, the following ini-file will set the
+=ERGOEMACS_KEYBOARD_LAYOUT= to the proper value
+
+#+BEGIN_SRC conf
+[Environment]
+ERGOEMACS_KEYBOARD_LAYOUT=colemak
+#+END_SRC
+
+** Load Path
+Load Path for source directory is in =Data/src=.
+** Literate Initialization
+When using EmacsPortable.App's startup mechanism, t
+1) Any =.org=, =.el= or =.elc= files in =Data/init= and loads them
+2) User-based =.org=, =.el=, or =.elc= files in =Data/init/user=.   
+3) System based =.org=, =.el= or =.elc= files in =Data/init/system=.
+   
+* Configuration
+Since EmacsPortable.App tries to run portably, there are a few things
+that are changed from a standard emacs distribution:
+
+1. Home directory is allowed to change based on different computers
+   (USB is e:, f:, etc)
+   
+2. Directories that change can become aliases for convenience and to
+   allow recent files to save correctly (for instance ~usb for the usb
+   drive).
+   
+3. Install fonts on different computers to allow a favorite fond to be
+   used in emacs for all distributions.  In windows this is done by
+   making the font available to windows during the session.
 ** Emacs aliases
 Emacs has a list of "home" directory aliases.  The absolute
 directories are:
@@ -130,102 +263,11 @@ Custom aliases may be added by customizing =EmacsPortable-aliases=.
 Will install specific fonts, if needed.
 *** STARTED Allow Mac to install specific fonts.
 
-* Starting Emacs
-** Running Debug
-Under windows, debug mode starts =gdb= if found.  Additionally, if
-=App/gdbinit= is found, gdb sources this before running emacs.  You
-can download an appropriate gdbinit for emacs [[http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit][here]].
-* Customizing
-** Startup Customization
-The =EmacsOptions.exe= allows you to set Emacs startup options via a
-GUI.  This is mirrored in the =Data/ini/EmacsPortable.ini= file.
-*** Emacs Version
-This selects the version of Emacs that EmacsPortable.App will be
-running.  This is useful if you run different versions of Emacs to
-possibly test lisp code, or use features not previously used.
-*** Register Org-protocol
-This registers Org-protocol and also associates org-protocol actions
-with adobe acrobat/adobe acrobat reader.
-*** Startup Font, Color, Geometry
-This allows the initial font/color and gemoetry options to be
-specified so that emacs will startup with these options enabled.
-These are called from the command line and do not affect the
-registry.
-*** Proxy
-This allows proxy settings to be dynamically determined based on your
-location.  Your password is encrypted based on the location as well.
-This works on windows only.
-*** Setting Startup Environment variables
-By creating or editing an environment ini file at
-=Data/ini/Environment.ini=, startup environmental variables may be set.
-For example, if you use the =colemak= keyboard with the ergoemacs
-package, the following ini-file will set the
-=ERGOEMACS_KEYBOARD_LAYOUT= to the proper value
-
-#+BEGIN_SRC conf
-[Environment]
-ERGOEMACS_KEYBOARD_LAYOUT=colemak
-#+END_SRC
-*** Determining if Emacs Binaries should be zipped
-Emacs binaries can be zipped to save space.  This requires that the
-emacs binaries are extracted to the temporary directory before
-running.  I have found that running emacs in this manner is faster
-than running it on the USB stick alone.  If not selected the binaries
-will run from the usb drive.  If you are running EmacsPortable.App locally
-*** LiberKey Support
-EmacsPortable.App will add LiberKey File associations when it locates
-LiberKey, and the LiberKey support is checked.  Note that you should
-restart LiberKey and make sure that the associations actually
-installed correctly.
-*** Associations Support
-EmacsPortable.App handles file associations in the following ways:
-- Associations through LiberKey
-- PortableApps.com specifictaion (when PortableApps supports association)
-- Registering Associations when running.
-When changing associations under windows, the Mac =Info.plist= xml
-file is also updated.
-** Load Path
-Load Path for source directory is in =Data/src=.
-** Literate Initialization
-When using EmacsPortable.App's startup mechanism, t
-1) Any =.org=, =.el= or =.elc= files in =Data/init= and loads them
-2) User-based =.org=, =.el=, or =.elc= files in =Data/init/user=.
-   
-3) System based =.org=, =.el= or =.elc= files in =Data/init/system=.
-   
 * How It Works
 ** EmacsPortable.App Startup (Windows Only)
-The Pseudo-Daemon Start-up script among other things:
- - Opens Emacs
- - Renames the current Frame
- - Creates a New frame
- - Calls an external program (ahk) that hides the frame & puts an
-   Emacs icon in the task bar to allow this frame to be shown or
-   closed
- - Once Emacs has started up, subsequent calls to the Emacs start-up script open a new frame.
-
-This allows you to "close" out of Emacs while maintaining a running Emacs.
-
-The startup script also sets the environment variable
-EMACS_SERVER_FILE to the temporary directory
-
-=$TEMP\ep\EmacsPortable.App-Server-$EMACS_VERSION\server=
-
-Subsequent calls to emacsclient.exe specify this server location.
-Therefore an emacs server can be run for each distinct emacs version
-
-More information about the startup is found in [[file:./App/site-lisp/site-start.org][site-start.org]]
 
 ** Proxy Configuration (Windows Only)
-EmacsPortable.App will setup the =HTTPS_PROXY=, =HTTP_PROXY= and
-=FTP_PROXY= based on the connection specific setup.
-To use a proxy, set it up with =EmacsOptions.exe=.
 
-This is sufficient for some packages, but not for =gnus=.
-
-The information is stored by the blowfish encryption algorithm.
-However the =HTTP_PROXY= environment variable will contain the
-password in clear text.
 ** Fonts
 *** Windows
 Under windows the fonts in the =App/fonts/= directory are temporarily

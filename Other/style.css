@@ -11,37 +11,44 @@ Released for free under a Creative Commons Attribution 2.5 License
 
 
 body {
-	margin: 0;
-	padding: 0;
-	background: #1B3266;
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 14px;
-	color: #181B20;
+    margin: 0;
+    padding: 0;
+    background: #1B3266;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #181B20;
 }
 
-h1, h2, h3, h4 {
-	margin: 0;
-	padding: 0;
-        font-variant: small-caps;
-	font-family: 'Oswald', sans-serif;
-	font-weight: normal;
-	color: #2483A6;
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+    font-variant: small-caps;
+    font-family: 'Oswald', sans-serif;
+    font-weight: normal;
+    color: #2483A6;
 }
 
 h1 {
-	font-size: 2em;
+    font-size: 2em;
 }
 
 h2 {
-	font-size: 2.4em;
+    font-size: 2.4em;
 }
 
 h3 {
-	font-size: 1.6em;
+    font-size: 1.6em;
 }
 
 h4 {
-	font-size: 1.1em;
+    font-size: 1.1em;
+}
+
+h5 {
+    font-size: 1em;
+}
+h6 {
+    font-size: 1em;
 }
 
 p, ul, ol {

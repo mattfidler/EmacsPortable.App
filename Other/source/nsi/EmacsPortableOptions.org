@@ -25,6 +25,8 @@ This provides an interface to the Emacs Startup options
   Var download_startup
   Var download_use 
   Var download_dict
+  Var download_nsis
+  Var download_ahk
 #+END_SRC
 ** Include files
 #+BEGIN_SRC nsis
@@ -502,6 +504,31 @@ From http://nsis.sourceforge.net/Explode
     ClearErrors
   FunctionEnd
   
+#+END_SRC
+** Download AutoHotKey
+#+BEGIN_SRC nsis
+  Function DownloadAHK
+    ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" ahk url
+    ClearErrors
+    ${If} $0 != ""
+      Inetc::get "$0" "$TEMP\ep\ep\ahk.7z"
+      ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\ahk.7z" -o"$EXEDIR\App\ahk"'
+      Delete "$TEMP\ep\ep\ahk.7z"
+    ${EndIf}
+  FunctionEnd
+ 
+#+END_SRC
+** Download NSIS
+#+BEGIN_SRC nsis
+  Function DownloadNSIS
+    ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
+    ClearErrors
+    ${If} $0 != ""
+      Inetc::get "$0" "$TEMP\ep\ep\NSIS.zip"
+      ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.zip" -o"$EXEDIR\App"'
+      Delete "$TEMP\ep\ep\NSIS.zip"
+    ${EndIf}
+  FunctionEnd
 #+END_SRC
 * Pages
 ** Select Options to Customize
@@ -2084,7 +2111,11 @@ FunctionEnd
     ${NSD_GetText} $hCtl_download_Startup $download_startup
     ${NSD_GetText} $hCtl_download_Use $download_use
     ${NSD_GetText}  $hCtl_download_Dict $download_dict
+    ${NSD_GetState} $hCtl_download_NSIS $download_nsis
+    ${NSD_GetState}  $hCtl_download_CheckBox1 $download_ahk
   FunctionEnd
+    
+  
 #+END_SRC
 *** Download Functions
 **** Download Emacs
@@ -2272,7 +2303,12 @@ FunctionEnd
                 ${EndIf}
               ${EndIf}
             ${EndIf}
-            
+            ${If} $download_ahk != ""
+              Call DownloadAHK
+            ${EndIf}
+            ${If} $download_nsis != ""
+              Call DownloadNSIS
+            ${EndIf}
             ${If} $download_dict != "(Select)"
               DetailPrint "Attempting to download dictionary $download_dict"
               ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
@@ -2401,23 +2437,11 @@ FunctionEnd
             
             
             ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
-              ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" ahk url
-              ClearErrors
-              ${If} $0 != ""
-                Inetc::get "$0" "$TEMP\ep\ep\ahk.7z"
-                ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\ahk.7z" -o"$EXEDIR\App\ahk"'
-                Delete "$TEMP\ep\ep\ahk.7z"
-              ${EndIf}
+              Call DownloadAHK
             ${EndIf}
             
             ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
-              ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
-              ClearErrors
-              ${If} $0 != ""
-                Inetc::get "$0" "$TEMP\ep\ep\NSIS.zip"
-                ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.zip" -o"$EXEDIR\App"'
-                Delete "$TEMP\ep\ep\NSIS.zip"
-              ${EndIf}
+              Call DownloadNSIS
             ${EndIf}
             ## Add Make.exe
             SetOutPath "$EXEDIR\App\gw32\share\locale\zh_CN\LC_MESSAGES"
