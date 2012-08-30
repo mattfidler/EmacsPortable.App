@@ -2457,6 +2457,7 @@ FunctionEnd
             SetOutPath "$EXEDIR\App\7z"
             File "..\..\..\App\7z\7zG.exe"
             File "..\..\..\App\7z\7z.*"
+            File "..\..\..\App\7z\7zCon.sfx"
             File "..\..\..\App\7z\License.txt"
           ${EndIf}
           ## mirrors.ini not found.  Download EmacsPortableApp
