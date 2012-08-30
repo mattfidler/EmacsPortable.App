@@ -5,6 +5,8 @@ ehthumbs.db
 Icon?
 Thumbs.db
 # EmacsPortable Files to Ignore #
+Other/source/nsi/EmacsInstall*.nsi
+EmacsInstall*.exe
 /App/7z/*
 /App/NSIS/*
 /App/bin/*
