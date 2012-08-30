@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Wed Aug 29 11:58:51 2012 (-0500)
 ;; Version: 
-;; Last-Updated: Thu Aug 30 11:24:20 2012 (-0500)
+;; Last-Updated: Thu Aug 30 15:12:28 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 101
+;;     Update #: 107
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -203,7 +203,7 @@ FunctionEnd
       (insert (format "\n!include \"%s\"\n"
                       (replace-regexp-in-string "/" "\\\\"
                                                 (expand-file-name "setupEmacsData.nsh" "~nsi/"))))
-      (insert "Section Main\n")
+      (insert "Section Main sec_main\n")
       (insert "SetOutPath \"$INSTDIR\"\n")
       (setq tmp (replace-regexp-in-string "/" "\\" (expand-file-name "~ep/") t t))
       (mapc
@@ -245,7 +245,12 @@ FunctionEnd
                                (replace-regexp-in-string "/" "\\"
                                                          (expand-file-name "~ep/") t t)
                                emacs-ver ep-ver) t t))
-      (setq ret (buffer-string)))
+      (setq ret (buffer-string))
+      (goto-char (point-min))
+      (when (search-forward "!insertmacro MUI_PAGE_COMPONENTS")
+        (replace-match ""))
+      (goto-char (point-max))
+      (insert "\nSection \"-hidden\"\nExec '\"$INSTDIR\EmacsOptions.exe\" /all'\nSectionEnd\n"))
     (setq tmp
           (remove-if (lambda(x) (string-match "/\\([.][.]?\\|user\\|system\\|shared\\|[.]git\\)$" x))
                      (directory-files "~start/" t)))
@@ -253,7 +258,7 @@ FunctionEnd
       (mapc
        (lambda(x)
          (setq bat
-               (concat makensis " "
+               (concat bat makensis " "
                        (replace-regexp-in-string "/" "\\" (expand-file-name (format "~nsi/EmacsInstall-%s.nsi" (file-name-nondirectory x))) t t) "\n"))
          (with-temp-file (format "~nsi/EmacsInstall-%s.nsi" (file-name-nondirectory x))
            (setq buffer-file-coding-system 'raw-text)
@@ -261,7 +266,7 @@ FunctionEnd
            (insert (format "\nSection \"%s\"" (file-name-nondirectory x)))
            (build-nsi-file (remove-if
                             (lambda(x)
-                              (string-match "\\([.][.]?\\(git\\|bzr\\|svn\\)\\)" x))
+                              (string-match "\\([.][.]?\\(git\\|bzr\\|svn\\)\\|.*[#~]\\)$" x))
                             (directory-files (format "~start/%s/" (file-name-nondirectory x)) t))
                            (format "$INSTDIR\\Data\\start\\%s" (file-name-nondirectory x)))
            (setq tmp2 (remove-if
@@ -297,7 +302,9 @@ FunctionEnd
                                     (replace-regexp-in-string "/" "\\"
                                                               (expand-file-name "~ep/") t t)
                                     emacs-ver ep-ver (file-name-nondirectory x))
-                            t t))))
+                            t t))
+           (goto-char (point-max))
+           (insert "\nSection \"-hidden\"\nExec '\"$INSTDIR\EmacsOptions.exe\" /all'\nSectionEnd\n")))
        tmp))
     (with-temp-file tmp-file
       (insert bat))

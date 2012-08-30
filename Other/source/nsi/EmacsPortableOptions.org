@@ -126,9 +126,9 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
 
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
-  Name "EmacsPortable.App Options"
+  Name "EmacsPortable.App"
   OutFile "..\..\..\EmacsOptions.exe"
-  BrandingText "PortableEmacs.App"
+  BrandingText "EmacsPortable.App, Emacs on the Go!"
   
   InstallDir "$EXEDIR"
 #+END_SRC
@@ -169,7 +169,12 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
   Page custom fnc_behavior_Show fnc_behavior_Validate
   Page custom fnc_visuals_Show fnc_visuals_Validate
   !insertmacro MUI_PAGE_INSTFILES
-  ##!insertmacro MUI_PAGE_FINISH
+  !define MUI_FINISHPAGE_RUN $EXEDIR\EmacsPortableApp.exe
+  !define MUI_FINISHPAGE_RUN_TEXT "Start Emacs"
+  !define MUI_FINISHPAGE_SHOWREADME $EXEDIR\help.html
+  !define MUI_FINISHPAGE_SHOWREADME_TXT "EmacsPortable.App Information"
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE finishPre
+  !insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_LANGUAGE "English"
   
 #+END_SRC
@@ -225,6 +230,18 @@ Don't display the license page when
       Goto +2
       Abort
     ${EndIf}
+  FunctionEnd
+#+END_SRC
+
+** Abort finish page
+#+BEGIN_SRC nsis
+  Function finishPre
+    ${GetParameters} $0
+    ${GetOptions} $0 '/all' $R0
+    ${If} ${Errors}
+      Abort
+    ${EndIf}
+    ClearErrors
   FunctionEnd
 #+END_SRC
 
