@@ -2346,6 +2346,19 @@ FunctionEnd
             ${If} $download_nsis != ""
               Call DownloadNSIS
             ${EndIf}
+            ${IfNot} ${FileExists} "$EPEXE\App\hunspell\bin\hunspell.exe"
+              ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" hunspell url
+              ClearErrors
+              ${If} $0 != ""
+                SetOutPath $TEMP\ep
+                Inetc::get "$0" "$TEMP\ep\hunspell.zip"
+                SetOutPath "$EXEDIR\App\hunspell\bin"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.zip" -o"$EXEDIR\App\hunspell\bin"'
+                SetOutPath "$EXEDIR\App\hunspell\epdic"
+                CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
+                Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
+              ${EndIf}
+            ${EndIf}
             ${If} $download_dict != "(Select)"
               DetailPrint "Attempting to download dictionary $download_dict"
               ReadINIStr $R0 "$EXEDIR\App\ini\dicts.ini" "$download_dict" "url"
