@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Wed Aug 29 11:58:51 2012 (-0500)
 ;; Version: 
-;; Last-Updated: Wed Aug 29 16:34:19 2012 (-0500)
+;; Last-Updated: Thu Aug 30 11:24:20 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 88
+;;     Update #: 101
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -67,7 +67,7 @@
           ((file-directory-p file)
            (setq out2 (concat out-path "\\" (file-name-nondirectory file)))
            (setq lst (remove-if '(lambda(x)
-                                   (string-match (or exclude-reg "/\\([.][.]?\\|.*~\\|[#].*[#]\\)$") x))
+                                   (string-match (or exclude-reg "/\\([.][.]?\\|.*~\\|[#].*[#]\\|[.]git\\|[.]bzr\\)$") x))
                                 (directory-files (concat file "/") t)))
            (setq changed-out t)
            (build-nsi-file lst out2 exclude-reg))
@@ -80,10 +80,27 @@
        file-list))
     (symbol-value 'ret)))
 
+(defvar build-nsi-batch-file nil
+  "Batch file that is building the nsis installers.")
+
+(defun build-nsi-setinel (process event)
+  (when (string= event "finished\n")
+    (when build-nsi-batch-file
+      (delete-file build-nsi-batch-file)
+      (setq build-nsi-batch-file nil))))
+
 (defun build-nsi ()
   "Build NSI based on current install"
   (interactive)
-  (let (ret tmp tmp2)
+  (let (ret
+        tmp
+        tmp2
+        (tmp-file (make-temp-file "emacs-make" nil "bat"))
+        (makensis (concat "@" (replace-regexp-in-string "/" "\\" (expand-file-name "~app/nsis/makensis.exe") t t)))
+        (bat ""))
+    (setq bat
+          (concat makensis " "
+                  (replace-regexp-in-string "/" "\\" (expand-file-name "~nsi/EmacsInstall.nsi") t t) "\n"))
     (with-temp-file "~nsi/EmacsInstall.nsi"
       (setq buffer-file-coding-system 'raw-text)
       (insert (replace-regexp-in-string
@@ -177,6 +194,7 @@ Function GetDriveVars
   
   FunctionEnd
 Function .onInit
+StrCpy $PA \"c:\\\"
 ${GetDrives} \"FDD+HDD\" \"GetDriveVars\"
 StrCpy $INSTDIR \"$PA\EmacsPortable.App\"
 FunctionEnd
@@ -188,9 +206,17 @@ FunctionEnd
       (insert "Section Main\n")
       (insert "SetOutPath \"$INSTDIR\"\n")
       (setq tmp (replace-regexp-in-string "/" "\\" (expand-file-name "~ep/") t t))
-      (insert (format "File \"%s\*.exe\"\n" tmp))
+      (mapc
+       (lambda(x)
+         (insert (format "File \"%s\"\n"
+                         (replace-regexp-in-string "/" "\\" x t t))))
+       (remove-if (lambda(x)
+                    (string-match "EmacsPortableApp-" x))
+                  (directory-files (expand-file-name "~ep/") t ".*[.]exe")))
       (insert (format "File \"%s\*.html\"\n" tmp))
       (insert (format "File \"%s\*.org\"" tmp))
+      (build-nsi-file (directory-files "~ep/Contents" t)
+                      "$INSTDIR\\Contents")
       (build-nsi-file (directory-files (concat "~app/emacs-" emacs-ver) t)
                       (concat "$INSTDIR\\App\\emacs-" emacs-ver))
       (build-nsi-file
@@ -204,20 +230,20 @@ FunctionEnd
        "$INSTDIR\\App")
       (build-nsi-file
        (remove-if '(lambda(x) (string-match
-                          (format "/\\(%s\\|EmacsPortableServer-.*\\|.*~\\|[#].*[#]\\)$"
+                          (format "/\\(%s\\|EmacsPortableServer-.*exe\\|rm-.*exe\\|.*~\\|[#].*[#]\\)$"
                                   (regexp-opt
                                    '("." ".." ".git"))) x))
                   (directory-files "~app/eps" t))
        "$INSTDIR\\App\\eps")
       (build-nsi-file (directory-files "~other/" t) "$INSTDIR\\Other")
       
-      (insert "\n${SetupData}\n")
+      (insert "\n${setupInstallData}\n")
       (insert "SectionEnd\n")
       (goto-char (point-min))
       (when (re-search-forward "OutFile.*")
         (replace-match (format "OutFile \"%s\\EmacsInstall-%s-ep%s.exe\""
                                (replace-regexp-in-string "/" "\\"
-                                                 (expand-file-name "~ep/") t t)
+                                                         (expand-file-name "~ep/") t t)
                                emacs-ver ep-ver) t t))
       (setq ret (buffer-string)))
     (setq tmp
@@ -226,11 +252,17 @@ FunctionEnd
     (when tmp
       (mapc
        (lambda(x)
+         (setq bat
+               (concat makensis " "
+                       (replace-regexp-in-string "/" "\\" (expand-file-name (format "~nsi/EmacsInstall-%s.nsi" (file-name-nondirectory x))) t t) "\n"))
          (with-temp-file (format "~nsi/EmacsInstall-%s.nsi" (file-name-nondirectory x))
            (setq buffer-file-coding-system 'raw-text)
            (insert ret)
            (insert (format "\nSection \"%s\"" (file-name-nondirectory x)))
-           (build-nsi-file (directory-files (format "~start/%s/" (file-name-nondirectory x)) t)
+           (build-nsi-file (remove-if
+                            (lambda(x)
+                              (string-match "\\([.][.]?\\(git\\|bzr\\|svn\\)\\)" x))
+                            (directory-files (format "~start/%s/" (file-name-nondirectory x)) t))
                            (format "$INSTDIR\\Data\\start\\%s" (file-name-nondirectory x)))
            (setq tmp2 (remove-if
                        (lambda(x)
@@ -266,7 +298,11 @@ FunctionEnd
                                                               (expand-file-name "~ep/") t t)
                                     emacs-ver ep-ver (file-name-nondirectory x))
                             t t))))
-       tmp))))
+       tmp))
+    (with-temp-file tmp-file
+      (insert bat))
+    (start-process-shell-command "build-nsi" "*build-nsi*" bat)
+    (set-process-sentinel (get-process "build-nsi") 'build-nsi-setinel)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; build-nsi.el ends here
 

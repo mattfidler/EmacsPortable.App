@@ -555,7 +555,9 @@ From http://nsis.sourceforge.net/Explode
   Var option_visual
   Var option_download
   Var option_build
+  Var option_request_build
   Var option_net
+  Var option_unix
   
   
   ; dialog create function
@@ -584,6 +586,8 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 4 "Download Components"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 5 "Net Install"
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 6 "Build Launcher" 
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 7 "Install/Remove Unix Components" 
     ${If} $option_startup == "1"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 0 "$option_assoc"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 1 "$option_proxy"
@@ -591,6 +595,8 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 3 "$option_visual"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 4 "$option_download"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 5 "$option_net"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 6 "$option_request_build"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 7 "$option_unix"
     ${EndIf}
     !define /math _LISTVIEW_TEMP_STYLE ${LVS_EX_CHECKBOXES} | ${LVS_EX_FULLROWSELECT}
     SendMessage $hCtl_startup_options_Select ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${_LISTVIEW_TEMP_STYLE}
@@ -601,7 +607,7 @@ From http://nsis.sourceforge.net/Explode
   ; dialog show function
   Function fnc_startup_options_Show
     StrCpy $option_download ""
-    StrCpy $option_build ""
+    StrCpy $option_build ""     
     ${If} $EXEFILE == "EmacsBuild.exe"
       StrCpy $option_build "1"
     ${Else}
@@ -650,6 +656,8 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 5 $option_net
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 6 $option_request_build
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 7 $option_unix
       StrCpy $option_startup "1"
     ${EndIf}
   FunctionEnd
@@ -1371,6 +1379,7 @@ From http://nsis.sourceforge.net/Explode
   ; handle variables
   Var hCtl_assocs
   Var hCtl_assocs_Label1
+  Var hCtl_assocs_Extless
   Var hCtl_assocs_Assoc
   Var hCtl_assocs_AssocList
   Var hCtl_assocs_New
@@ -1403,13 +1412,18 @@ From http://nsis.sourceforge.net/Explode
     !insertmacro MUI_HEADER_TEXT "EmacsPortable.App File Associations" "Determines the file-assocation options for EmacsPortable.App"
     
     ; === Label1 (type: Label) ===
-    ${NSD_CreateLabel} 8u 5u 121u 13u "EmacsPortable.App Registered File"
+    ${NSD_CreateLabel} 8u 5u 61u 13u "Registered Files"
     Pop $hCtl_assocs_Label1
     
     ; === CheckBox1 (type: Checkbox) ===
-    ${NSD_CreateCheckbox} 219u 2u 68u 14u "Associate Files"
+    ${NSD_CreateCheckbox} 126u 2u 68u 14u "Associate Files"
     Pop $hCtl_assocs_Assoc
     ${SetUnCheck} $hCtl_assocs_Assoc "Assoc"
+  
+    ; === ExtLess (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 198u 2u 89u 14u "Assoc. Extensionless"
+    Pop $hCtl_assocs_ExtLess
+    ${SetUnCheck} $hCtl_assocs_ExtLess "AssocNoExt"
     
     ; === AssocList (type: ListBox) ===
     ${NSD_CreateListViewSorted} 11u 17u 276u 53u "Listview"
@@ -1489,6 +1503,7 @@ From http://nsis.sourceforge.net/Explode
     ${If} $option_assoc == "1"
       ${NSD_KillTimer} PopulateSteal
       ${WriteCheck} $hCtl_assocs_Assoc "Assoc"
+      ${WriteCheck} $hCtl_assocs_ExtLess "AssocNoExt"
       DeleteIniSec "$EXEDIR\Data\ini\assoc.ini" "assoc"
       SendMessage $hCtl_assocs_AssocList ${LVM_GETITEMCOUNT} 0 0 $R1
       IntOp $R1 $R1 - 1
@@ -2415,6 +2430,15 @@ FunctionEnd
               SetAutoClose true
             ${EndIf}
           ${EndIf}
+          ${If} $option_unix == "1"
+            Exec "$EXEDIR\App\eps\download-unix.exe"
+            SetAutoClose true
+          ${EndIf}
+          ${If} $option_request_build == "1"
+            CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$EXEDIR\EmacsBuild.exe"
+            Exec "$EXEDIR\EmacsBuild.exe"
+            SetAutoClose true
+          ${EndIf}
         ${Else}
           ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
             SetOutPath "$EXEDIR\App\7z"
@@ -2628,11 +2652,9 @@ FunctionEnd
         ${EndIf}
         ${PathIfExist} "$EXEDIR\App\ahk\App\AutoHotkey\Compiler"
         StrCpy $7 ""
-        MessageBox MB_OK "$EXEDIR"
         FindFirst $0 $1 "$EXEDIR\App\emacs-*.*"
         loop_emacs_build:
           StrCmp $1 "" done_emacs_build
-          MessageBox MB_OK $1
           StrCpy $7 $1
           FindNext $0 $1
           Goto loop_emacs_build
@@ -2645,12 +2667,16 @@ FunctionEnd
           ${Else}
             ;; Unzip binaries.
             ${If} ${FileExists} "$EXEDIR\App\$7\bare-bin.zip"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\$7\bare-bin.zip" -o"$EXEDIR\App"'
-              Delete "$EXEDIR\App\$7\bare-bin.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\bare-bin.zip" -o"$EXEDIR\App"'
+              ${If} ${FileExists} "$EXEDIR\App\$7\bin\emacs.exe"
+                Delete "$EXEDIR\App\$7\bare-bin.zip"
+              ${EndIf}
             ${EndIf}
             ${If} ${FileExists} "$EXEDIR\App\$7\ext-bin.zip"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\$7\ext-bin.zip" -o"$EXEDIR\App"'
-              Delete "$EXEDIR\App\$7\ext-bin.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\ext-bin.zip" -o"$EXEDIR\App"'
+              ${If} ${FileExists} "$EXEDIR\App\$7\bin\emacsclient.exe"
+                Delete "$EXEDIR\App\$7\ext-bin.zip"
+              ${EndIf}
             ${EndIf}
             FileWrite $4 "@path $EXEDIR\App\ahk\App\AutoHotkey\Compiler;%PATH%$\r$\n"
             FileWrite $4 "@path $EXEDIR\App\nsis;%PATH%$\r$\n"

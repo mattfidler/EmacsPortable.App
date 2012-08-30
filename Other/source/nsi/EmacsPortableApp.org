@@ -425,7 +425,12 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     StrCpy $option_debug_from_ini ""
     StrCpy $option_dos ""
     StrCpy $option_q ""
-    StrCpy $option_version "24.0"
+    StrCpy $option_version "24.1"
+    FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+    ${While} $1 != ""
+      StrCpy $option_version $1 "" 6
+	  FindNext $0 $1 
+    ${EndWhile}
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
     StrCpy $option_colorsync ""    
@@ -852,7 +857,9 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       ${Else}
         ExecWait '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
       ${EndIf}
-      Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bin\emacs.exe"
+        Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+      ${EndIf}
     ${EndIf}
     ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
       ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
@@ -860,7 +867,9 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
       ${Else}
         ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
       ${EndIf}
-      Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bin\emacsclient.exe"
+        Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+      ${EndIf}
     ${EndIf}
     Goto end
   zip_binaries:

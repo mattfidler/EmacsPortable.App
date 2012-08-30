@@ -101,7 +101,7 @@ This marks a section as installed and makes it read-only
     Goto +2
     StrCmp "" "$0" 0 ${JMP}
   !macroend
-
+  
   !define setInstallIfExists `!insertmacro setInstallIfExists`
   !macro setInstallIfExists FILE SEC
     ClearErrors
@@ -150,6 +150,13 @@ This marks a section as installed and makes it read-only
     ${ifSecRO} ${SEC} is_ro_dont_check_${SEC}
     SectionSetFlags ${SEC} 17
     is_ro_dont_check_${SEC}:
+      ClearErrors
+  !macroend
+  
+  !macro setChk SEC
+    ${ifSecRO} ${SEC} is_dont_check_${SEC}
+    SectionSetFlags ${SEC} ${SF_SELECTED}
+    is_dont_check_${SEC}:
       ClearErrors
   !macroend
   

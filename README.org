@@ -20,11 +20,20 @@ net install can be performed in two ways:
 * Options
 ** Associations
 EmacsPortable.App handles file associations in the following ways:
+
 - Associations through LiberKey
 - PortableApps.com specifictaion (when PortableApps supports association)
 - Registering Associations when running.
+
 When changing associations under windows, the Mac =Info.plist= xml
-file is also updated.** Proxy
+file is also updated.
+
+In addition to regular extensions, EmacsPortable.App can be registered
+to extensionless files.  Currently this is unsupported through
+liberkey.  Therefore, this is only in effect when EmacsPortableApp is
+running or installed locally.
+
+** Proxy
 This allows proxy settings to be dynamically determined based on your
 location.  Your password is encrypted based on the location as well.
 This works on windows only.
@@ -42,6 +51,8 @@ password in clear text.
 When Putty Key is specified in this dialog, the putty key is loaded
 and Putty local or portable is started (depending on the options selected).
 ** Behavior
+Under windows, launching options may be changed by running
+=EmacsOptions.exe=. Otherwise, ini files can be edited on Mac OSX.
 *** Launching Options 
 **** Emacs Version
 This selects the version of Emacs that EmacsPortable.App will be
@@ -191,7 +202,8 @@ registry.
 In addition this tries to set an option to maximize new frames.
 ** Download
 EmacsPortable.App updates 
-** Build EmacsPortable.App
+** Network Install
+** Build Launcher
 ** Unix Components
 * Customizing
 ** Startup Customization

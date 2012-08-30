@@ -6,63 +6,57 @@ This sets up Emacs Data Directory according to PAF specifications.
 
 * Data Structure
 #+BEGIN_SRC nsis
-  !macro _setupData
+  !macro _setupData DIR
     # Setup Data
-    IfFileExists "$EXEDIR\Data\AllUsers" +2
-    CreateDirectory "$EXEDIR\Data\AllUsers"
+    IfFileExists "${DIR}\Data\AllUsers" +2
+    CreateDirectory "${DIR}\Data\AllUsers"
   
-    IfFileExists "$EXEDIR\Data\AppData" +2
-    CreateDirectory "$EXEDIR\Data\AppData"
+    IfFileExists "${DIR}\Data\AppData" +2
+    CreateDirectory "${DIR}\Data\AppData"
     
-    IfFileExists "$EXEDIR\Data\AllUsers\Application Data" +2
-    CreateDirectory "$EXEDIR\Data\AllUsers\Application Data"
+    IfFileExists "${DIR}\Data\AllUsers\Application Data" +2
+    CreateDirectory "${DIR}\Data\AllUsers\Application Data"
     
-    IfFileExists "$EXEDIR\Data\Home" +2
-    CreateDirectory "$EXEDIR\Data\Home"
+    IfFileExists "${DIR}\Data\Home" +2
+    CreateDirectory "${DIR}\Data\Home"
     
-    IfFileExists "$EXEDIR\Data\ini" +2
-    CreateDirectory "$EXEDIR\Data\ini"
+    IfFileExists "${DIR}\Data\ini" +2
+    CreateDirectory "${DIR}\Data\ini"
     
-    IfFileExists "$EXEDIR\Data\saves" +2
-    CreateDirectory "$EXEDIR\Data\saves"
+    IfFileExists "${DIR}\Data\saves" +2
+    CreateDirectory "${DIR}\Data\saves"
   
-    IfFileExists "$EXEDIR\Data\snippets" +2
-    CreateDirectory "$EXEDIR\Data\snippets"
+    IfFileExists "${DIR}\Data\snippets" +2
+    CreateDirectory "${DIR}\Data\snippets"
     
-    IfFileExists "$EXEDIR\Data\src" +2
-    CreateDirectory "$EXEDIR\Data\src"
+    IfFileExists "${DIR}\Data\src" +2
+    CreateDirectory "${DIR}\Data\src"
   
-    IfFileExists "$EXEDIR\Data\start" +2
-    CreateDirectory "$EXEDIR\Data\start"
+    IfFileExists "${DIR}\Data\start" +2
+    CreateDirectory "${DIR}\Data\start"
   
-    IfFileExists "$EXEDIR\Data\start\user" +2
-    CreateDirectory "$EXEDIR\Data\start\user"
+    IfFileExists "${DIR}\Data\start\user" +2
+    CreateDirectory "${DIR}\Data\start\user"
   
-    IfFileExists "$EXEDIR\Data\start\system" +2
-    CreateDirectory "$EXEDIR\Data\start\system"
+    IfFileExists "${DIR}\Data\start\system" +2
+    CreateDirectory "${DIR}\Data\start\system"
   
-    IfFileExists "$EXEDIR\Data\start\shared" +2
-    CreateDirectory "$EXEDIR\Data\start\shared"
+    IfFileExists "${DIR}\Data\start\shared" +2
+    CreateDirectory "${DIR}\Data\start\shared"
   
-    IfFileExists "$EXEDIR\Data\themes" +2
-    CreateDirectory "$EXEDIR\Data\themes"
+    IfFileExists "${DIR}\Data\themes" +2
+    CreateDirectory "${DIR}\Data\themes"
   
-    IfFileExists "$EXEDIR\Data\UserProfile" +2
-    CreateDirectory "$EXEDIR\Data\UserProfile"
+    IfFileExists "${DIR}\Data\UserProfile" +2
+    CreateDirectory "${DIR}\Data\UserProfile"
     
-    IfFileExists "$EXEDIR\Data\lisp" +2
-    CreateDirectory "$EXEDIR\Data\lisp"
+    IfFileExists "${DIR}\Data\lisp" +2
+    CreateDirectory "${DIR}\Data\lisp"
     
-    IfFileExists "$EXEDIR\Data\lisp\el-get" +2
-    CreateDirectory "$EXEDIR\Data\lisp\el-get"
-    
-    IfFileExists "$EXEDIR\Data\lisp\elpa" +2
-    CreateDirectory "$EXEDIR\Data\lisp\elpa"
-    
-    IfFileExists "$EXEDIR\Data\lisp\src" +2
-    CreateDirectory "$EXEDIR\Data\lisp\src"
+    IfFileExists "${DIR}\Data\lisp\src" +2
+    CreateDirectory "${DIR}\Data\lisp\src"
   
   !macroend
-  !define setupData '!insertmacro "_setupData"'
-  
+  !define setupData '!insertmacro "_setupData" $EXEDIR'
+  !define setupInstallData '!insertmacro "_setupData" $INSTDIR'
 #+END_SRC

@@ -5,8 +5,8 @@ http://coolsoft.altervista.org/nsisdialogdesigner
 Do not edit manually!
 -->
 <Dialog Name="assocs" Title="Dialog title..." Subtitle="Dialog subtitle...">
-  <Label Name="Label1" Location="12, 9" Size="185, 23" Text="EmacsPortable.App Registered File" TabIndex="0" />
-  <CheckBox Name="CheckBox1" Location="334, 4" Text="Associate Files" TabIndex="1" />
+  <Label Name="Label1" Location="12, 9" Size="93, 23" Text="Registered Files" TabIndex="0" />
+  <CheckBox Name="CheckBox1" Location="192, 4" Text="Associate Files" TabIndex="1" />
   <ListBox Name="ListBox1" Location="17, 30" Size="421, 95" TabIndex="2" />
   <Button Name="Button1" Location="17, 131" Text="New" TabIndex="3" />
   <Button Name="Button2" Location="98, 131" Text="Save" TabIndex="4" />
@@ -19,4 +19,5 @@ Do not edit manually!
     <TextBox Name="TextBox2" Location="75, 36" Size="224, 20" TabIndex="1" />
     <TextBox Name="TextBox1" Location="75, 13" Size="224, 20" TabIndex="1" />
   </GroupBox>
+  <CheckBox Name="ExtLess" Location="302, 4" Size="132, 24" Text="Assoc. Extensionless" TabIndex="8" />
 </Dialog>

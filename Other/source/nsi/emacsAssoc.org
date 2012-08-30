@@ -259,15 +259,17 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
 
 * Main 
 #+BEGIN_SRC nsis
-Section "Main" sec_main
+  Section "Main" sec_main
     HideWindow
+    StrCpy $R9 "" 
     IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
     GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
     ClearErrors
-    StrCmp $R0 "1" end
+    
+    StrCmp $R0 "1" extless
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
     ClearErrors
     StrCmp $R0 "1" 0 end
@@ -281,19 +283,31 @@ Section "Main" sec_main
       ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
       ${Explode}  $0  "," "$R2"
       ${For} $1 1 $0
-          Pop $2
-          Push $R1
-          Push ".$2"
-          Call RegisterExtension
+        Pop $2
+        Push $R1
+        Push ".$2"
+        Call RegisterExtension
       ${Next}
       IntOp $R0 $R0 - 1
       Goto loop_assoc
     done_assoc:
-    System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
-    writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
+      StrCpy $R9 "1"
+    extless:
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "AssocNoExt"
+      ${If} $R0 == "1"
+        # Extensionless files are not currently supported by liberkey.
+        Push "Extensionless Files"
+        Push "."
+        Call RegisterExtension
+        StrCpy $R9 "1"
+      ${EndIf}
+      ${If} $R9 == "1"
+        writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
+        System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
+      ${EndIf}
     end:
-      ClearErrors
-SectionEnd
+      ClearErrors      
+  SectionEnd
 #+END_SRC
 * Uninstaller
 #+BEGIN_SRC nsis
@@ -311,6 +325,10 @@ SectionEnd
     GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2
     ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+    ClearErrors
+    
+    StrCmp $R0 "1" extless
     EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
     Pop $R0
     StrCmp $R0 "error" done_assoc
@@ -320,14 +338,24 @@ SectionEnd
       ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
       ${unExplode}  $0  "," "$R2"
       ${For} $1 1 $0
-          Pop $2
-          Push $R1
-          Push ".$2"
-          Call un.RegisterExtension
+        Pop $2
+        Push $R1
+        Push ".$2"
+        Call un.RegisterExtension
       ${Next}
       IntOp $R0 $R0 - 1
       Goto loop_assoc
     done_assoc:
+    extless:
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "AssocNoExt"
+      ClearErrors
+      ${If} $R0 == "1"
+        # Extensionless files are not currently supported by liberkey.
+        Push "Extensionless Files"
+        Push "."
+        Call un.RegisterExtension
+        StrCpy $R9 "1"
+      ${EndIf}'
     done:
       System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
       ClearErrors

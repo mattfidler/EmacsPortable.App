@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jan 26 16:33:22 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Aug 24 00:24:20 2012 (-0500)
+;; Last-Updated: Thu Aug 30 12:27:16 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 26
+;;     Update #: 30
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -61,6 +61,7 @@
       (ini "")
       (ini-file "[ezw]\n")
       (ini2 "")
+      (ini3 "")
       (ret "")
       (dt ""))
   (mapc
@@ -75,6 +76,10 @@
        (setq ini2
              (format "%s\n${ifSecNotRO} ${sec_ezwine_%s} skip_ezwine_group_ro"
                      ini2 pkg))
+       (setq ini3
+             (format "%s\n${ifSecRO} ${sec_ezwine_%s} +2\n SectionSetFlags ${sec_ezwine_%s} ${SF_SELECTED}"
+                     ini3 pkg pkg))
+
        (setq ret
              (format "%s\nSection /o \"%s\" sec_ezwine_%s\n!insertmacro ezwindown \"%s\"\nSectionEnd\nLangString DESC_sec_ezwine_%s ${LANG_ENGLISH} \"%s - %s\""
                      ret pkg-d pkg pkg pkg pkg-d desc))
@@ -87,7 +92,7 @@
   (setq ini2 (format
               "%s\n${setInstallGroup} ${sec_ezwine_grp}\nskip_ezwine_group_ro:\n"
               ini2))
-  (setq ini (concat ini "\n" ini2))
+  (setq ini (concat ini "\n" ini3 "\n" ini2))
   (setq ini2 "")
   (setq ret
         (format

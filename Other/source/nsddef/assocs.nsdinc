@@ -18,6 +18,7 @@ Var hCtl_assocs_Label4
 Var hCtl_assocs_Label3
 Var hCtl_assocs_TextBox2
 Var hCtl_assocs_TextBox1
+Var hCtl_assocs_ExtLess
 
 
 ; dialog create function
@@ -32,11 +33,11 @@ Function fnc_assocs_Create
   !insertmacro MUI_HEADER_TEXT "Dialog title..." "Dialog subtitle..."
   
   ; === Label1 (type: Label) ===
-  ${NSD_CreateLabel} 8u 5u 121u 13u "EmacsPortable.App Registered File"
+  ${NSD_CreateLabel} 8u 5u 61u 13u "Registered Files"
   Pop $hCtl_assocs_Label1
   
   ; === CheckBox1 (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 219u 2u 68u 14u "Associate Files"
+  ${NSD_CreateCheckbox} 126u 2u 68u 14u "Associate Files"
   Pop $hCtl_assocs_CheckBox1
   
   ; === ListBox1 (type: ListBox) ===
@@ -84,6 +85,10 @@ Function fnc_assocs_Create
   ; === TextBox1 (type: Text) ===
   ${NSD_CreateText} 60u 95u 147u 11u ""
   Pop $hCtl_assocs_TextBox1
+  
+  ; === ExtLess (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 198u 2u 87u 14u "Assoc. Extensionless"
+  Pop $hCtl_assocs_ExtLess
   
 FunctionEnd
 

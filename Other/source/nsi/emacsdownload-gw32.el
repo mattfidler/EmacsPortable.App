@@ -6,9 +6,9 @@
 ;; Maintainer:
 ;; Created: Sat Jan 21 13:06:23 2012 (-0600)
 ;; Version: 
-;; Last-Updated: Fri Aug 24 00:02:20 2012 (-0500)
+;; Last-Updated: Thu Aug 30 12:30:54 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 97
+;;     Update #: 104
 ;; URL:
 ;; Keywords: 
 ;; Compatibility: 
@@ -75,6 +75,7 @@
          ("Zlib" "required by LibPng (also in GTK). ")))
       (ini-file "[gw32]\n")
       (ini "")
+      (ini3 "")
       (ini2 "")
       (ret "")
       (dt ""))
@@ -90,6 +91,9 @@
        (setq ini2
              (format "%s\n${ifSecNotRO} ${sec_gw32e_%s} skip_gw32e_group_ro"
                      ini2 pkg))
+       (setq ini3
+             (format "%s\n${ifSecRO} ${sec_gw32e_%s} +2\n SectionSetFlags ${sec_gw32e_%s} ${SF_SELECTED}"
+                     ini3 pkg pkg))
        (setq ret
              (format "%s\nSection /o \"%s\" sec_gw32e_%s\n!insertmacro g32down \"%s\"\nSectionEnd\nLangString DESC_sec_gw32e_%s ${LANG_ENGLISH} \"%s - %s\""
                      ret pkg-d pkg pkg pkg pkg-d desc))
@@ -97,12 +101,10 @@
              (format "%s\n!insertmacro MUI_DESCRIPTION_TEXT ${sec_gw32e_%s} $(DESC_sec_gw32e_%s)"
                      dt pkg pkg))))
    gw32-emacs-suggested)
-  (with-temp-file "./unix-download-gw32.ini"
-    (insert ini-file))
   (setq ini2 (format
               "%s\n${setInstallGroup} ${sec_gw32e_grp}\nskip_gw32e_group_ro:\n"
               ini2))
-  (setq ini (concat ini "\n" ini2))
+  (setq ini (concat ini "\n" ini3 "\n" ini2))
   (setq ini2 "")
   (setq ret
         (format
