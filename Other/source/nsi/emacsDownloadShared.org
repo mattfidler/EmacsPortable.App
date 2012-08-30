@@ -374,7 +374,7 @@ it alone when OTHER_SEC is read-only.
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
       
-      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
+      nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
@@ -385,7 +385,7 @@ it alone when OTHER_SEC is read-only.
       inetc::get /CONNECTTIMEOUT 30 $R0 "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
       RmDir /r "$TEMP\ep-gw32"
-      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
+      nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
       SetOutPath "$EPEXE\App\gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "dep"
@@ -399,7 +399,7 @@ it alone when OTHER_SEC is read-only.
           "$TEMP\${WHAT}-bin.zip" 
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
       RmDir /r "$TEMP\ep-gw32"
-      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
+      nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
       SetOutPath "$EPEXE\App\gw32"
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
@@ -411,7 +411,7 @@ it alone when OTHER_SEC is read-only.
           "$TEMP\${WHAT}-dep.zip"
       IfFileExists "$TEMP\${WHAT}-dep.zip" 0 g32_exit
       RmDir /r "$TEMP\ep-gw32"
-      ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
+      nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\${WHAT}-dep.zip" -o"$TEMP\ep-gw32"'
       SetOutPath "$EPEXE\App\gw32"
       StrCpy $R1 "dep"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"
@@ -592,7 +592,7 @@ This removes a gnuwin32 package.
         "$TEMP\${WHAT}-bin.zip" 
     IfFileExists "$TEMP\${WHAT}-bin.zip" 0 ezwin_exit
     RmDir /r "$TEMP\ep\ezwin"
-    ExecWait '"$EPEXE\App\7z\7zG.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-ezwin"'
+    nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-ezwin"'
     SetOutPath "$EPEXE\App\ezwin"
     StrCpy $R0 "${WHAT}"
     ${Locate} "$TEMP\ep-ezwin" "" "AddEZW"

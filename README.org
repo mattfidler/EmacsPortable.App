@@ -4,6 +4,11 @@
 EmacsPortable.App attempts to make a portable version of Emacs that
 runs off a USB drive under either Windows, or Mac OSX.
 * Download
+** Download for Emacs 24
+The following downloads are available:
+- Emacs 24.1
+- Emacs 24.1 with eshulte's starter kit
+- Emacs 24.1 with ergoemacs
 ** Using Pre-releases
 Under windows, you can do a net-install by using EmacsOptions.  This
 net install can be performed in two ways:
@@ -19,8 +24,7 @@ EmacsPortable.App handles file associations in the following ways:
 - PortableApps.com specifictaion (when PortableApps supports association)
 - Registering Associations when running.
 When changing associations under windows, the Mac =Info.plist= xml
-file is also updated.
-** Proxy
+file is also updated.** Proxy
 This allows proxy settings to be dynamically determined based on your
 location.  Your password is encrypted based on the location as well.
 This works on windows only.
@@ -48,6 +52,11 @@ Emacs allows you to select popular startup scripts for emacs startup.
 Once downloaded, you can use:
 - Prelude
 - Emacs 24 Starter Kit
+- Ergoemacs
+- Kicker
+
+You can also create  you own.  Just place an =init.el= or =.emacs= in
+a directory under =Data/startup/=
 
 **** Pseudo Daemon
 The Pseudo-Daemon Start-up script among other things:
@@ -57,7 +66,8 @@ The Pseudo-Daemon Start-up script among other things:
  - Calls an external program (ahk) that hides the frame & puts an
    Emacs icon in the task bar to allow this frame to be shown or
    closed
- - Once Emacs has started up, subsequent calls to the Emacs start-up script open a new frame.
+ - Once Emacs has started up, subsequent calls to the Emacs start-up
+   script open a new frame.
 
 This allows you to "close" out of Emacs while maintaining a running Emacs.
 
@@ -86,11 +96,30 @@ than running it on the USB stick alone.  If not selected the binaries
 will run from the usb drive.  If you are running EmacsPortable.App locally
 **** Clean residual files
 When running portably, the unzipped binaries are stored in the
-temporary directory.  
+temporary directory.  To save time on startup, if the bare binaries
+needed to run emacs are still present, the launcher uses these files
+in the temporary directory.
+
+When the clean residual files option is selected, these binaries are
+removed after emacs stops, otherwise they are retained to improve
+startup time. 
 **** Home directory
 The =HOME= Directory is where Emacs stores the =.emacs= file;  Other
 emacs programs also store information here. EmacsPortable.App has a
 few options for home directories
+
+*EXEDIR Alias*
+
+If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
+#+BEGIN_SRC conf
+  [EmacsPortableApp]
+  Home=EXEDIR:/Data/Home
+#+END_SRC
+The EXEDIR directory is changed for the base directory that
+EmacsPortable.App is run from.
+
+The advantage to this methodology is that you can drag and drop Emacs
+and all your customizations will be dragged with it.
 
 *USB Alias*
 
@@ -106,20 +135,7 @@ platform.
 
 The advantage of this methodology is that under windows, Emacs can be
 copied to the hard-drive to speed up the run-time, and the
-initialization from the hard drive 
-
-*EXEDIR Alias*
-
-If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry 
-#+BEGIN_SRC conf
-  [EmacsPortableApp]
-  Home=EXEDIR:/Data/Home
-#+END_SRC
-The EXEDIR directory is changed for the base directory that
-EmacsPortable.App is run from.
-
-The advantage to this methodology is that you can drag and drop Emacs
-and all your customizations will be dragged with it.
+initialization from the hard drive. 
 
 *Home if Exists*
 
@@ -182,9 +198,7 @@ EmacsPortable.App updates
 The =EmacsOptions.exe= allows you to set Emacs startup options via a
 GUI.  This is mirrored in the =Data/ini/EmacsPortable.ini= file. 
 
-*** Startup Font, Color, Geometry
-
-*** Setting Startup Environment variables
+** Setting Startup Environment variables
 By creating or editing an environment ini file at
 =Data/ini/Environment.ini=, startup environmental variables may be set.
 For example, if you use the =colemak= keyboard with the ergoemacs
@@ -264,10 +278,6 @@ Will install specific fonts, if needed.
 *** STARTED Allow Mac to install specific fonts.
 
 * How It Works
-** EmacsPortable.App Startup (Windows Only)
-
-** Proxy Configuration (Windows Only)
-
 ** Fonts
 *** Windows
 Under windows the fonts in the =App/fonts/= directory are temporarily

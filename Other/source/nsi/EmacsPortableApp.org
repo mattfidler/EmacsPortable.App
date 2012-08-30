@@ -325,7 +325,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
 #+BEGIN_SRC nsis
   !macro ExecHide
   !macroend
-  !define ExecHide "!insertmacro ExecHideCall"
+  !define ExecHide "!insertmacro ExecHideCall "
   !macro ExecHideCall cmdline wrkdir outVar
     !verbose push
     !verbose ${_PROCFUNC_VERBOSE}
@@ -343,7 +343,7 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     System::Store "s" ; store registers in System's private stack
     Pop $0 ; cmdline
     Pop $1 ; wrkdir
-    
+  
     System::Alloc 68 ; 4*16 + 2*2 / STARTUPINFO structure = $2
     Pop $2
     ##
@@ -809,7 +809,11 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
         CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs_dir\${FILETO}"
         ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
           SetOutPath "$TEMP\ep"
-          ExecWait '"$EXEDIR\App\7z\7zG.exe" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}'
+          ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
+            nsExec::ExecToLog /OEM "$\"$EXEDIR\App\7z\7z.exe$\" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}"
+          ${Else}
+            ExecWait "$\"$EXEDIR\App\7z\7zG.exe$\" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}"
+          ${EndIf}
         ${EndIf}
       ${EndIf}
     ${EndIf}
@@ -842,12 +846,22 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     ${ReadINIStrWithDefault} $R0 $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Zip" "0"
     StrCmp "$R0" "0" extract_zip zip_binaries
   extract_zip:
-    IfFileExists "$EXEDIR\App\emacs-$option_version\bare-bin.zip" 0 +3
-    ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
-    Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
-    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" 0 +3
-    ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
-    Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+      ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
+        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
+      ${Else}
+        ExecWait '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
+      ${EndIf}
+      Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+    ${EndIf}
+    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+      ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
+        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
+      ${Else}
+        ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
+      ${EndIf}
+      Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+    ${EndIf}
     Goto end
   zip_binaries:
     IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" end

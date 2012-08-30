@@ -483,18 +483,28 @@ From http://nsis.sourceforge.net/Explode
   Function .onInit
     ${GetParameters} $0
     ${GetOptions} $0 '/7z' $R0
-    IfErrors next 0
-    ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
-      SetOutPath "$EXEDIR\App\7z"
-      File "..\..\..\App\7z\7zG.exe"
-      File "..\..\..\App\7z\7z.*"
-      File "..\..\..\App\7z\License.txt"
-    ${EndIf}
-    Abort
-    next:
-      StrCpy $EPEXE $EXEDIR
-      StrCpy $INSTDIR $EXEDIR
+    ${IfNot} ${Errors}
+      ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+        SetOutPath "$EXEDIR\App\7z"
+        File "..\..\..\App\7z\7zG.exe"
+        File "..\..\..\App\7z\7z.*"
+        File "..\..\..\App\7z\7zCon.sfx"
+        File "..\..\..\App\7z\License.txt"
+      ${EndIf}
+      Abort
+    ${Else}
       ClearErrors
+      ${GetParameters} $0
+      ${GetOptions} $0 '/DONEBUILD' $R0
+      ${IfNot} ${Errors}
+        Delete "$EXEDIR\EmacsBuild.exe"
+        Abort
+      ${EndIf}
+      ClearErrors
+    ${EndIf}
+    StrCpy $EPEXE $EXEDIR
+    StrCpy $INSTDIR $EXEDIR
+    ClearErrors
   FunctionEnd  
   
 #+END_SRC
@@ -545,6 +555,7 @@ From http://nsis.sourceforge.net/Explode
   Var option_visual
   Var option_download
   Var option_build
+  Var option_net
   
   
   ; dialog create function
@@ -572,12 +583,14 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 2 "Behavior; Startup Options, Integration Options, etc."
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 4 "Download Components"
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 5 "Net Install"
     ${If} $option_startup == "1"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 0 "$option_assoc"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 1 "$option_proxy"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 2 "$option_behavior"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 3 "$option_visual"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 4 "$option_download"
+      ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 5 "$option_net"
     ${EndIf}
     !define /math _LISTVIEW_TEMP_STYLE ${LVS_EX_CHECKBOXES} | ${LVS_EX_FULLROWSELECT}
     SendMessage $hCtl_startup_options_Select ${LVM_SETEXTENDEDLISTVIEWSTYLE} 0 ${_LISTVIEW_TEMP_STYLE}
@@ -636,6 +649,7 @@ From http://nsis.sourceforge.net/Explode
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 2 $option_behavior
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 3 $option_visual
       ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 4 $option_download
+      ${NSD_LV_GetCheckState} $hCtl_startup_options_Select 5 $option_net
       StrCpy $option_startup "1"
     ${EndIf}
   FunctionEnd
@@ -2167,10 +2181,18 @@ FunctionEnd
             SetOutPath "$EPEXE\App\7z"
             File "..\..\..\App\7z\7zG.exe"
             File "..\..\..\App\7z\7z.*"
+            File "..\..\..\App\7z\7zCon.sfx"
             File "..\..\..\App\7z\License.txt"
           ${EndIf}
+  
           ${SetEnv}
           ${SetupProxy}
+  
+          ${If} $option_net == "1"
+            CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$TEMP\EmacsOptions.exe"
+            ExecWait "$TEMP\EmacsOptions.exe"
+            Delete "$TEMP\EmacsOptions.exe"
+          ${EndIf}
           
           ${If} $option_assoc == "1"
             md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
@@ -2605,10 +2627,13 @@ FunctionEnd
           StrCpy $option_build "1"
         ${EndIf}
         ${PathIfExist} "$EXEDIR\App\ahk\App\AutoHotkey\Compiler"
-        FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+        StrCpy $7 ""
+        MessageBox MB_OK "$EXEDIR"
+        FindFirst $0 $1 "$EXEDIR\App\emacs-*.*"
         loop_emacs_build:
           StrCmp $1 "" done_emacs_build
-          StrCpy $2 $1
+          MessageBox MB_OK $1
+          StrCpy $7 $1
           FindNext $0 $1
           Goto loop_emacs_build
         done_emacs_build:
@@ -2618,9 +2643,18 @@ FunctionEnd
           ${If} ${Errors}
             DetailPrint "Error opening $TEMP\ep\build.cmd"
           ${Else}
+            ;; Unzip binaries.
+            ${If} ${FileExists} "$EXEDIR\App\$7\bare-bin.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\$7\bare-bin.zip" -o"$EXEDIR\App"'
+              Delete "$EXEDIR\App\$7\bare-bin.zip"
+            ${EndIf}
+            ${If} ${FileExists} "$EXEDIR\App\$7\ext-bin.zip"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\$7\ext-bin.zip" -o"$EXEDIR\App"'
+              Delete "$EXEDIR\App\$7\ext-bin.zip"
+            ${EndIf}
             FileWrite $4 "@path $EXEDIR\App\ahk\App\AutoHotkey\Compiler;%PATH%$\r$\n"
             FileWrite $4 "@path $EXEDIR\App\nsis;%PATH%$\r$\n"
-            FileWrite $4 "@path $EXEDIR\App\$2\bin;%PATH%$\r$\n"
+            FileWrite $4 "@path $EXEDIR\App\$7\bin;%PATH%$\r$\n"
             StrCpy $3 $EXEDIR 2
             FileWrite $4 "@$3$\r$\n"
             FileWrite $4 "@echo Build AHK$\r$\n" 
@@ -2628,13 +2662,15 @@ FunctionEnd
             FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all$\r$\n"
             FileWrite $4 "@echo Build NSI$\r$\n"
             FileWrite $4 "@cd $EXEDIR\Other\source\nsi$\n"
-            FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all EMACS=$\"$EXEDIR\App\$2\bin\emacs.exe$\" MAKENSIS=$\"$EXEDIR\App\NSIS\makensis.exe$\"$\r$\n"
+            FileWrite $4 "@$EXEDIR\App\gw32\bin\make.exe all EMACS=$\"$EXEDIR\App\$7\bin\emacs.exe$\" MAKENSIS=$\"$EXEDIR\App\NSIS\makensis.exe$\"$\r$\n"
             FileWrite $4 "@pause$\r$\n"
             FileClose $4
             ExecWait "cmd /c $\"$TEMP\ep\build.cmd$\""
           ${EndIf}
           ${If} $option_build == "1"
             Exec "$EXEDIR\App\eps\download-unix.exe"
+          ${Else}
+            Exec "$EXEDIR\EmacsOptions.exe /DONEBUILD"
           ${EndIf}
           SetAutoClose true
       ${Else}
@@ -2644,6 +2680,4 @@ FunctionEnd
     ${EndIf}
   SectionEnd
   
-#+END_SRC  
-
-
+#+END_SRC
