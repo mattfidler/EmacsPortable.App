@@ -153,25 +153,28 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     ; $9    "drive letter"  (a:\ c:\ ...)
     ; $8    "drive type"    (FDD HDD ...)
     DetailPrint "Checking Drive $9 ($EPEXE\App\ini\paths.ini)"
+    System::Call "Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i("$9",,${NSIS_MAX_STRLEN},.r0,,,,${NSIS_MAX_STRLEN})"
+    Exch $0
+    Pop $0
     StrCpy $globalMD5 ""
     ${GetMD5} "$9*.*" $R3
     StrCmp "$R3" "" 0 +3
     DetailPrint "Nothing On Drive."
     Goto done_portable
     DetailPrint "MD5: $R3"
-    ReadIniStr $R4 "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5"
+    ReadIniStr $R4 "$EPEXE\Data\ini\$0-cache.ini" "portable" "MD5"
     ${If} $R4 == "$R3"
-      ReadIniStr $R0 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
+      ReadIniStr $R0 "$EPEXE\Data\ini\$0-cache.ini" "portable" "Drive"
       ${If} "$R0" != "$9"
-        ${RIF} "$EPEXE\Data\ini\portable-cache.ini" "$R0" "$9"
+        ${RIF} "$EPEXE\Data\ini\$0-cache.ini" "$R0" "$9"
       ${EndIf}
       StrCpy $globalMD5 "1"
       StrCpy "$R8" "StopGetDrives"
       Goto done_portable
     ${EndIf}
-    DeleteIniSec "$EPEXE\Data\ini\portable-cache.ini" "portable"
-    WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5" "$R3"
-    WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive" "$9"
+    DeleteIniSec "$EPEXE\Data\ini\$0-cache.ini" "portable"
+    WriteIniStr "$EPEXE\Data\ini\$0-cache.ini" "portable" "MD5" "$R3"
+    WriteIniStr "$EPEXE\Data\ini\$0-cache.ini" "portable" "Drive" "$9"
     
     ## Now look for each portable Directory.
     StrCpy $R8 ""
@@ -214,6 +217,9 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       ; $9 -- Drive Letter
       ; $R1 -- ${WHAT} Directories
       DetailPrint "Checking $9$R1"
+      System::Call "Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i("$9",,${NSIS_MAX_STRLEN},.r0,,,,${NSIS_MAX_STRLEN})"
+      Exch $0
+      Pop $0
       IfFileExists "$9$R1" 0 not_found
       ${GetMD5} "$9$R1" $R3 
       DetailPrint "MD5: $R3"
@@ -361,8 +367,6 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
   FunctionEnd
   
   Function GetLocaldir
-    ${GetComputerName} $0
-    DetailPrint "Computer Name: $0"
   
     GetFullPathName /SHORT $R1  $PROGRAMFILES
     StrCpy $9 $R1 3
@@ -382,7 +386,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
   FunctionEnd
   
   
-  !insertmacro AddIt "portable" "$EPEXE\Data\ini\portable-cache.ini" "$EPEXE\App\ini\paths.ini"
+  !insertmacro AddIt "portable" "$EPEXE\Data\ini\$0-cache.ini" "$EPEXE\App\ini\paths.ini"
   !insertmacro AddIt "exedir" "$EPEXE\Data\ini\exedir-cache.ini" "$EPEXE\App\ini\paths.ini"
   !insertmacro AddIt "local" "$EPEXE\Data\ini\$0-cache.ini" "$EPEXE\App\ini\paths.ini"
   
