@@ -3,13 +3,17 @@ emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh se
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/ep-local.exe
 
-../../../App/eps/download-unix.exe: EmacsUnix.nsi unix-download.ini
+../../../App/eps/ep-local.exe: emacsLocal.nsi
+	$(MAKENSIS) emacsLocal.nsi
+
+emacsLocal.nsi: emacsLocal.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsLocal.org)"
+
+../../../App/eps/download-unix.exe: EmacsUnix.nsi
 	$(MAKENSIS) EmacsUnix.nsi
 
-unix-download.ini: emacsdownload-gw32.nsi emacsdownload-ezwin.nsi
-	copy unix-download-gw32.ini +unix-download-ezw.ini  unix-download.ini
 
 EmacsUnix.nsi: emacsUnix.org emacsdownload-gw32.nsi emacsdownload-ezwin.nsi EmacsDownloadShared.nsh EmacsCall.nsh
 	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsUnix.org)"

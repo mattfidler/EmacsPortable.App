@@ -461,6 +461,7 @@ FunctionEnd
 #+BEGIN_SRC nsis
   Section "Main" sec_main
     HideWindow
+    IfFileExists "$EXEDIR\rm-ep-local.exe" end
     IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
     GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2

@@ -8,6 +8,7 @@ Thumbs.db
 Other/source/nsi/EmacsInstall*.nsi
 EmacsInstall*.exe
 /App/7z/*
+/App/ahk/*
 /App/NSIS/*
 /App/bin/*
 /App/fonts/*
@@ -142,3 +143,4 @@ Readme.org_archive
 /Other/source/nsi/unix-download.ini
 /Other/source/nsi/EmacsEnv.nsh
 /Other/source/nsi/emacsportablerun.nsi
+/Other/source/nsi/emacsLocal.nsi

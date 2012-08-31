@@ -1381,6 +1381,10 @@ From http://nsis.sourceforge.net/Explode
       ${WriteProxy} $hCtl_proxy_port "Port"
       ${WriteProxy} $hCtl_proxy_UserName "User"
       ${WriteProxy} $hCtl_proxy_Password1 "Password"
+      blowfish::encrypt $PROXY_IDE $PROXY_ID
+      Pop $R0
+      Pop $R0
+      WriteIniStr "$EXEDIR\Data\ini\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "ID" "$R0"
     ${EndIf}
   FunctionEnd
   
@@ -2357,10 +2361,12 @@ FunctionEnd
                 ${EndIf}
               ${EndIf}
             ${EndIf}
-            ${If} $download_ahk != ""
+            ${If} $download_ahk == "1"
+            ${AndIfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
               Call DownloadAHK
             ${EndIf}
-            ${If} $download_nsis != ""
+            ${If} $download_nsis == "1"
+            ${AndIfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
               Call DownloadNSIS
             ${EndIf}
             ${IfNot} ${FileExists} "$EPEXE\App\hunspell\bin\hunspell.exe"

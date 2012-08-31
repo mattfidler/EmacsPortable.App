@@ -14,20 +14,21 @@ I want:
  - CRC check
  - Good compression
 #+BEGIN_SRC nsis
-CRCCheck On
-RequestExecutionLevel user
-; Best Compression
-SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Caption "Loading EmacsPortable.App"
-Subcaption 3 " "
-XPStyle on
-OutFile "..\..\..\App\eps\ep-reg.exe"
-Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\ico\trash_empty.ico"
-var EPEXE 
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Caption "Loading EmacsPortable.App"
+  Subcaption 3 " "
+  XPStyle on
+  OutFile "..\..\..\App\eps\ep-reg.exe"
+  Icon "..\img\ico\appicon.ico"
+  UninstallIcon "..\img\ico\trash_empty.ico"
+  var EPEXE
+  !include "LogicLib.nsh"
 #+END_SRC
 
 ** User Interface
@@ -92,26 +93,30 @@ FunctionEnd
 #+END_SRC
 * Main
 #+BEGIN_SRC nsis
-Section "Main" sec_main
-    HideWindow
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
-    Goto +2
-    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-    DetailPrint "Add Org-protocol"
-    ${RegOrgProtocol}
-    DetailPrint "Add Edit With..."
-    ${RegEditWith}
-    DetailPrint "Write Uninstaller information"
-    writeUninstaller "$TEMP\ep\rm-ep-reg.exe"
-SectionEnd
+  Section "Main" sec_main
+      HideWindow
+      IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
+      GetFullPathName /SHORT $EPEXE "..\.."
+      Goto +2
+      ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+      DetailPrint "Add Org-protocol"
+      ${RegOrgProtocol}
+      DetailPrint "Add Edit With..."
+      ${RegEditWith}
+      DetailPrint "Write Uninstaller information"
+      ${If} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+        writeUninstaller "$EXEDIR\rm-ep-reg.exe"
+      ${Else}
+        writeUninstaller "$TEMP\ep\rm-ep-reg.exe"
+      ${EndIf}
+  SectionEnd
 #+END_SRC
 * Uninstaller
 #+BEGIN_SRC nsis
   Section "Uninstall" sec_uninstall
     SetAutoClose true
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
+    IfFileExists "$INSTDIR\..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$INSTDIR\..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
     IfFileExists "$TEMP\ep\ep-reg.exe" 0 +2
@@ -122,6 +127,9 @@ SectionEnd
     Delete "$TEMP\ep\rm-ep-reg.exe"
     IfFileExists "$TEMP\rm-ep-reg.exe" 0 +2
     Delete "$TEMP\rm-ep-reg.exe"
+    IfFileExists "$INSTDIR\rm-ep-reg.exe" 0 +2
+    Delete "$INSTDIR\rm-ep-reg.exe"
+    
     ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
     IfErrors look_for_acrobat 0
     IfFileExists "$R0\Javascripts" 0 look_for_acrobat
@@ -166,6 +174,7 @@ SectionEnd
     done: 
       ClearErrors
   SectionEnd
+  
 #+END_SRC
 
 

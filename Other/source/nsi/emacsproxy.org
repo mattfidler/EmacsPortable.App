@@ -11,6 +11,25 @@
   Var PROXY_PORT
   Var PROXY_USER
   Var PROXY_PASS
+  Var curr_ser
+#+END_SRC
+** Get Drive Serial Number
+http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
+#+BEGIN_SRC nsis
+!define _GetVolumeInformationSysCall "Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i"
+!macro GetDiskVolumeSerialNumber _SERIAL _DRIVE
+  Push $0
+  System::Call '${_GetVolumeInformationSysCall}("${_DRIVE}",,${NSIS_MAX_STRLEN},.r0,,,,${NSIS_MAX_STRLEN})'
+  Exch $0
+  Pop ${_SERIAL}
+!macroend
+!define GetDiskVolumeSerialNumber "!insertmacro GetDiskVolumeSerialNumber"
+ 
+!macro GetDiskVolumeSerialNumberHex _SERIAL _DRIVE
+  ${GetDiskVolumeSerialNumber} ${_SERIAL} ${_DRIVE}
+  IntFmt ${_SERIAL} "%08X" ${_SERIAL}
+!macroend
+!define GetDiskVolumeSerialNumberHex "!insertmacro GetDiskVolumeSerialNumberHex"
 #+END_SRC
 
 ** Read Line Function 
@@ -55,11 +74,18 @@
       ClearErrors
   FunctionEnd
   
+  Function SetupSerial
+    ${If} $curr_ser == ""
+      StrCpy $0 $EPEXE 3  
+      ${GetDiskVolumeSerialNumberHex} $curr_ser $0
+    ${EndIf}
+  FunctionEnd
   
   Function SetupProxy
     Pop $9
     Pop $8
     Pop $7
+    Call SetupSerial
     ClearErrors
     StrCpy $PROXY_IDE ""
     StrCpy $PROXY_ID ""
@@ -75,7 +101,7 @@
     Goto +3
     IfFileExists "$7\App\ezwin\bin\sed.exe" 0 +2
     StrCpy $R0 "$7\App\ezwin\bin\sed.exe"
-  
+    
     IfFileExists "$7\App\gw32\bin\sort.exe" 0 +3
     StrCpy $R2 "$7\App\gw32\bin\sort.exe" 
     Goto +3
@@ -115,54 +141,64 @@
       StrCmp "$PROXY_ID" "" 0 +2
       StrCpy $PROXY_ID "Unknown"
       StrCpy $PROXY_NAME $PROXY_ID
-      StrCpy $PROXY_ID "$PROXY_ID mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+      StrCpy $PROXY_ID "$PROXY_ID$curr_ser mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
       DetailPrint "Network: `$PROXY_IDE`"
       IfFileExists "$9\proxy-$PROXY_IDE.ini" 0 end
-      ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
-      blowfish::decrypt $R0 "$PROXY_ID"
+      blowfish::encrypt $PROXY_IDE "$PROXY_ID"
+      Pop $R2
       Pop $R0
-      Pop $R0
-      StrCpy "$PROXY_SERVER" "$R0"
-      StrCmp "$R0" "" end
-      StrCpy "$R1" "$R0"
-      ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      StrCpy "$PROXY_PORT" "$R0"  
-      StrCmp "$R0" "" +2 0
-      StrCpy "$R1" "$R1:$R0"
-      ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      StrCpy $PROXY_USER "$R0"
-      
-      StrCmp "$R0" "" +2 0
-      StrCpy "$R2" "$R0"
-      ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
-      blowfish::decrypt $R0 "$PROXY_ID"
-      Pop $R0
-      Pop $R0
-      StrCpy $PROXY_PASS $R0
-      StrCmp "$R0" "" +3 0
-      StrCmp "$R2" "" +2 0
-      StrCpy "$R2" "$R2:$R0"
-      StrCmp "$R2" "" +2 0
-      StrCpy $R3 '(setq url-proxy-services $\'(("http" . "$R1") ("ftp" . "$R1") ("https" . "$R1")))$\n' 
-      StrCpy "$R1" "$R2@$R1"
-      StrCpy $R3 '$R3(setenv "HTTP_PROXY" "http://$R1")$\n(setenv "HTTPS_PROXY" "https://$R1")$\n(setenv "FTP_PROXY" "ftp://$R1")$\n'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTP_PROXY","http://$R1").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTPS_PROXY","https://$R1").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
-      StrCmp $8 "" end
-      IfFileExists "$TEMP\ep" 0 +3
-      StrCpy $1 "$TEMP\ep\proxy.el"
-      Goto +2
-      StrCpy $1 "$TEMP\proxy.el"
-      FileOpen $3 $1 w
-      FileWrite $3 $R3
-      FileClose $3
+      ReadIniStr $R1 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "ID"
+      ClearErrors
+      ${If} $R0 == $R1
+        ReadIniStr $R0 "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Server"
+        blowfish::decrypt $R0 "$PROXY_ID"
+        Pop $R0
+        Pop $R0
+        StrCpy "$PROXY_SERVER" "$R0"
+        StrCmp "$R0" "" end
+        StrCpy "$R1" "$R0"
+        ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Port"
+        blowfish::decrypt $R0 "$PROXY_ID"
+        Pop $R0
+        Pop $R0
+        StrCpy "$PROXY_PORT" "$R0"  
+        StrCmp "$R0" "" +2 0
+        StrCpy "$R1" "$R1:$R0"
+        ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "User"
+        blowfish::decrypt $R0 "$PROXY_ID"
+        Pop $R0
+        Pop $R0
+        StrCpy $PROXY_USER "$R0"
+        
+        StrCmp "$R0" "" +2 0
+        StrCpy "$R2" "$R0"
+        ReadIniStr "$R0" "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME" "Password"
+        blowfish::decrypt $R0 "$PROXY_ID"
+        Pop $R0
+        Pop $R0
+        StrCpy $PROXY_PASS $R0
+        StrCmp "$R0" "" +3 0
+        StrCmp "$R2" "" +2 0
+        StrCpy "$R2" "$R2:$R0"
+        StrCmp "$R2" "" +2 0
+        StrCpy $R3 '(setq url-proxy-services $\'(("http" . "$R1") ("ftp" . "$R1") ("https" . "$R1")))$\n' 
+        StrCpy "$R1" "$R2@$R1"
+        StrCpy $R3 '$R3(setenv "HTTP_PROXY" "http://$R1")$\n(setenv "HTTPS_PROXY" "https://$R1")$\n(setenv "FTP_PROXY" "ftp://$R1")$\n'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTP_PROXY","http://$R1").r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("HTTPS_PROXY","https://$R1").r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("FTP_PROXY","ftp://$R1").r0'
+        StrCmp $8 "" end
+        IfFileExists "$TEMP\ep" 0 +3
+        StrCpy $1 "$TEMP\ep\proxy.el"
+        Goto +2
+        StrCpy $1 "$TEMP\proxy.el"
+        FileOpen $3 $1 w
+        FileWrite $3 $R3
+        FileClose $3
+      ${ElseIfNot} $R1 == ""
+        DeleteIniSec "$9\proxy-$PROXY_IDE.ini" "$PROXY_NAME"
+        MessageBox MB_OK "The drive that EmacsPortable.App is run from has changed.$\nProxy settings have been reset."
+      ${EndIf}
     end:
       ClearErrors
   FunctionEnd

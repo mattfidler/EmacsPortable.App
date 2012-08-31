@@ -81,7 +81,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   
   Var nini
   Var EPEXE
-  
 #+END_SRC
 
 ** Headers and Plug ins
@@ -372,6 +371,25 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     System::Store "l" ; restore registers
   !macroend
   
+#+END_SRC
+
+** Get Disk Volume Serial Number
+http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
+#+BEGIN_SRC nsis
+!define _GetVolumeInformationSysCall "Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i"
+!macro GetDiskVolumeSerialNumber _SERIAL _DRIVE
+  Push $0
+  System::Call '${_GetVolumeInformationSysCall}("${_DRIVE}",,${NSIS_MAX_STRLEN},.r0,,,,${NSIS_MAX_STRLEN})'
+  Exch $0
+  Pop ${_SERIAL}
+!macroend
+!define GetDiskVolumeSerialNumber "!insertmacro GetDiskVolumeSerialNumber"
+ 
+!macro GetDiskVolumeSerialNumberHex _SERIAL _DRIVE
+  ${GetDiskVolumeSerialNumber} ${_SERIAL} ${_DRIVE}
+  IntFmt ${_SERIAL} "%08X" ${_SERIAL}
+!macroend
+!define GetDiskVolumeSerialNumberHex "!insertmacro GetDiskVolumeSerialNumberHex"
 #+END_SRC
 
 * Command Line Options

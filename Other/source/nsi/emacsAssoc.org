@@ -266,10 +266,13 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
     GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
-    ClearErrors
-    
-    StrCmp $R0 "1" extless
+
+    ${IfNot} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+      ClearErrors
+      StrCmp $R0 "1" extless
+    ${EndIf}
+
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
     ClearErrors
     StrCmp $R0 "1" 0 end
@@ -302,12 +305,17 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
         StrCpy $R9 "1"
       ${EndIf}
       ${If} $R9 == "1"
-        writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
+        ${If} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+          writeUninstaller "$EXEDIR\rm-ep-assoc.exe"
+        ${Else}
+          writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
+        ${EndIf}
         System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
       ${EndIf}
     end:
       ClearErrors      
   SectionEnd
+  
 #+END_SRC
 * Uninstaller
 #+BEGIN_SRC nsis
@@ -321,10 +329,14 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
     Delete "$TEMP\ep\rm-ep-assoc.exe"
     IfFileExists "$TEMP\rm-ep-assoc.exe" 0 +2
     Delete "$TEMP\rm-ep-assoc.exe"
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
+    IfFileExists "$INSTDIR\rm-ep-assoc.exe" 0 +2
+    Delete "$INSTDIR\rm-ep-assoc.exe"
+    IfFileExists "$INSTDIR\..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$INSTDIR\..\.."
     Goto +2
     ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+    StrCpy $R0 ""
+    IfFileExists "$INSTDIR\rm-ep-local.exe" +2
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
     ClearErrors
     

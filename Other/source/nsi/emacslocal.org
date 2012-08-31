@@ -1,0 +1,145 @@
+#+TITLE: Local Emacs Install
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsLocal.nsi
+* Introduction
+This is the file to install EmacsPortable.App locally.
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+OutFile "..\..\..\App\eps\ep-local.exe"
+Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
+!include "LogicLib.nsh"
+!include "FileFunc.nsh"
+!include "XML.nsh"
+var EPEXE
+var XML
+var cmdLineParams
+#+END_SRC
+** Modern User Interface properties
+#+BEGIN_SRC nsis
+!include "MUI.nsh"
+!define MUI_ICON "..\img\ico\appicon.ico"
+!define MUI_HEADERIMAGE
+  
+  !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage-options.bmp" ; 150x57 pixels
+  !define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage-options.bmp" ; 150x57 pixels
+  
+  !define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome-options.bmp" ;164x314 pixels
+  !define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome-options.bmp" ;164x314 pixels
+  
+  !define MUI_ABORTWARNING
+  !define MUI_UNABORTWARNING
+  !define MUI_PAGE_HEADER_TEXT "EmacsPortable.app"
+  !define MUI_PAGE_HEADER_SUBTEXT "Emacs on the Go"
+  
+  !define MUI_COMPONENTSPAGE_SMALLDESC
+  !define MUI_HEADERIMAGE_RIGHT
+#+END_SRC
+** NSIS Pages
+#+BEGIN_SRC nsis
+  !insertmacro MUI_PAGE_COMPONENTS
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE dirPre
+  !insertmacro MUI_PAGE_DIRECTORY
+  !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
+  !insertmacro MUI_LANGUAGE "English"
+#+END_SRC
+* Section for Installing
+#+BEGIN_SRC nsis
+  Section /o "Copy EmacsPortable.App Locally" sec_copy_emacsportable_app_locally ; Unchecked (/o)
+    ; Description:
+    ; Copy EmacsPortable.App to a local directory
+    GetFullPathName $0 "$EXEDIR\..\.."
+    SetOutPath "$INSTDIR"
+    CopyFiles "$0\*.*" "$INSTDIR"
+  SectionEnd ; sec_copy_emacsportable_app_locally
+  
+  Section "-Main" sec_main ; Checked, Hidden
+    ; Description:
+    ; Main installation section
+    writeUninstaller "$EXEDIR\rm-ep-local.exe"
+    ${If} ${FileExists} "$INSTDIR\App\eps\rm-ep-liberkey.exe"
+      ExecWait "$INSTDIR\App\eps\rm-ep-liberkey.exe"
+    ${EndIf}
+    
+    EnumINI::Section "$EXEDIR\..\ini\plugins.ini" "plugins"
+    Pop $R0 
+    StrCmp $R0 "error" done_plugins
+    loop_plugins:
+      IntCmp $R0 "0" done_plugins done_plugins 0
+      Pop $R1
+      ReadINIStr $R2 "$EXEDIR\..\ini\plugins.ini" "plugins" "$R1"
+      IfFileExists "$EXEDIR\$R1" 0 +6
+      IfFileExists "$EXEDIR\rm-$R1" 0 +3
+      DetailPrint "$R2 has already been installed"
+      Goto +9
+      DetailPrint "Setup $R2"
+      ## Wait for the Plug-in to finish before launching emacs?
+      ExecWait "$EXEDIR\$R1"
+      IntOp $R0 $R0 - 1
+      Goto loop_plugins
+    done_plugins:
+      
+  SectionEnd ; sec_main
+  
+  ;--------------------------------
+  ;Description(s)
+  LangString DESC_sec_copy_emacsportable_app_locally ${LANG_ENGLISH} "Copy EmacsPortable.App to a local directory"
+  LangString DESC_sec_main ${LANG_ENGLISH} "Main installation section"
+  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_main} $(DESC_sec_main)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_copy_emacsportable_app_locally} $(DESC_sec_copy_emacsportable_app_locally)
+  !insertmacro MUI_FUNCTION_DESCRIPTION_END
+  
+#+END_SRC
+* Uninstall Function
+#+BEGIN_SRC nsis
+  Section "Uninstall" sec_uninstall ; Checked
+    ; Description:
+    ; uninstall
+    FindFirst $0 $1 $INSTDIR\rm-ep-*.exe
+    ${While} $1 != ""
+      ${IfNot} $1 == "rm-ep-local.exe"
+        DetailPrint "$1"
+        ExecWait "$INSTDIR\$1"
+      ${EndIf}
+      FindNext $0 $1 
+    ${EndWhile}
+    Delete "$INSTDIR\rm-ep-local.exe"
+  SectionEnd ; sec_uninstall  
+#+END_SRC
+
+* Callback functions
+** Initialization 
+#+BEGIN_SRC nsis
+  Function .onInit
+    GetFullPathName $INSTDIR "$EXEDIR\..\.."
+  FunctionEnd
+#+END_SRC
+** Check to see if directory should be specified
+#+BEGIN_SRC nsis 
+  Function dirPre
+    SectionGetFlags ${sec_copy_emacsportable_app_locally} $R0
+    IntOp $R0 $R0 & ${SF_SELECTED}
+    ${IfNot} $R0 == ${SF_SELECTED}
+      Abort
+    ${EndIf}
+    StrCpy "$INSTDIR" "C:\EmacsPortable.App\"
+  FunctionEnd
+  
+#+END_SRC
