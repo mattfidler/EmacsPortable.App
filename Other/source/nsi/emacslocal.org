@@ -20,27 +20,32 @@ SetDatablockOptimize On
 Caption "Loading EmacsPortable.App"
 Subcaption 3 " "
 XPStyle on
+
+Name "EmacsPortable.App"
+BrandingText "EmacsPortable.App, Emacs on the Go!"
+
 OutFile "..\..\..\App\eps\ep-local.exe"
 Icon "..\img\ico\appicon.ico"
 UninstallIcon "..\img\ico\trash_empty.ico"
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
 !include "XML.nsh"
+!include "setupEmacsData.nsh" 
 var EPEXE
-var XML
-var cmdLineParams
+Var StartMenuFolder
 #+END_SRC
 ** Modern User Interface properties
 #+BEGIN_SRC nsis
-!include "MUI.nsh"
-!define MUI_ICON "..\img\ico\appicon.ico"
-!define MUI_HEADERIMAGE
+  !include "MUI2.nsh"
+  !define MUI_ICON "..\img\ico\appicon.ico"
+  !define MUI_UNICON "..\img\ico\trash_empty.ico"
+  !define MUI_HEADERIMAGE
   
   !define MUI_HEADERIMAGE_BITMAP "..\img\headerimage-options.bmp" ; 150x57 pixels
   !define MUI_HEADERIMAGE_UNBITMAP "..\img\headerimage-options.bmp" ; 150x57 pixels
   
   !define MUI_WELCOMEFINISHPAGE_BITMAP "..\img\welcome-options.bmp" ;164x314 pixels
-  !define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\img\welcome-options.bmp" ;164x314 pixels
+  !define MUI_WELCOMEFINISHPAGE_UNBITMAP "..\img\welcome-options.bmp" ;164x314 pixels
   
   !define MUI_ABORTWARNING
   !define MUI_UNABORTWARNING
@@ -49,14 +54,21 @@ var cmdLineParams
   
   !define MUI_COMPONENTSPAGE_SMALLDESC
   !define MUI_HEADERIMAGE_RIGHT
+  
+  ;Start Menu Folder Page Configuration
+  !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
+  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\EmacsPortable.App" 
+  !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "EmacsPortable.App"
 #+END_SRC
 ** NSIS Pages
 #+BEGIN_SRC nsis
   !insertmacro MUI_PAGE_COMPONENTS
   !define MUI_PAGE_CUSTOMFUNCTION_PRE dirPre
   !insertmacro MUI_PAGE_DIRECTORY
+  !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
+
   !insertmacro MUI_LANGUAGE "English"
 #+END_SRC
 * Section for Installing
@@ -64,44 +76,103 @@ var cmdLineParams
   Section /o "Copy EmacsPortable.App Locally" sec_copy_emacsportable_app_locally ; Unchecked (/o)
     ; Description:
     ; Copy EmacsPortable.App to a local directory
-    GetFullPathName $0 "$EXEDIR\..\.."
-    SetOutPath "$INSTDIR"
-    CopyFiles "$0\*.*" "$INSTDIR"
+    ${setupInstallData}
+    CopyFiles "$EXEDIR\..\..\*.exe" "$INSTDIR"
+    CopyFiles "$EXEDIR\..\..\*.html" "$INSTDIR"
+    CopyFiles "$EXEDIR\..\..\*.org" "$INSTDIR"
+    GetFullPathName $2 "$EXEDIR\..\..\Data\start"
+    SetOutPath "$INSTDIR\Data\start"
+    FindFirst $0 $1 $2\*.*
+    loop:
+      StrCmp $1 "" done
+      StrCmp $1 "." next
+      StrCmp $1 ".." next
+      StrCmp $1 "shared" next
+      StrCmp $1 "system" next
+      StrCmp $1 "user" next
+      DetailPrint $1
+      ${If} ${FileExists} "$2\$1\*.*"
+        SetOutPath "$INSTDIR\Data\start\$1"
+        CopyFiles "$2\$1\*.*" "$INSTDIR\Data\start\$1"
+      ${Else}
+        CopyFiles /SILENT "$2\$1" "$INSTDIR\Data\start\$1"
+      ${EndIf}
+    next:
+      FindNext $0 $1
+      Goto loop
+    done:
+      FindClose $0
+      GetFullPathName $0 "$EXEDIR\..\.."
+      SetOutPath "$INSTDIR\App"
+      CopyFiles "$0\App\*.*" "$INSTDIR\App"
+      SetOutPath "$INSTDIR\Other"
+      CopyFiles "$0\Other\*.*" "$INSTDIR\Other"
+      SetOutPath "$INSTDIR\Contents"
+      CopyFiles "$0\Contents\*.*" "$INSTDIR\Contents"
+      
   SectionEnd ; sec_copy_emacsportable_app_locally
+  
+  Section "Create QuickLaunch Icon" sec_create_quicklaunch_icon ; 
+    ; Description:
+    ; This will create a QuickLaunch Icon for EmacsPortable.App
+    CreateShortcut "$QUICKLAUNCH\EmacsPortableApp.lnk" "$INSTDIR\EmacsPortableApp.exe"
+  SectionEnd ; sec_create_quicklaunch_icon
   
   Section "-Main" sec_main ; Checked, Hidden
     ; Description:
     ; Main installation section
-    writeUninstaller "$EXEDIR\rm-ep-local.exe"
+  
+    ; Store installation folder
+    WriteRegStr HKCU "Software\EmacsPortable.App" "" $INSTDIR
+    !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
+    
+    ;Create shortcuts
+    CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
+  
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\EmacsPortableApp.lnk" "$INSTDIR\EmacsPortableApp.exe"    
+  
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\EmacsOptions.lnk" "$INSTDIR\EmacsOptions.exe"
+  
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Help.lnk" "$INSTDIR\help.html"
+    
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\App\eps\rm-ep-local.exe"
+  
+    !insertmacro MUI_STARTMENU_WRITE_END
+  
+    SetOutPath "$INSTDIR\App\eps"
+    writeUninstaller "$INSTDIR\App\eps\rm-ep-local.exe"
+  
     ${If} ${FileExists} "$INSTDIR\App\eps\rm-ep-liberkey.exe"
       ExecWait "$INSTDIR\App\eps\rm-ep-liberkey.exe"
     ${EndIf}
-    
-    EnumINI::Section "$EXEDIR\..\ini\plugins.ini" "plugins"
+  
+    EnumINI::Section "$INSTDIR\App\ini\plugins.ini" "plugins"
     Pop $R0 
     StrCmp $R0 "error" done_plugins
     loop_plugins:
       IntCmp $R0 "0" done_plugins done_plugins 0
       Pop $R1
-      ReadINIStr $R2 "$EXEDIR\..\ini\plugins.ini" "plugins" "$R1"
-      IfFileExists "$EXEDIR\$R1" 0 +6
-      IfFileExists "$EXEDIR\rm-$R1" 0 +3
+      ReadINIStr $R2 "$INSTDIR\App\ini\plugins.ini" "plugins" "$R1"
+      IfFileExists "$INSTDIR\App\eps\$R1" 0 +6
+      IfFileExists "$INSTDIR\App\eps\rm-$R1" 0 +3
       DetailPrint "$R2 has already been installed"
       Goto +9
       DetailPrint "Setup $R2"
       ## Wait for the Plug-in to finish before launching emacs?
-      ExecWait "$EXEDIR\$R1"
+      ExecWait "$INSTDIR\App\eps\$R1"
       IntOp $R0 $R0 - 1
       Goto loop_plugins
     done_plugins:
-      
+      ClearErrors
   SectionEnd ; sec_main
   
   ;--------------------------------
   ;Description(s)
   LangString DESC_sec_copy_emacsportable_app_locally ${LANG_ENGLISH} "Copy EmacsPortable.App to a local directory"
+  LangString DESC_sec_create_quicklaunch_icon ${LANG_ENGLISH} "This will create a QuickLaunch Icon for EmacsPortable.App"
   LangString DESC_sec_main ${LANG_ENGLISH} "Main installation section"
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_create_quicklaunch_icon} $(DESC_sec_create_quicklaunch_icon)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_main} $(DESC_sec_main)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_copy_emacsportable_app_locally} $(DESC_sec_copy_emacsportable_app_locally)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
@@ -120,8 +191,15 @@ var cmdLineParams
       ${EndIf}
       FindNext $0 $1 
     ${EndWhile}
+    !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
+  
+    Delete "$QUICKLAUNCH\EmacsPortableApp.lnk"
+  
+    Delete "$SMPROGRAMS\$StartMenuFolder\*.lnk"
+    RMDir "$SMPROGRAMS\$StartMenuFolder"
+    DeleteRegKey HKCU "Software\EmacsPortable.App"
     Delete "$INSTDIR\rm-ep-local.exe"
-  SectionEnd ; sec_uninstall  
+  SectionEnd ; sec_uninstall
 #+END_SRC
 
 * Callback functions

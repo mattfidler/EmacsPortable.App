@@ -64,5 +64,6 @@
             (message (format "Loaded %s since byte-compile failed."
                                    exported-file))))))))
 
-(ep-load-org (expand-file-name "start.org"
-                               (file-name-directory (or load-file-name (buffer-file-name)))))
+(ep-load-org (expand-file-name 
+              "start.org"
+              (file-name-directory (or load-file-name (buffer-file-name)))))

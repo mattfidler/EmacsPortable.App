@@ -127,8 +127,8 @@ http://nsis.sourceforge.net/NsDialogs_FAQ#How_to_create_a_sorted_droplist_contro
 ** Name,Branding and Output file
 #+BEGIN_SRC nsis
   Name "EmacsPortable.App"
-  OutFile "..\..\..\EmacsOptions.exe"
   BrandingText "EmacsPortable.App, Emacs on the Go!"
+  OutFile "..\..\..\EmacsOptions.exe"
   
   InstallDir "$EXEDIR"
 #+END_SRC
@@ -2454,6 +2454,15 @@ FunctionEnd
                     StrCpy $3 "1"
                     Goto  loop_fonts
                   ${EndIf}
+                  ; Reset Font Installation.
+                  ${If} ${FileExists} "$EXEDIR\App\eps\rm-ep-font.exe"
+                    ExecWait "$EXEDIR\App\eps\rm-ep-font.exe"
+                  ${ElseIf} ${FileExists} "$TEMP\ep\rm-ep-font.exe"
+                    ExecWait "$TEMP\ep\rm-ep-font.exe"
+                  ${ElseIf} ${FileExists} "$TEMP\rm-ep-font.exe"
+                    ExecWait "$TEMP\rm-ep-font.exe"
+                  ${EndIf}
+                  ExecWait "$EXEDIR\App\eps\ep-font.exe"
               ${EndIf}
             ${EndIf}
             

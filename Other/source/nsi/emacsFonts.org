@@ -28,6 +28,7 @@ I want:
   !include "LogicLib.nsh"
   !include "WinMessages.nsh"
   var EPEXE
+  Var FONTREGKEY
 #+END_SRC
 
 ** User Interface
@@ -37,6 +38,83 @@ EmacsPortable.App uses the loading bar to startup emacs.
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
 * Setup Fonts
+** Get Localized Name
+This is based on the code from:
+http://nsis.sourceforge.net/Get_localised_font_name
+
+It has been changed to add:
+- (OpenType) to open type fonts
+- (TrueType) to true type fonts
+#+BEGIN_SRC nsis
+  !define GetFontName `!insertmacro GetFontName "" `
+  !define UnGetFontName `!insertmacro GetFontName "un." `
+  
+  !macro GetFontName un FONT FONT_NAME
+    Push ${FONT_NAME}
+    Call ${un}GetFontName
+    Pop ${FONT}
+  !macroEnd
+  
+  !macro _GetFontName un
+    Function ${un}GetFontName
+      Exch $R0
+      Push $R1
+      Push $R2
+      Push $R3
+  
+      StrCpy $R3 $R0 "" -4
+  
+      ${If} $R3 == ".otf"
+        StrCpy $R3 " (OpenType)"
+      ${ElseIf} $R3 == ".ttf"
+        StrCpy $R3 " (TrueType)"
+      ${Else}
+        StrCpy $R3 ""
+      ${EndIf}
+      
+      System::Call *(i${NSIS_MAX_STRLEN})i.R1
+      System::Alloc ${NSIS_MAX_STRLEN}
+      Pop $R2
+      System::Call gdi32::GetFontResourceInfoW(wR0,iR1,iR2,i1)i.R0
+      ${If} $R0 == 0
+        StrCpy $R0 error
+      ${Else}
+        System::Call *$R2(&w${NSIS_MAX_STRLEN}.R0)
+        StrCpy $R0 "$R0$R3"
+      ${EndIf}
+      System::Free $R1
+      System::Free $R2
+      
+      Pop $R3
+      Pop $R2
+      Pop $R1
+      Exch $R0
+    FunctionEnd
+  !macroend
+  !insertmacro _GetFontName ""
+  !insertmacro _GetFontName "un."
+  
+#+END_SRC
+
+** Get Font Reg Key
+#+BEGIN_SRC nsis
+  !macro FontRegKey
+    ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" "CurrentVersion"
+    IfErrors Win9x WinNT
+  
+    Win9x:
+      StrCpy $FONTREGKEY "Software\Microsoft\Windows\CurrentVersion\Fonts"
+      Goto RegFont
+  
+    WinNT:
+      StrCpy $FONTREGKEY "Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+      Goto RegFont
+  
+    RegFont:
+      ClearErrors
+  !macroend
+#+END_SRC
+
 ** Find Fonts
 #+BEGIN_SRC nsis
   !macro AddFonts EXT
@@ -44,12 +122,18 @@ EmacsPortable.App uses the loading bar to startup emacs.
     FindFirst $0 $1 "$EPEXE\App\fonts\*${EXT}"
     ${While} $1 != ""
       GetFullPathName $2 "$EPEXE\App\fonts\$1"
-      DetailPrint "Attempting to add Font Resource $2"
       System::Call 'Gdi32::AddFontResource(t "$2")i .r3'
       ${If} $3 == "0"
-        DetailPrint "Failed"
+        DetailPrint "Failed To Add $2"
       ${Else}
-        DetailPrint "Sucessfully added $2 font(s)"
+        ${GetFontName} $3 $2
+        ${If} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+          WriteRegStr HKLM '$FONTREGKEY' '$3' '$2'
+          DetailPrint "Successfully added $3 (Permanent)"
+          WriteIniStr "$EXEDIR\rm-ep-fonts.ini" "fonts" "$3" "$FONTREGKEY"
+        ${Else}
+          DetailPrint "Successfully added $3 (Temporary)"
+        ${EndIf}
       ${EndIf}
       FindNext $0 $1
     ${EndWhile}
@@ -62,7 +146,8 @@ EmacsPortable.App uses the loading bar to startup emacs.
     FindFirst $0 $1 "$EPEXE\App\fonts\*${EXT}"
     ${While} $1 != ""
       GetFullPathName $2 "$EPEXE\App\fonts\$1"
-      DetailPrint "Removing Font Resource $2"
+      ${UnGetFontName} $3 $2
+      DetailPrint "Removing Font $3"
       System::Call 'Gdi32::RemoveFontResource(t "$2")i .r3'
       ${If} $3 == "0"
         DetailPrint "Failed"
@@ -77,20 +162,40 @@ EmacsPortable.App uses the loading bar to startup emacs.
   
 #+END_SRC
 
+** Remove Permanent Fonts
+#+BEGIN_SRC nsis
+  Function un.RmPermFont
+    ${If} ${FileExists} "$INSTDIR\rm-ep-fonts.ini"
+      EnumINI::Section  "$INSTDIR\rm-ep-fonts.ini" "fonts"
+      Pop $R0
+      StrCmp $R0 "error" done_fonts
+      loop_fonts:
+        IntCmp $R0 "0" done_fonts done_fonts 0
+        Pop $R1
+        ReadINIStr $R2 "$EPEXE\App\ini\fonts.ini" "fonts" "$R1"
+        DetailPrint "Remove Registry for $R1"
+        DeleteRegValue HKLM $R2 $R1
+        IntOp $R0 $R0 - 1
+        Goto loop_fonts
+      done_fonts:
+        StrCpy $R9 "1"
+        Delete "$INSTDIR\rm-ep-fonts.ini"
+    ${EndIf}
+  FunctionEnd
+#+END_SRC
+
 * Main
 #+BEGIN_SRC nsis
   Section "Main" sec_main
     HideWindow
+    !insertmacro FontRegKey
     IfFileExists "$TEMP\rm-ep-font.exe" end
     IfFileExists "$TEMP\ep\rm-ep-font.exe" end
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
+    IfFileExists "$EXEDIR\..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
-    ClearErrors
-    StrCmp $R0 "1" 0 end
-    DetailPrint "Add Fonts"
+    DetailPrint "Add Fonts ($EPEXE\App\fonts)"
     ${AddFonts} .fon
     ${AddFonts} .fnt
     ${AddFonts} .ttf
@@ -101,18 +206,29 @@ EmacsPortable.App uses the loading bar to startup emacs.
     ${AddFonts} .pfb
     ${AddFonts} .pfm
     SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
-    writeUninstaller "$TEMP\ep\rm-ep-font.exe"
+    ${If} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+      writeUninstaller "$EXEDIR\rm-ep-font.exe"
+    ${Else}
+      writeUninstaller "$TEMP\ep\rm-ep-font.exe"
+    ${EndIf}
     end:
       ClearErrors
   SectionEnd
+  
 #+END_SRC
 * Uninstall
 #+BEGIN_SRC nsis
   Section "Uninstall" sec_uninstall 
     SetAutoClose true
-    Delete "$TEMP\ep\rm-ep-font.exe"
-    ${If} ${FileExists} "..\..\EmacsPortableApp.exe"
-      GetFullPathName /SHORT $EPEXE "..\.."
+  
+    ${If} ${FileExists} "$TEMP\ep\rm-ep-font.exe"
+      Delete "$TEMP\ep\rm-ep-font.exe"
+    ${ElseIf} ${FileExists} "$INSTDIR\rm-ep-font.exe"
+      Delete "$INSTDIR\rm-ep-font.exe"
+    ${EndIf}
+  
+    ${If} ${FileExists} "$INSTDIR\..\..\EmacsPortableApp.exe"
+      GetFullPathName /SHORT $EPEXE "$INSTDIR\..\.."
     ${ElseIf} ${FileExists} "$TEMP\ep.ini"
       ReadINIStr $EPEXE "$TEMP\ep.ini" "EmacsPortableApp" "EXEDIR"
     ${ElseIf} ${FileExists} "$TEMP\ep\ep.ini"
@@ -132,6 +248,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
       ${RmFonts} .mmm
       ${RmFonts} .pfb
       ${RmFonts} .pfm
+      Call un.RmPermFont
       SendMessage ${HWND_BROADCAST} ${WM_FONTCHANGE} 0 0 /TIMEOUT=5000
     ${EndIf}
   SectionEnd

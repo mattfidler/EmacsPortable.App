@@ -24,7 +24,7 @@ UninstallIcon "..\img\ico\trash_empty.ico"
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis 
+#+BEGIN_SRC nsis :tangle no
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -81,6 +81,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   
   Var nini
   Var EPEXE
+  Var epdata
 #+END_SRC
 
 ** Headers and Plug ins
@@ -467,7 +468,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
 ** Parse Parameters
 #+BEGIN_SRC nsis  
   Function parseParameters
-    ${ReadINIStrWithDefault} $option_version $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
+    ${ReadINIStrWithDefault} $option_version $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
     FindProcDLL::FindProc "emacs-$option_version.exe"
     StrCmp $R0 "1" already_running
     FindFirst $0 $1 "$EXEDIR\App\emacs-*"
@@ -497,23 +498,23 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       ; ${EndIf}
     already_running:
       
-      ${ReadINIStrWithDefault} $option_geometry $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
+      ${ReadINIStrWithDefault} $option_geometry $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
       
-      ${ReadINIStrWithDefault} $option_maximized $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Max" $option_maximized 
+      ${ReadINIStrWithDefault} $option_maximized $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Max" $option_maximized 
       
-      ${ReadINIStrWithDefault} $option_fullwidth $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
+      ${ReadINIStrWithDefault} $option_fullwidth $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
       
-      ${ReadINIStrWithDefault} $option_fullheight $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullheight" $option_fullheight
+      ${ReadINIStrWithDefault} $option_fullheight $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullheight" $option_fullheight
       
-      ${ReadINIStrWithDefault} $option_font $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Font" $option_font
-      ${ReadINIStrWithDefault} $option_font_size $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "FontSize" $option_font_size
-      ${ReadINIStrWithDefault} $option_toolbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Toolbar" $option_toolbar
-      ${ReadINIStrWithDefault} $option_menubar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Menubar" $option_menubar
-      ${ReadINIStrWithDefault} $option_scrollbar $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "ScrollBars" $option_scrollbar
-      ${ReadINIStrWithDefault} $option_minibuffer $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Minibuffer" $option_minibuffer
-      ${ReadINIStrWithDefault} $option_background $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
-      ${ReadINIStrWithDefault} $option_foreground $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
-      ${ReadINIStrWithDefault} $option_daemon $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
+      ${ReadINIStrWithDefault} $option_font $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Font" $option_font
+      ${ReadINIStrWithDefault} $option_font_size $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "FontSize" $option_font_size
+      ${ReadINIStrWithDefault} $option_toolbar $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Toolbar" $option_toolbar
+      ${ReadINIStrWithDefault} $option_menubar $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Menubar" $option_menubar
+      ${ReadINIStrWithDefault} $option_scrollbar $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "ScrollBars" $option_scrollbar
+      ${ReadINIStrWithDefault} $option_minibuffer $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Minibuffer" $option_minibuffer
+      ${ReadINIStrWithDefault} $option_background $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
+      ${ReadINIStrWithDefault} $option_foreground $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
+      ${ReadINIStrWithDefault} $option_daemon $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
       
       StrCmp "1" $option_daemon 0 +2
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
@@ -546,11 +547,11 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       MessageBox MB_YESNO|MB_ICONEXCLAMATION "Emacs $option_version not found!$\n$\n Run emacs $2 instead?" IDYES set_new_ver IDNO abort_run
     set_new_ver:
       ## Save known version string if it is not saved correctly.
-      ReadIniStr $1 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
+      ReadIniStr $1 "$epdata\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
       ClearErrors
       StrCmp $1 "" +2
       StrCmp $1 $option_version 0 +2
-      WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version" $2
+      WriteIniStr "$epdata\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version" $2
       
       StrCpy $option_version $2
       StrCpy $emacs_exe "emacs-$option_version.exe"
@@ -594,12 +595,12 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       Goto emacs_debug_done
     no_debug_cmd_line:
       ClearErrors
-      IfFileExists $EXEDIR\Data\ini\EmacsPortableApp.ini read_debug_ini_file
+      IfFileExists $epdata\ini\EmacsPortableApp.ini read_debug_ini_file
       StrCpy $option_debug ""
       Goto emacs_debug_done
     read_debug_ini_file:
       ClearErrors
-      ${ReadINIStrWithDefault} $option_debug $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
+      ${ReadINIStrWithDefault} $option_debug $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Debug" "0"
       StrCmp $option_debug "1" 0 no_debugging
       StrCpy $option_debug " --debug-init"
       StrCpy $option_debug_from_ini "1"
@@ -723,7 +724,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     System::Call 'Kernel32::GetEnvironmentVariable(t, t, i) i("HOME", .r0, ${NSIS_MAX_STRLEN}).r1'
     StrCpy $OHOME $0
     
-    ${ReadINIStrWithDefault} $option_home $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Home" "EXEDIR:\Data\Home"
+    ${ReadINIStrWithDefault} $option_home $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Home" "EXEDIR:\Data\Home"
     ${StrSlash} "$option_home" "/"  
     StrCpy $option_home_usb ""
     StrCpy $option_home $R0
@@ -743,7 +744,13 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       StrCpy $R0 $option_home 8
       StrCmp "$R0" "EXEDIR:\" 0 home_exists
       StrCpy $option_home $option_home "" 8
-      StrCpy $home "$EXEDIR\$option_home"
+      StrCpy "$R0" $option_home 4
+      ${If} $R0 == "Data"
+        StrCpy $option_home $option_home "" 4
+        StrCpy $home "$epdata\$option_home"
+      ${Else}
+        StrCpy $home "$EXEDIR\$option_home"
+      ${EndIf}
       Goto end
     home_exists:
       IfFileExists "$R0" 0 leave_home
@@ -757,17 +764,18 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("OHOME", "$OHOME").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PWD", "$home").r0'
   FunctionEnd
+  
 #+END_SRC
 
 ** Add To Environment
 #+BEGIN_SRC nsis
   !macro AddToEnvironment
-    SetOutPath "$EXEDIR\Data\AppData"
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("AppData", "$EXEDIR\Data\AppData").r0'
-    SetOutPath "$EXEDIR\Data\AllUsers"
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("ALLUSERSPROFILE", "$EXEDIR\Data\AllUsers").r0'
-    SetOutPath "$EXEDIR\Data\UserProfile"
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("ALLUSERSPROFILE", "$EXEDIR\Data\AllUsers").r0'
+    SetOutPath "$epdata\AppData"
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("AppData", "$epdata\AppData").r0'
+    SetOutPath "$epdata\AllUsers"
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("ALLUSERSPROFILE", "$epdata\AllUsers").r0'
+    SetOutPath "$epdata\UserProfile"
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("ALLUSERSPROFILE", "$epdata\AllUsers").r0'
     ;; Add User-name to the USER variable
     System::Call "advapi32::GetUserName(t .r0, *i ${NSIS_MAX_STRLEN} r1) i.r2"
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("USER", "$0").r0'
@@ -780,28 +788,28 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     ;; Add Server file to environment
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_SERVER_FILE", "$server_file").r0'
     ;; Add environment sections before loading.
-    IfFileExists "$EXEDIR\Data\ini\Environment.ini" 0 done_1
-    EnumINI::Section "$EXEDIR\Data\ini\Environment.ini" "Environment"
+    IfFileExists "$epdata\ini\Environment.ini" 0 done_1
+    EnumINI::Section "$epdata\ini\Environment.ini" "Environment"
     Pop $R0
     StrCmp $R0 "error" done_1
     loop_1:
       IntCmp $R0 "0" done_1 done_1 0
       Pop $R1
-      ReadINIStr $R2 "$EXEDIR\Data\ini\Environment.ini" "Environment" "$R1"
+      ReadINIStr $R2 "$epdata\ini\Environment.ini" "Environment" "$R1"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R1", "$R2").r0'
       IntOp $R0 $R0 - 1
       Goto loop_1
     done_1:
       
-      IfFileExists "$EXEDIR\Data\start\shared\Environment.ini" 0 done_2
+      IfFileExists "$epdata\start\shared\Environment.ini" 0 done_2
       
-      EnumINI::Section "$EXEDIR\Data\start\shared\Environment.ini" "Environment"
+      EnumINI::Section "$epdata\start\shared\Environment.ini" "Environment"
       Pop $R0
       StrCmp $R0 "error" done_1
     loop_2:
       IntCmp $R0 "0" done_2 done_2 0
       Pop $R1
-      ReadINIStr $R2 "$EXEDIR\Data\start\shared\Environment.ini" "Environment" "$R1"
+      ReadINIStr $R2 "$epdata\start\shared\Environment.ini" "Environment" "$R1"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R1", "$R2").r0'
       IntOp $R0 $R0 - 1
       Goto loop_2
@@ -866,7 +874,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
 #+BEGIN_SRC nsis
   Function CreateZip
     Push $R0
-    ${ReadINIStrWithDefault} $R0 $EXEDIR\Data\ini\EmacsPortableApp.ini "EmacsPortableApp" "Zip" "0"
+    ${ReadINIStrWithDefault} $R0 $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Zip" "0"
     StrCmp "$R0" "0" extract_zip zip_binaries
   extract_zip:
     ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
@@ -995,9 +1003,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     ${EndIf}
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
     ClearErrors
-    ## If the font is not found, Emacs does not start up. Need to
-    ## somehow check to see if the font is installed.
-    Goto skip_font
+	Goto skip_font
     IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
     ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
     IfErrors skip_font
@@ -1125,7 +1131,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       ## Only open a new window when emacs isn't visible, or when
       ## clicking on EmacsPortableApp
       ${If} $cmdLineParams == ""
-        ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
+        ReadIniStr $R0 "$epdata\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
         ${If} $R0 == "1"
           ${If} ${FileExists} "$TEMP\ep\hidden-$option_version"
             StrCpy $R9 " -c"
@@ -1155,7 +1161,26 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit 
-    
+    # Get local installation.
+    ReadRegStr $0 HKCU "Software\EmacsPortable.App" ""
+    ClearErrors
+    ${IfNot} $0 == ""
+      GetFullPathName $0 $0
+      GetFullPathName $1 $EXEDIR
+      ${IfNot} $1 == $0
+        # Call From locally installed EmacsPortable.App
+        GetFullPathName $1 "$EXEDIR\Data"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPDATA", "$1").r1'
+        ${GetParameters} $cmdLineParams
+        Exec '"$0\EmacsPortableApp.exe" $cmdLineParams'
+        Abort
+      ${EndIf}
+    ${EndIf}
+    ReadEnvStr $epdata "EPDATA"
+    ClearErrors
+    ${If} $epdata == ""
+      StrCpy $epdata "$EXEDIR\Data"
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC

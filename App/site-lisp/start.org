@@ -23,7 +23,9 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 #+END_SRC
 * Set Font
 #+BEGIN_SRC emacs-lisp
-  (let ((epi (expand-file-name "../Data/ini/EmacsPortableApp.ini" (getenv "EPOTHER")))
+  (let ((epi (expand-file-name (if (getenv "EPDATA")
+                                   (concat (getenv "EPDATA") "/ini/EmacsPortableApp.ini")
+                                 "../Data/ini/EmacsPortableApp.ini") (getenv "EPOTHER")))
         font-name font-size)
     (cond
      ((and (getenv "EPOTHER")
@@ -206,13 +208,18 @@ EmacsPortableApp.exe launcher.
           `(("ep" . ,(expand-file-name (concat usb-app-dir "../")))
             ("site-lisp" . ,(expand-file-name (concat usb-app-dir "site-lisp/")))
             ("app" . ,(expand-file-name usb-app-dir))
-            ("data" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data"))))
+            ("data" . ,(expand-file-name (expand-file-name (or (getenv "EPDATA")
+                                                               (concat usb-app-dir "../Data")))))
             ("nsi" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Other/source/nsi/"))))
             ("ahk" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Other/source/ahk/"))))
             ("other" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Other/"))))
             ("start" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/start/"))))
-            ("ini" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/ini/"))))
-            ("src" . ,(expand-file-name (expand-file-name (concat usb-app-dir "../Data/src/"))))
+            ("ini" . ,(expand-file-name (expand-file-name (if (getenv "EPDATA")
+                                                              (concat (getenv "EPDATA") "/ini/")
+                                                            (concat usb-app-dir "../Data/ini/")))))
+            ("src" . ,(expand-file-name (expand-file-name (if (getenv "EPDATA")
+                                                              (concat (getenv "EPDATA") "/src/")
+                                                            (concat usb-app-dir "../Data/src/")))))
             ,@(mapcar
                (lambda(x)
                  `(,(replace-regexp-in-string "^~*\\(.*?\\)[/\\]*$" "\\1" (car x))
@@ -223,8 +230,13 @@ EmacsPortableApp.exe launcher.
                  `(,(format "%s"
                             (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
                                 (match-string 1 x) x)) .
-                                ,(format "%s/"
-                                         (expand-file-name x (concat usb-app-dir "../Data/start")))))
+                                ,(if (not (string-match (regexp-opt '("user" "system" "shared") 'paren) x))
+                                     (format "%s/"
+                                             (expand-file-name x (concat usb-app-dir "../Data/start")))
+                                   (format "%s/"
+                                           (expand-file-name x (if (getenv "EPDATA")
+                                                                   (concat (getenv "EPDATA") "/start")
+                                                                 (concat usb-app-dir "../Data/start")))))))
                (remove-if
                 (lambda(x)
                   (or (not (file-directory-p (expand-file-name x (concat usb-app-dir "../Data/start"))))
@@ -369,7 +381,9 @@ This also attempts to speed up the recent files cleanup list by
           (setq recentf-auto-cleanup 'mode)
           (setq recentf-max-menu-items 20)
           (setq recentf-max-saved-items 1000)
-          (setq recentf-save-file (concat usb-site-lisp-dir "../Data/saves/recent-files-" system-name))
+          (setq recentf-save-file (concat usb-site-lisp-dir (if (getenv "EPDATA")
+                                                                (concat (getenv "EPDATA") "/saves/recent-files-")
+                                                              "../Data/saves/recent-files-") system-name))
           (require 'recentf)
           (setq recentf-menu-filter 'recentf-arrange-by-mode)
           (setq recentf-filename-handlers (quote (abbreviate-file-name)))
@@ -915,8 +929,9 @@ Start the appropriate startup script
   (let ((epi
          (expand-file-name "EmacsPortableApp.ini"
                            (expand-file-name "ini"
-                                             (expand-file-name "Data"
-                                                               (expand-file-name ".." usb-app-dir))))))
+                                             (or (getenv "EPDATA")
+                                                 (expand-file-name "Data"
+                                                                   (expand-file-name ".." usb-app-dir)))))))
     (when (file-exists-p epi)
       (let ((start-dir))
         (with-temp-buffer
@@ -925,7 +940,7 @@ Start the appropriate startup script
           (when (re-search-forward "^[ \t]*[sS]tartup[ \t]*=[ \t]*\\(.*?\\)[ \t]*$" nil t)
             (setq start-dir (match-string 1))))
         (when start-dir
-          (setq start-dir (expand-file-name start-dir "~start/"))
+          (setq start-dir (expand-file-name (concat "~" start-dir "/")))
           (message "Using startup at %s" start-dir)
           (cond
            ((file-exists-p (expand-file-name ".emacs" start-dir))
@@ -933,8 +948,8 @@ Start the appropriate startup script
             (message "Loaded %s/.emacs" start-dir))
            
            ((file-exists-p (expand-file-name "init.el" start-dir))
-            (load (concat start-dir "/init"))
-            (message "Loaded %s/init" start-dir))
+            (load (concat (replace-regexp-in-string "/$" "" start-dir t t) "/init"))
+            (message "Loaded %s/init" (replace-regexp-in-string "/$" "" start-dir t t)))
            
            ((file-exists-p (expand-file-name  "site-start.el" (expand-file-name "site-lisp" start-dir)))
             (load (concat (expand-file-name "site-lisp" start-dir) "/site-start"))
@@ -1001,131 +1016,137 @@ Load either an encrypted org-file, an org-file, a lisp file, or a
 compiled lisp file.  Delete intermediary files
 
 #+BEGIN_SRC emacs-lisp
-   (defun ep-load-org (file)
-     "Loads Emacs Lisp source code blocks like `org-babel-load-file'.  However, byte-compiles the files as well as tangles them..."
-     (flet ((age (file)
-                 (float-time
-                  (time-subtract (current-time)
-                                 (nth 5 (or (file-attributes (file-truename file))
-                                            (file-attributes file)))))))
-       (let* ((base-name (file-name-sans-extension file))
-              (exported-file (concat base-name ".el"))
-              (compiled-file (concat base-name ".elc")))
-         (message "Base Name %s" base-name)
-         (unless (and (file-exists-p exported-file)
-                      (> (age file) (age exported-file)))
-           (message "Trying to Tangle %s" file)
-           (condition-case err
-               (progn
-                 (org-babel-tangle-file file exported-file "emacs-lisp")
-                 (ep-m (format "Tangled %s to %s"
-                               file exported-file)))
-             (error (message "Error Tangling %s" file))))
-         (when (file-exists-p exported-file)
-           (if (and (file-exists-p compiled-file)
-                    (> (age exported-file) (age compiled-file)))
-               (progn
-                 (condition-case err
-                     (load-file compiled-file)
-                   (error (message "Error Loading %s" compiled-file)))
-                 (ep-m (format "Loaded %s" compiled-file)))
-             (condition-case err
-                 (byte-compile-file exported-file t)
-               (error (message "Error Byte-compiling and loading %s" exported-file)))
-             (ep-m (format "Byte-compiled & loaded %s" exported-file))
-             ;; Fallback and load source
-             (if (file-exists-p compiled-file)
-                 (set-file-times compiled-file) ; Touch file.
-               (condition-case err
-                   (load-file exported-file)
-                 (error (message "Error loading %s" exported-file)))
-               (ep-m (format "Loaded %s since byte-compile failed."
-                             exported-file))))))))
-   
-   (defun ep-load-user (name)
-     "Loads a user-name's configuration"
-     (ep-load-user-or-system name t))
-   (defun ep-load-system (name)
-     "Loads a system configuration"
-     (ep-load-user-or-system name))
-   (defun ep-load-init-dir (&optional dir-name)
-     (let ((name (or dir-name (concat usb-app-dir "../Data/start/shared"))))
-       (ep-load-user-or-system nil nil name)))    
-   
-   (defun ep-load-user-or-system (name &optional is-user is-dir)
-     "Loads either a user-name's configuration OR system
-     configuration.  This prefers org-files and will compile them as
-     far as possible.  It can accept many .el and .elc files if their
-     upstream program is not available/found
-     "
-     (flet ((in-dir (file &optional ext)
-                    (expand-file-name (concat file ext)
-                                      (or is-dir
-                                          (concat usb-app-dir "../Data/start/"
-                                                  (if is-user
-                                                      "user"
-                                                    "system")))))
-            (age (file)
-                 (float-time
-                  (time-subtract (current-time)
-                                 (nth 5 (or (file-attributes (file-truename file))
-                                            (file-attributes file))))))
-            (load-cfg (ini-file)
-                      (let* ((base-name (file-name-sans-extension ini-file))
-                             (org-gpg (concat base-name ".org.gpg"))
-                             (org (concat base-name ".org"))
-                             (file (concat base-name ".el"))
-                             (compiled-file (concat base-name ".elc")))
-                        (if (file-readable-p org-gpg)
-                            (ep-load-org org-gpg)
-                          (if (file-readable-p org)
-                              (ep-load-org org)
-                            (if (file-readable-p file)
-                                (when (file-exists-p file)
-                                  (if (and (file-exists-p compiled-file)
-                                           (> (age file) (age compiled-file)))
-                                      (load-file compiled-file)
-                                    (byte-compile-file file t)
-                                    ;; Fall-back and load source
-                                    (unless (file-exists-p compiled-file)
-                                      (load-file file))))
-                              (if (file-readable-p compiled-file)
-                                  (load-file compiled-file))))))))
-       (flet ((dir-cfgs (dir)
-                        ;; Return a list of highest level configuration org,
-                        ;; el elc, and then load the configuration.
-                        (when (file-readable-p dir)
-                          (add-to-list 'load-path dir)
-                          (let ((files (directory-files dir t ".*[.]\\(org\\(.gpg\\)?\\|el\\|elc\\)$")))
-                            (setq files (remove-if #'(lambda(item)
-                                                       (let ((base-name (file-name-sans-extension item)))
-                                                         (cond
-                                                          ((string-match "elc$" item)
-                                                           (or (file-readable-p (concat base-name ".el"))
-                                                               (file-readable-p (concat base-name ".org"))
-                                                               (file-readable-p (concat base-name ".gpg"))))
-                                                          ((string-match "el$" item)
-                                                           (or (file-readable-p (concat base-name ".org"))
-                                                               (file-readable-p (concat base-name ".gpg"))))
-                                                          (t
-                                                           nil))))
-                                                   files))
-                            (mapc (lambda(file)
-                                    (message "Loading %s" file)
-                                    (load-cfg file))
-                                  files)))))
-         (let ((org2 (in-dir name ".org"))
-               (dir2 (in-dir name)))
-           (if is-dir
-               (progn
-                 (dir-cfgs is-dir))
-             (load-cfg org2)
-             (dir-cfgs dir2))))))
-   
-   (ep-load-init-dir)
-   (ep-load-system system-name)
-   (ep-load-user user-login-name) 
-   
+  (defun ep-load-org (file)
+    "Loads Emacs Lisp source code blocks like `org-babel-load-file'.  However, byte-compiles the files as well as tangles them..."
+    (flet ((age (file)
+                (float-time
+                 (time-subtract (current-time)
+                                (nth 5 (or (file-attributes (file-truename file))
+                                           (file-attributes file)))))))
+      (let* ((base-name (file-name-sans-extension file))
+             (exported-file (concat base-name ".el"))
+             (compiled-file (concat base-name ".elc")))
+        (message "Base Name %s" base-name)
+        (unless (and (file-exists-p exported-file)
+                     (> (age file) (age exported-file)))
+          (message "Trying to Tangle %s" file)
+          (condition-case err
+              (progn
+                (org-babel-tangle-file file exported-file "emacs-lisp")
+                (ep-m (format "Tangled %s to %s"
+                              file exported-file)))
+            (error (message "Error Tangling %s" file))))
+        (when (file-exists-p exported-file)
+          (if (and (file-exists-p compiled-file)
+                   (> (age exported-file) (age compiled-file)))
+              (progn
+                (condition-case err
+                    (load-file compiled-file)
+                  (error (message "Error Loading %s" compiled-file)))
+                (ep-m (format "Loaded %s" compiled-file)))
+            (condition-case err
+                (byte-compile-file exported-file t)
+              (error (message "Error Byte-compiling and loading %s" exported-file)))
+            (ep-m (format "Byte-compiled & loaded %s" exported-file))
+            ;; Fallback and load source
+            (if (file-exists-p compiled-file)
+                (set-file-times compiled-file) ; Touch file.
+              (condition-case err
+                  (load-file exported-file)
+                (error (message "Error loading %s" exported-file)))
+              (ep-m (format "Loaded %s since byte-compile failed."
+                            exported-file))))))))
+  
+  (defun ep-load-user (name)
+    "Loads a user-name's configuration"
+    (ep-load-user-or-system name t))
+  (defun ep-load-system (name)
+    "Loads a system configuration"
+    (ep-load-user-or-system name))
+  
+  (defun ep-load-init-dir (&optional dir-name)
+    (let ((name (or dir-name (if (getenv "EPDATA")
+                                 (concat (getenv "EPDATA") "/start/shared")
+                               (concat usb-app-dir "../Data/start/shared")))))
+      (ep-load-user-or-system nil nil name)))    
+  
+  (defun ep-load-user-or-system (name &optional is-user is-dir)
+    "Loads either a user-name's configuration OR system
+    configuration.  This prefers org-files and will compile them as
+    far as possible.  It can accept many .el and .elc files if their
+    upstream program is not available/found
+    "
+    (flet ((in-dir (file &optional ext)
+                   (expand-file-name (concat file ext)
+                                     (or is-dir
+                                         (concat usb-app-dir 
+                                                 (if (getenv "EPDATA")
+                                                     (concat (getenv "EPDATA") "/start/")
+                                                     "../Data/start/")
+                                                 (if is-user
+                                                     "user"
+                                                   "system")))))
+           (age (file)
+                (float-time
+                 (time-subtract (current-time)
+                                (nth 5 (or (file-attributes (file-truename file))
+                                           (file-attributes file))))))
+           (load-cfg (ini-file)
+                     (let* ((base-name (file-name-sans-extension ini-file))
+                            (org-gpg (concat base-name ".org.gpg"))
+                            (org (concat base-name ".org"))
+                            (file (concat base-name ".el"))
+                            (compiled-file (concat base-name ".elc")))
+                       (if (file-readable-p org-gpg)
+                           (ep-load-org org-gpg)
+                         (if (file-readable-p org)
+                             (ep-load-org org)
+                           (if (file-readable-p file)
+                               (when (file-exists-p file)
+                                 (if (and (file-exists-p compiled-file)
+                                          (> (age file) (age compiled-file)))
+                                     (load-file compiled-file)
+                                   (byte-compile-file file t)
+                                   ;; Fall-back and load source
+                                   (unless (file-exists-p compiled-file)
+                                     (load-file file))))
+                             (if (file-readable-p compiled-file)
+                                 (load-file compiled-file))))))))
+      (flet ((dir-cfgs (dir)
+                       ;; Return a list of highest level configuration org,
+                       ;; el elc, and then load the configuration.
+                       (when (file-readable-p dir)
+                         (add-to-list 'load-path dir)
+                         (let ((files (directory-files dir t ".*[.]\\(org\\(.gpg\\)?\\|el\\|elc\\)$")))
+                           (setq files (remove-if #'(lambda(item)
+                                                      (let ((base-name (file-name-sans-extension item)))
+                                                        (cond
+                                                         ((string-match "elc$" item)
+                                                          (or (file-readable-p (concat base-name ".el"))
+                                                              (file-readable-p (concat base-name ".org"))
+                                                              (file-readable-p (concat base-name ".gpg"))))
+                                                         ((string-match "el$" item)
+                                                          (or (file-readable-p (concat base-name ".org"))
+                                                              (file-readable-p (concat base-name ".gpg"))))
+                                                         (t
+                                                          nil))))
+                                                  files))
+                           (mapc (lambda(file)
+                                   (message "Loading %s" file)
+                                   (load-cfg file))
+                                 files)))))
+        (let ((org2 (in-dir name ".org"))
+              (dir2 (in-dir name)))
+          (if is-dir
+              (progn
+                (dir-cfgs is-dir))
+            (load-cfg org2)
+            (dir-cfgs dir2))))))
+  
+  (ep-load-init-dir)
+  (ep-load-system system-name)
+  (ep-load-user user-login-name) 
+  
 #+END_SRC
 * Attempt to sync background and foreground colors with startup options
 This attempts to sync color options with the startup options in EmacsPortable.App
