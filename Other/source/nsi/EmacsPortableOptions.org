@@ -741,7 +741,7 @@ From http://nsis.sourceforge.net/Explode
       StrCpy $2 $1
       StrCmp $2 $3 0 +2
       StrCpy $4 $2
-      ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion $1
+      ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion $1 
       FindNext $0 $1
       Goto loop_emacs
     done_emacs:
@@ -894,8 +894,12 @@ From http://nsis.sourceforge.net/Explode
       ${WriteCheck} $hCtl_behavior_LiberKey "LiberKey"
       
       ${WriteText} $hCtl_behavior_Home_Txt "Home"
+      # Only write if emacs exists.
       
-      ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bin\emacsclient.exe"
+      ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bare-bin.zip"
+        ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
+      ${EndIf}
       ${WriteCB} $hCtl_behavior_StartupScript "Startup"
     ${EndIf}
   FunctionEnd
@@ -2465,9 +2469,11 @@ FunctionEnd
                   ExecWait "$EXEDIR\App\eps\ep-font.exe"
               ${EndIf}
             ${EndIf}
-            
-            WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
-                "Version" "$download_emacs_version"
+            ${If} ${FileExists} "$EXEDIR\App\emacs-$download_emacs_version\bin\emacsclient.exe"
+            ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$download_emacs_version\bare-bin.zip"
+              WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+                  "Version" "$download_emacs_version"
+            ${EndIf}
             ${If} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
               ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
             ${Else}
@@ -2753,3 +2759,4 @@ FunctionEnd
   SectionEnd
   
 #+END_SRC
+  

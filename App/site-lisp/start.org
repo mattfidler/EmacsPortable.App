@@ -381,9 +381,10 @@ This also attempts to speed up the recent files cleanup list by
           (setq recentf-auto-cleanup 'mode)
           (setq recentf-max-menu-items 20)
           (setq recentf-max-saved-items 1000)
-          (setq recentf-save-file (concat usb-site-lisp-dir (if (getenv "EPDATA")
-                                                                (concat (getenv "EPDATA") "/saves/recent-files-")
-                                                              "../Data/saves/recent-files-") system-name))
+          (setq recentf-save-file
+                (concat (if (getenv "EPDATA")
+                            (concat (getenv "EPDATA") "/saves/recent-files-")
+                          (concat usb-site-lisp-dir "../Data/saves/recent-files-")) system-name))
           (require 'recentf)
           (setq recentf-menu-filter 'recentf-arrange-by-mode)
           (setq recentf-filename-handlers (quote (abbreviate-file-name)))
