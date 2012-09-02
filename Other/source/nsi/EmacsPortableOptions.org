@@ -708,7 +708,7 @@ From http://nsis.sourceforge.net/Explode
   Var hCtl_behavior_editWith
   Var hCtl_behavior_orgProtocol
   Var hCtl_behavior_LiberKey
-  
+  Var hCtl_behavior_SendTo
   
   ; dialog create function
   Function fnc_behavior_Create
@@ -841,7 +841,7 @@ From http://nsis.sourceforge.net/Explode
       ${SetCheck} $hCtl_behavior_editWith "RightEdit"
       
       ; === orgProtocol (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 105u 97u 58u 14u "org-protocol"
+      ${NSD_CreateCheckbox}  226u 97u 58u 14u "org-protocol"
       Pop $hCtl_behavior_orgProtocol
       ${SetCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
       
@@ -850,6 +850,9 @@ From http://nsis.sourceforge.net/Explode
       Pop $hCtl_behavior_LiberKey
       ${SetUnCheck} $hCtl_behavior_LiberKey "LiberKey"
       
+      ${NSD_CreateCheckbox} 105u 97u 47u 14u "Send To"
+      Pop $hCtl_behavior_SendTo
+      ${SetUnCheck} $hCtl_behavior_SendTo "SendTo"
   FunctionEnd
   
   
@@ -892,6 +895,7 @@ From http://nsis.sourceforge.net/Explode
       ${WriteCheck} $hCtl_behavior_editWith "RightEdit"
       ${WriteCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
       ${WriteCheck} $hCtl_behavior_LiberKey "LiberKey"
+      ${WriteCheck} $hCtl_behavior_SendTo "SendTo"
       
       ${WriteText} $hCtl_behavior_Home_Txt "Home"
       # Only write if emacs exists.

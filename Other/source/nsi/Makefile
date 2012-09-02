@@ -3,7 +3,13 @@ emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh se
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/ep-local.exe
+all: ../../../EmacsPortableApp.exe ../../../EmacsOptions.exe  ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe  ../../../help.html ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/ep-local.exe ../../../App/eps/ep-sendto.exe
+
+../../../App/eps/ep-sendto.exe: emacsSendTo.nsi
+	$(MAKENSIS) emacsSendTo.nsi
+
+emacsSendTo.nsi: emacsSendTo.org
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-nsi 'emacsSendTo.org)"
 
 ../../../App/eps/ep-local.exe: emacsLocal.nsi
 	$(MAKENSIS) emacsLocal.nsi

@@ -1,0 +1,74 @@
+#+TITLE: Emacs Send To
+#+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle emacsSendTo.nsi
+* Introduction
+Create a Shortcut to the Send To folder to EmacsPortable.App.
+* Launcher Properties
+** Setup Options
+I want:
+ - user level execution
+ - CRC check
+ - Good compression
+#+BEGIN_SRC nsis
+CRCCheck On
+RequestExecutionLevel user
+; Best Compression
+SetCompress Auto
+SetCompressor /SOLID lzma
+SetCompressorDictSize 32
+SetDatablockOptimize On
+Caption "Loading EmacsPortable.App"
+Subcaption 3 " "
+XPStyle on
+OutFile "..\..\..\App\eps\ep-sendto.exe"
+Icon "..\img\ico\appicon.ico"
+UninstallIcon "..\img\ico\trash_empty.ico"
+!include "LogicLib.nsh"
+!include "FileFunc.nsh"
+!include "XML.nsh"
+var EPEXE
+var XML
+var cmdLineParams
+#+END_SRC
+** User Interface
+EmacsPortable.App uses the loading bar to startup emacs.
+#+BEGIN_SRC nsis 
+  AutoCloseWindow true
+  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+#+END_SRC
+
+* Create EmacsPortableApp SendTo Shortcut
+#+BEGIN_SRC nsis
+  Section "Main"
+    HideWindow
+    IfFileExists "$EXEDIR\..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
+    Goto +2
+    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "SendTo"
+    ClearErrors
+    ${If} $R0 == "1"
+      CreateShortCut "$SENDTO\EmacsPortableApp.lnk" "$EPEXE\EmacsPortableApp.exe"
+      ${If} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+        WriteUninstaller "$EXEDIR\rm-ep-sendto.exe"
+      ${Else}
+        WriteUninstaller "$TEMP\ep\rm-ep-sendto.exe"
+      ${EndIf}
+    ${EndIf}
+  SectionEnd
+  
+#+END_SRC
+
+* Remove EmacsPortbaleApp SendTo Shortcut
+#+BEGIN_SRC nsis
+  Section "Uninstall"
+    SetAutoClose true
+    ${If} ${FileExists} "$TEMP\ep\rm-ep-sendto.exe"
+      Delete "$TEMP\ep\rm-ep-sendto.exe"
+    ${ElseIf} ${FileExists} "$INSTDIR\rm-ep-sendto.exe"
+      Delete "$INSTDIR\rm-ep-sendto.exe"
+    ${EndIf}
+    Delete "$SENDTO\EmacsPortableApp.lnk"
+  SectionEnd
+  
+#+END_SRC

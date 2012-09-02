@@ -6,11 +6,11 @@
 ; handle variables
 Var hCtl_behavior
 Var hCtl_behavior_GroupBox1
-Var hCtl_behavior_Daemon
-Var hCtl_behavior_Label1
-Var hCtl_behavior_Label2
 Var hCtl_behavior_newFrame
 Var hCtl_behavior_Debug
+Var hCtl_behavior_Label2
+Var hCtl_behavior_Daemon
+Var hCtl_behavior_Label1
 Var hCtl_behavior_StartupScript
 Var hCtl_behavior_DefaultVersion
 Var hCtl_behavior_Home_Txt
@@ -19,9 +19,10 @@ Var hCtl_behavior_Label3
 Var hCtl_behavior_ZipBin
 Var hCtl_behavior_Clean
 Var hCtl_behavior_GroupBox2
-Var hCtl_behavior_editWith
 Var hCtl_behavior_orgProtocol
+Var hCtl_behavior_editWith
 Var hCtl_behavior_LiberKey
+Var hCtl_behavior_SendTo
 
 
 ; dialog create function
@@ -39,6 +40,18 @@ Function fnc_behavior_Create
   ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
   Pop $hCtl_behavior_GroupBox1
   
+  ; === newFrame (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 105u 34u 95u 14u "New frame on file open"
+  Pop $hCtl_behavior_newFrame
+  
+  ; === Debug (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 204u 34u 84u 14u "Debug Startup (gdb)"
+  Pop $hCtl_behavior_Debug
+  
+  ; === Label2 (type: Label) ===
+  ${NSD_CreateLabel} 134u 19u 52u 13u "Startup Script"
+  Pop $hCtl_behavior_Label2
+  
   ; === Daemon (type: Checkbox) ===
   ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Dameon"
   Pop $hCtl_behavior_Daemon
@@ -47,18 +60,6 @@ Function fnc_behavior_Create
   ; === Label1 (type: Label) ===
   ${NSD_CreateLabel} 13u 19u 54u 13u "Default Version"
   Pop $hCtl_behavior_Label1
-  
-  ; === Label2 (type: Label) ===
-  ${NSD_CreateLabel} 134u 19u 52u 13u "Startup Script"
-  Pop $hCtl_behavior_Label2
-  
-  ; === newFrame (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 105u 34u 95u 14u "New frame on file open"
-  Pop $hCtl_behavior_newFrame
-  
-  ; === Debug (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 204u 34u 84u 14u "Debug Startup (gdb)"
-  Pop $hCtl_behavior_Debug
   
   ; === StartupScript (type: DropList) ===
   ${NSD_CreateDropList} 190u 17u 94u 12u ""
@@ -98,17 +99,21 @@ Function fnc_behavior_Create
   ${NSD_CreateGroupBox} 8u 87u 280u 26u "Integration Options"
   Pop $hCtl_behavior_GroupBox2
   
+  ; === orgProtocol (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 226u 97u 58u 14u "org-protocol"
+  Pop $hCtl_behavior_orgProtocol
+  
   ; === editWith (type: Checkbox) ===
   ${NSD_CreateCheckbox} 12u 97u 89u 14u "Right-Click $\"Edit With$\""
   Pop $hCtl_behavior_editWith
   
-  ; === orgProtocol (type: Checkbox) ===
-  ${NSD_CreateCheckbox} 105u 97u 58u 14u "org-protocol"
-  Pop $hCtl_behavior_orgProtocol
-  
   ; === LiberKey (type: Checkbox) ===
   ${NSD_CreateCheckbox} 167u 97u 47u 14u "LiberKey"
   Pop $hCtl_behavior_LiberKey
+  
+  ; === SendTo (type: Checkbox) ===
+  ${NSD_CreateCheckbox} 105u 97u 47u 14u "Send To"
+  Pop $hCtl_behavior_SendTo
   
 FunctionEnd
 
