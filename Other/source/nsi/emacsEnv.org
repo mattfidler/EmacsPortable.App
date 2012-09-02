@@ -220,7 +220,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     System::Call 'Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i("$9",,${NSIS_MAX_STRLEN},.r0,,,,${NSIS_MAX_STRLEN})'
     Exch $0
     Pop $0
-        IntFmt $0 "%08X" $0
+    IntFmt $0 "%08X" $0
     StrCpy $globalMD5 ""
     ${GetMD5} "$9*.*" $R3
     StrCmp "$R3" "" 0 +3
@@ -625,8 +625,14 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     StrCmp "$1" "USB:\" home_usb home_exe
     home_usb:
       StrCpy $R0 $R0 "" 5
-      IfFileExists "$EPEXE\Data\ini\portable-cache.ini" 0 not_found
-      ReadIniStr $R1 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
+      StrCpy $9 $EPEXE 3
+      System::Call 'Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i("$9",,${NSIS_MAX_STRLEN},.r9,,,,${NSIS_MAX_STRLEN})'
+      Exch $9
+      Pop $9
+      IntFmt $9 "%08X" $9
+      
+      IfFileExists "$EPEXE\Data\ini\$9-cache.ini" 0 not_found
+      ReadIniStr $R1 "$EPEXE\Data\ini\$9-cache.ini" "portable" "Drive"
       IfFileExists "$R1$R0" 0 not_found
       StrCpy "$usb" "$R1"
       StrCpy "$usbs" "$R1" -1

@@ -35,7 +35,7 @@ I want:
 #+END_SRC
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis 
+#+BEGIN_SRC nsis  :tangle no
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -67,6 +67,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
       ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
           "PuttyKey"
       ${ConvertToFile} $R0 $R0
+      DetailPrint "PuttyKey: $R0 "
       IfFileExists $R0 0 end
       ReadIniStr $R3 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
           "PuttyPortable"
@@ -93,27 +94,18 @@ EmacsPortable.App uses the loading bar to startup emacs.
       EnumINI::Section "$EPEXE\App\ini\paths.ini" "portable.dirs"
       Pop $R4
       StrCmp $R4 "error" done_portable
+      StrCpy $R9 ""
     loop_portable:
       IntCmp $R4 "0" done_portable done_portable 0
       Pop $R2
-      ${If} ${FileExists} "$usb$R2\PuTTYPortable\PageantPortable.exe" 
-        StrCpy "$R1" "$usb$R2\PuTTYPortable\PageantPortable.exe"
-      ${EndIf}
+      IfFileExists "$usb$R2\PuTTYPortable\PageantPortable.exe" 0 +3
+      StrCpy "$R1" "$usb$R2\PuTTYPortable\PageantPortable.exe"
+      StrCpy $R9 "$usb$R2\PuTTYPortable\Data\PortableApps.comLauncherRuntimeData-PuTTYPortable.ini"
       Push $R0
       FindProcDLL::FindProc "PuTTYPortable.exe"
-      ${If} $R0 == "1"
-        StrCpy "$R1" "$usb$R2\PuTTYPortable\App\putty\pageant.exe"
-      ${Else}
-        ReadIniStr $7 "$usb$R2\PuTTYPortable\Data\PortableApps.comLauncherRuntimeData-PuTTYPortable.ini" "PortableApps.comLauncher" "Status"
-        ${If} $7 == "stopping"
-          ReadIniStr $7 "$usb$R2\PuTTYPortable\Data\PortableApps.comLauncherRuntimeData-PuTTYPortable.ini" "PortableApps.comLauncher" "PluginsDir"
-          ${If} ${FileExists} $7
-            RmDir /r "$7"
-          ${EndIf}
-          DeleteIniSec "$usb$R2\PuTTYPortable\Data\PortableApps.comLauncherRuntimeData-PuTTYPortable.ini" "PortableApps.comLauncher"
-        ${ElseIf} $7 == "running"
-        ${EndIf}
-      ${EndIf}
+      StrCmp $R0 "1" 0 +3
+      StrCpy "$R1" "$usb$R2\PuTTYPortable\App\putty\pageant.exe"
+      StrCpy $R9 ""
       Pop $R0
     next_portable:
       IntOp $R4 $R4 - 1
@@ -125,6 +117,18 @@ EmacsPortable.App uses the loading bar to startup emacs.
     done_find:
       IfFileExists $R1 0 end
       IfFileExists $R0 0 end
+      ${If} $R9 != ""
+        ReadIniStr $7 "$R9" "PortableApps.comLauncher" "Status"
+        ClearErrors
+        ${If} $7 == "stopping"
+          ReadIniStr $7 "$R9" "PortableApps.comLauncher" "PluginsDir"
+          ${If} ${FileExists} $7
+            RmDir /r "$7"
+          ${EndIf}
+          DeleteIniSec "$R9" "PortableApps.comLauncher"
+        ${ElseIf} $7 == "running"
+        ${EndIf}
+      ${EndIf}
       Exec '"$R1" "$R0"'
       
     end:
