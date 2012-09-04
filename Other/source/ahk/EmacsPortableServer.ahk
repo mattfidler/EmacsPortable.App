@@ -1,193 +1,215 @@
-;;; EmacsPortableServer.ahk --- EmacsPortable Server AutoHotkey
-;; 
-;; Filename: EmacsPortableServer.ahk
-;; Description: 
-;; Author: Matthew L. Fidler
-;; Maintainer: 
-;; Created: Thu Jan 13 17:00:56 2011 (-0600)
-;; Version: 
-;; Last-Updated: Tue Jun 12 10:53:09 2012 (-0500)
-;;           By: Matthew L. Fidler
-;;     Update #: 20
-;; URL: 
-;; Keywords: 
-;; Compatibility: 
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;;; Commentary: 
-;; 
-;;  Psudo-server auto-hot-key script.
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;;; Change Log:
-;; 13-Jan-2011    Matthew L. Fidler  
-;;    Last-Updated: Thu Jan 13 17:01:04 2011 (-0600) #1 (Matthew L. Fidler)
-;;    Removed Remember.  Now org-capture is where its at.
-;; 
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;; This program is free software; you can redistribute it and/or
-;; modify it under the terms of the GNU General Public License as
-;; published by the Free Software Foundation; either version 3, or
-;; (at your option) any later version.
-;; 
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;; General Public License for more details.
-;; 
-;; You should have received a copy of the GNU General Public License
-;; along with this program; see the file COPYING.  If not, write to
-;; the Free Software Foundation, Inc., 51 Franklin Street, Fifth
-;; Floor, Boston, MA 02110-1301, USA.
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 
-;;; Code:
-
-Gui -Caption +ToolWindow
-
+#SingleInstance, Ignore
+#NoEnv
 DetectHiddenWindows, on
-  
-  OnExit showdaemonexit
-  ;OnExit xt
-  
-  WinHide ___EmacsPortableDaemon_%1%___
-  WinHide \mingw\bin\gdb.exe
-  WinHide \MinGW\bin\gdb.exe
-  WinHide \cygwin\bin\gdb.exe
-  
-  Menu, Tray, NoStandard
-  Menu, Tray, Add, New Emacs %1% Frame, newemacs
-  Menu, Tray, Add,
-  Menu, Tray, Add, Show Emacs %1% daemon window, showdaemon
-  Menu, Tray, Add, Hide Emacs %1% daemon window, hidedaemon
-  Menu, Tray, Add,
-  Menu, Tray, Add, Show Emacs %1% daemon and remove tray icon, xt
-  Menu, Tray, Add, E&xit Emacs %1%, showdaemonexit  
-  Menu, Tray, Default, New Emacs %1% Frame
-  
-  Process, wait, emacs-%1%.exe, 300
-  EmacsPID = %ErrorLevel%
-  IniWrite "%EmacsPID%", "%TEMP%\ep-reg.ini", "pid", "%1%"
-  HideDaemon = 1
-  ExitDaemon = 0
-  
-  Loop {    
-    If HideDaemon {
-      SetTitleMatchMode 3
-      WinHide ___EmacsPortableDaemon_%1%___
-      SetTitleMatchMode 2
-      WinHide \mingw\bin\gdb.exe
-      WinHide \MinGW\bin\gdb.exe
-      WinHide \cygwin\bin\gdb.exe
-    } Else {
-      SetTitleMatchMode 3
-      WinShow ___EmacsPortableDaemon_%1%___
-      SetTitleMatchMode 2
-      WinShow \mingw\bin\gdb.exe
-      WinShow \MinGW\bin\gdb.exe
-      WinShow \cygwin\bin\gdb.exe
+
+
+EnvGet EPOTHER, EPOTHER
+EnvGet TEMP, TEMP
+
+CmdLst=
+Care = 0
+Loop, Read, %EPOTHER%..\App\ini\server.ini
+{
+  If (A_LoopReadLine == "[Commands]"){
+     Care = 1
+  } Else If (Care == 1){
+    tmp = %A_LoopReadLine%
+    NextSec := InStr(tmp,"[")
+    If (NextSec == 1){
+       Care = 0
+    } else {
+      NextSec := InStr(tmp,"=")
+      If (NextSec != 0){
+         NextSec := SubStr(tmp,1,NextSec-1)
+         CmdLst  = %CmdLst%%NextSec%`n
+      }
     }
-    Process, exist, %EmacsPID%
-    If %ErrorLevel%
-    Sleep 50
-    Else
-    ExitApp
-    ;; Transparent menus
-    
-    ;IfWinExist, ahk_class #32768
-    ;  WinSet, Transparent, 220  ; Uses the window found by the above line.
   }
+}
 
+I = 0
+PLst=
+Loop, %EPOTHER%..\App\emacs-*.*,2
+{
+        StringReplace EmacsVer, A_LoopFileName, `emacs-`
+        PLst= %PLst%emacs-%EmacsVer%.exe`n
+        I += 1
+        did%I% := % "___EmacsPortableDaemon_" . EmacsVer . "___"
+        desc%I% := % "Emacs " . EmacsVer
+        menu%I% := % "Start Emacs " . EmacsVer
+        ver%I% := % EmacsVer
+        args%I% := % "/VERSION=" . EmacsVer . " /START=None"
+        pid%I% := 0
+        hideshow%I% := 1
+        NStart=0
+        Loop %EPOTHER%..\Data\start\*.*,2
+        {
+                If (A_LoopFileName == "shared" || A_LoopFileName == "system" || A_LoopFileName == "user"){
+                
+                } else {
+                    NStart := NStart + 1
+                    PLst= %PLst%emacs-%EmacsVer%-%A_LoopFileName%.exe`n
+                    I += 1
+                    did%I% := % "___EmacsPortableDaemon_" . EmacsVer . "_" . A_LoopFileName . "___"
+                    desc%I% := % "Emacs " . EmacsVer . " " . A_LoopFileName
+                    menu%I% := % "Start Emacs " . EmacsVer . " " . A_LoopFileName
+                    ver%I% := % EmacsVer
+                    args%I% := % "/VERSION=" . EmacsVer . " /START=" . A_LoopFileName
+                    pid%I% := 0
+                    hideshow%I% := 1
+                }
+        }
+}
+MaxI := I
+; Wait for at least one process to exist.
+Pexist=0
+While (Pexist == 0)
+{
+        Loop, parse, Plst, `n 
+        {
+              If (Pexist == 0)
+              {
+                 Process, exist, %A_LoopField%
+                 If (Errorlevel != 0){
+                    Pexist = 1
+                 }
+              }
+        }
+}
+; Now that process exists, Hide any running Emacs Daemons
+Pexist = 1
+ChangeMenu = 1
+ReqChangeMenu = 0
+While (Pexist == 1) 
+{ 
+  Pexist = 0
+  If (ChangeMenu == 1){
+     FirstLine = 1
+     Menu, Tray, DeleteAll
+     Menu, Tray, NoStandard
+  }
+  LastVersion := -1
+  I = 0
+  Loop, parse, Plst, `n 
+  {
+      I += 1
+      If (A_LoopField != "")
+      {
+        cDesc   := desc%I%
+        CurVer  := ver%I%
+        tit     := did%I%
+        LastPID := pid%I%
+        DoHide  := hideshow%I%
 
-xt:
-SetTitleMatchMode 3
-WinShow ___EmacsPortableDaemon_%1%___
-SetTitleMatchMode 2
-WinShow \MinGW\bin\gdb.exe
-WinShow \cygwin\bin\gdb.exe
+        If (CurVer != LastVer && ChangeMenu == 1 && FirstLine == 0){
+           Menu, tray, add  ; Creates a separator line.
+        }
+        FirstLine = 0
+        LastVer := CurVer
+        Process, exist, %A_LoopField%
+        If (Errorlevel != 0){
+           pid%I% := Errorlevel
+           If (LastPID == 0){
+              ReqChangeMenu = 1
+           }
+           Pexist = 1
+           
+           If (ChangeMenu == 1){
+             Menu, Menu%I%, add, New Frame, MenuHandler
+             Menu, Menu%I%, add, Hidden Daemon, MenuHandler
+             Loop, parse, CmdLst, `n 
+             {
+                    If (A_LoopField != ""){
+                         Menu, Menu%I%, add, %A_LoopField%, MenuHandler
+                    }
+             }
+             ;A_LoopField = %tmp%
+           }
+           If (DoHide == 1)
+           {
+              SetTitleMatchMode 3
+              If (ChangeMenu == 1){
+                Menu, Menu%I%, Check, Hidden Daemon
+              }                
+              WinHide %tit%   
+           } else {
+              SetTitleMatchMode 3
+              If (ChangeMenu == 1){
+                Menu, Menu%I%, UnCheck, Hidden Daemon                  
+              }
+              WinShow %tit%
+           }
+           If (ChangeMenu == 1){
+              Menu, tray, add, %cDesc% , :Menu%I%
+           }
+        } else {
+           pid%I% := 0
+           If (LastPID != 0){
+              ReqChangeMenu = 1
+           }
+           If (ChangeMenu == 1){
+             Menu, tray, add, Start %cDesc% ,MenuHandler 
+           } 
+        }
+      }
+  }
+  If (ChangeMenu == 1){
+    Menu, tray, add  ; Creates a separator line.
+    Menu, tray, add, Options, MenuHandler
+    Menu, tray, add, Exit, MenuHandler
+  }
+  ChangeMenu = 0
+  If (ReqChangeMenu == 1){
+     ChangeMenu = 1
+     ReqChangeMenu = 0
+  }
+  Sleep 50
+}
 ExitApp
-Return
+return
 
-hidedaemon:
-HideDaemon = 1
-  Return
-  
-  showdaemon:
-  HideDaemon = 0
-  Return
-  
-  stopd:
-  SetTitleMatchMode 3
-  WinShow ___EmacsPortableDaemon_%1%___
-  SetTitleMatchMode 2
-  WinShow \mingw\bin\gdb.exe
-  WinShow \MinGW\bin\gdb.exe
-  WinShow \cygwin\bin\gdb.exe
-  ExitDaemon = 1
+MenuHandler:
+If (A_ThisMenuItem == "Hidden Daemon"){
+   StringReplace J, A_ThisMenu, Menu
+   DoHide := hideshow%J%
+   If (DoHide == 1){
+      DoHide = 0
+   } else {
+      DoHide = 1
+   }
+   hideshow%J% := DoHide
+   Sleep 50
+   ReqChangeMenu = 1
+} Else If (A_ThisMenuItem == "Options" && A_ThisMenu == "Tray"){
+  Run %EPOTHER%..\EmacsOptions.exe, %EPOTHER%..\
+} Else If (A_ThisMenuItem == "Exit" && A_ThisMenu == "Tray"){
+  Loop %MaxI%
+  {
+     hideshow%I% := 0
+     tit := did%I%
+     WinShow %tit%
+  }
   ExitApp
-  Return
-  
-  newemacs:
-  If FileExist("../../EmacsPortableApp.exe /VERSION %1%")
-  Run "../../EmacsPortableApp.exe /VERSION %1%"
-  Else
-  Run %EPEXE%
-  Return
-  
-  showdaemonexit:
-  If ExitDaemon {
-  
-} Else {
-  SetTitleMatchMode 1
-    WinGet, ID, List, EmacsPortable
-    Loop, %id%
-    {
-      StringTrimRight, this_id, id%a_index%, 0
-        WinGetTitle, this_title, ahk_id %this_id%
-        winclose,%this_title%
+} Else If (A_ThisMenu == "Tray"){
+  J := 0
+  Loop %MaxI%
+  {
+        Temp := menu%A_Index%
+        If (A_ThisMenuItem == Temp){
+           J := A_Index
         }
-  WinGet, ID, List, EmacsLocal
-    Loop, %id%
-    {
-      StringTrimRight, this_id, id%a_index%, 0
-        WinGetTitle, this_title, ahk_id %this_id%
-        winclose,%this_title%
-        }
-  WinGet, ID, List, EmacsPortableDaemon
-    Loop, %id%
-    {
-      StringTrimRight, this_id, id%a_index%, 0
-        WinGetTitle, this_title, ahk_id %this_id%
-        WinClose,%this_title%
-        }
-  SetTitleMatchMode 3
-    WinShow, ___EmacsPortableDaemon_%1%___
-    SetTitleMatchMode 2
-    WinShow \mingw\bin\gdb.exe
-    WinShow \MinGW\bin\gdb.exe
-    WinShow \cygwin\bin\gdb.exe
-    SetTitleMatchMode 1
-    WinGet, ID, List, ___EmacsPortableDaemon_%1%___
-    Loop, %id%
-    {
-      StringTrimRight, this_id, id%a_index%, 0
-        WinGetTitle, this_title, ahk_id %this_id%
-        WinClose,%this_title% 
-        }
-  WinClose, ___EmacsPortableDaemon_%1%___
-    Process, WaitClose, %EmacsPID%, 10
-    Run %EPRMREG%
-    ;If ErrorLevel ; The PID still exists.
-    ;  MsgBox "EmacsPortableApp did not close within 10 seconds, Exiting daemon"
-    }
-ExitApp
-Return
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; EmacsPortableDaemon.ahk ends here
-
+  }
+  cArgs := args%J%
+  Run %EPOTHER%..\EmacsPortableApp.exe %cArgs%, %EPOTHER%..\
+} Else If (A_ThisMenuItem == "New Frame") {
+  StringReplace J, A_ThisMenu, Menu
+  cArgs := args%J%
+  Run %EPOTHER%..\EmacsPortableApp.exe %cArgs%, %EPOTHER%..\
+} Else If (A_ThisMenu != "Tray"){
+  IniRead xArgs, %EPOTHER%..\App\ini\server.ini ,Commands, %A_ThisMenuItem%
+  StringReplace J, A_ThisMenu, Menu
+  cArgs := args%J%
+  Run %EPOTHER%..\EmacsPortableApp.exe %cArgs% %xArgs%, %EPOTHER%..\
+}
+;MsgBox You selected %A_ThisMenuItem% from menu %A_ThisMenu%.
+return

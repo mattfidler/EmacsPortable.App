@@ -82,6 +82,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Var nini
   Var EPEXE
   Var epdata
+  Var epstart
 #+END_SRC
 
 ** Headers and Plug ins
@@ -196,14 +197,14 @@ FunctionEnd
   Function SetupEmacsExe
     StrCmp "" $option_dos setupwin setupdos
     setupdos:
-      IfFileExists "$emacs_dir\emacs-$option_version-dos.exe" end 
+      IfFileExists "$emacs_dir\emacs-$option_version$epstart-dos.exe" end 
       IfFileExists "$emacs_dir\emacs.exe" 0 not_found
-      CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version-dos.exe"
+      CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version$epstart-dos.exe"
       Goto end
     setupwin:
-      IfFileExists "$emacs_dir\emacs-$option_version.exe" end
+      IfFileExists "$emacs_dir\emacs-$option_version$epstart.exe" end
       IfFileExists "$emacs_dir\emacs.exe" 0 not_found
-      CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version.exe"
+      CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version$epstart.exe"
       Goto end
     not_found:
       MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
@@ -393,6 +394,90 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
 !define GetDiskVolumeSerialNumberHex "!insertmacro GetDiskVolumeSerialNumberHex"
 #+END_SRC
 
+** Explode
+From http://nsis.sourceforge.net/Explode
+#+BEGIN_SRC nsis
+  !define Explode "!insertmacro Explode"
+   
+  !macro  Explode Length  Separator   String
+      Push    `${Separator}`
+      Push    `${String}`
+      Call    Explode
+      Pop     `${Length}`
+  !macroend
+     
+  Function Explode
+    ; Initialize variables
+    Var /GLOBAL explString
+    Var /GLOBAL explSeparator
+    Var /GLOBAL explStrLen
+    Var /GLOBAL explSepLen
+    Var /GLOBAL explOffset
+    Var /GLOBAL explTmp
+    Var /GLOBAL explTmp2
+    Var /GLOBAL explTmp3
+    Var /GLOBAL explArrCount
+   
+    ; Get input from user
+    Pop $explString
+    Pop $explSeparator
+   
+    ; Calculates initial values
+    StrLen $explStrLen $explString
+    StrLen $explSepLen $explSeparator
+    StrCpy $explArrCount 1
+   
+    ${If}   $explStrLen <= 1          ;   If we got a single character
+    ${OrIf} $explSepLen > $explStrLen ;   or separator is larger than the string,
+      Push    $explString             ;   then we return initial string with no change
+      Push    1                       ;   and set array's length to 1
+      Return
+    ${EndIf}
+   
+    ; Set offset to the last symbol of the string
+    StrCpy $explOffset $explStrLen
+    IntOp  $explOffset $explOffset - 1
+   
+    ; Clear temp string to exclude the possibility of appearance of occasional data
+    StrCpy $explTmp   ""
+    StrCpy $explTmp2  ""
+    StrCpy $explTmp3  ""
+   
+    ; Loop until the offset becomes negative
+    ${Do}
+      ;   If offset becomes negative, it is time to leave the function
+      ${IfThen} $explOffset == -1 ${|} ${ExitDo} ${|}
+      
+      ;   Remove everything before and after the searched part ("TempStr")
+      StrCpy $explTmp $explString $explSepLen $explOffset
+      
+      ${If} $explTmp == $explSeparator
+          ;   Calculating offset to start copy from
+          IntOp   $explTmp2 $explOffset + $explSepLen ;   Offset equals to the current offset plus length of separator
+          StrCpy  $explTmp3 $explString "" $explTmp2
+          
+          Push    $explTmp3                           ;   Throwing array item to the stack
+          IntOp   $explArrCount $explArrCount + 1     ;   Increasing array's counter
+          
+          StrCpy  $explString $explString $explOffset 0   ;   Cutting all characters beginning with the separator entry
+          StrLen  $explStrLen $explString
+      ${EndIf}
+   
+      ${If} $explOffset = 0                       ;   If the beginning of the line met and there is no separator,
+                                                  ;   copying the rest of the string
+          ${If} $explSeparator == ""              ;   Fix for the empty separator
+              IntOp   $explArrCount   $explArrCount - 1
+          ${Else}
+              Push    $explString
+          ${EndIf}
+      ${EndIf}
+   
+      IntOp   $explOffset $explOffset - 1
+    ${Loop}
+   
+    Push $explArrCount
+  FunctionEnd
+#+END_SRC
 * Command Line Options
 ** Get Command Line Options
 #+BEGIN_SRC nsis
@@ -405,8 +490,6 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
   Function GetCmdOptions
     ## Gets Command Line Functions
     Push $R0
-    
-    ${GetParameters} $cmdLineParams
     
     ; /? param (help)
     ClearErrors
@@ -469,7 +552,11 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
 #+BEGIN_SRC nsis  
   Function parseParameters
     ${ReadINIStrWithDefault} $option_version $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Version" $option_version
-    FindProcDLL::FindProc "emacs-$option_version.exe"
+    ${ReadINIStrWithDefault} $epstart $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Startup" $epstart
+    
+    # If a version of emacs is running, use that.
+    
+    FindProcDLL::FindProc "emacs-$option_version-$epstart.exe"
     StrCmp $R0 "1" already_running
     FindFirst $0 $1 "$EXEDIR\App\emacs-*"
     StrCpy $2  ""
@@ -487,8 +574,27 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
         CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$1.exe"
       ${EndIf}
       FindProcDLL::FindProc "emacs-$1.exe"
-      StrCmp $R0 "1" 0 +2
-      StrCpy $option_version $1
+      ${If} $R0 == "1"
+        StrCpy $option_version $1
+        StrCpy $epstart ""
+      ${Else}
+        FindFirst $3 $4 $EXEDIR\App\emacs-*.*
+        ${While} $4 != ""
+          ${If} $4 != "."
+          ${AndIf} $4 != ".."
+          ${AndIf} $4 != "shared"
+          ${AndIf} $4 != "system"
+          ${AndIf} $4 != "user"
+            FindProcDLL::FindProc "emacs-$1-$4.exe"
+            ${If} $R0 == "1"
+              StrCpy $option_version $1
+              StrCpy $epstart $4
+            ${EndIf}
+          ${EndIf}
+          FindNext $3 $4
+        ${EndWhile}
+      ${EndIf}
+      ## Now check for starter Kit
       StrCpy $2 $1
       FindNext $0 $1
       Goto loop_find_running
@@ -498,23 +604,38 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       ; ${EndIf}
     already_running:
       
-      ${ReadINIStrWithDefault} $option_geometry $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Geometry" $option_geometry
+      ${ReadINIStrWithDefault} $option_geometry $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Geometry" $option_geometry
       
-      ${ReadINIStrWithDefault} $option_maximized $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Max" $option_maximized 
+      ${ReadINIStrWithDefault} $option_maximized $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Max" $option_maximized 
       
-      ${ReadINIStrWithDefault} $option_fullwidth $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullwidth" $option_fullwidth
+      ${ReadINIStrWithDefault} $option_fullwidth $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Fullwidth" $option_fullwidth
       
-      ${ReadINIStrWithDefault} $option_fullheight $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Fullheight" $option_fullheight
+      ${ReadINIStrWithDefault} $option_fullheight $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Fullheight" $option_fullheight
+  
+      ${ReadINIStrWithDefault} $option_font $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Font" $option_font
       
-      ${ReadINIStrWithDefault} $option_font $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Font" $option_font
-      ${ReadINIStrWithDefault} $option_font_size $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "FontSize" $option_font_size
-      ${ReadINIStrWithDefault} $option_toolbar $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Toolbar" $option_toolbar
-      ${ReadINIStrWithDefault} $option_menubar $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Menubar" $option_menubar
-      ${ReadINIStrWithDefault} $option_scrollbar $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "ScrollBars" $option_scrollbar
-      ${ReadINIStrWithDefault} $option_minibuffer $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Minibuffer" $option_minibuffer
-      ${ReadINIStrWithDefault} $option_background $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Background" $option_background
-      ${ReadINIStrWithDefault} $option_foreground $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Foreground" $option_foreground
-      ${ReadINIStrWithDefault} $option_daemon $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Daemon" $option_daemon
+      ${ReadINIStrWithDefault} $option_font_size $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "FontSize" $option_font_size
+      ${ReadINIStrWithDefault} $option_toolbar $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Toolbar" $option_toolbar
+      
+      ${ReadINIStrWithDefault} $option_menubar $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Menubar" $option_menubar
+      ${ReadINIStrWithDefault} $option_scrollbar $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "ScrollBars" $option_scrollbar
+      ${ReadINIStrWithDefault} $option_minibuffer $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Minibuffer" $option_minibuffer
+      ${ReadINIStrWithDefault} $option_background $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Background" $option_background
+      ${ReadINIStrWithDefault} $option_foreground $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Foreground" $option_foreground
+      ${ReadINIStrWithDefault} $option_daemon $epdata\ini\EmacsPortableApp.ini \
+          "EmacsPortableApp" "Daemon" $option_daemon
       
       StrCmp "1" $option_daemon 0 +2
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACS_DAEMON", "1").r0'
@@ -522,14 +643,57 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       ## Now Replace standard emacs options with EmacsPortableApp.org options.
       ${StrRep} $cmdLineParams $cmdLineParams "-Q" "/Q"
       
+      ## GetOptions readst the WHOLE string so things like
+      ## EmacsPortableApp /VERSION=24.1 --eval "(message (symbol-name 'ok))" wil not work.
+  
+      ${GetOptions} $cmdLineParams '/START=' $R0
+      ${If} ${Errors}
+        ClearErrors
+      ${Else}
+        ${Explode} $R1  " " $R0
+        Pop $R0
+        ${For} $R3 1 $R1
+          Pop $R4
+        ${Next}
+        StrCpy $epstart $R0
+        ${StrRep} $cmdLineParams $cmdLineParams "/START=$epstart" ""
+      ${EndIf}
+  
+      ;; Setup environmental variables for startup
+      ${If} $epstart == "None"
+        StrCpy $epstart ""
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", ).r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", ).r0'
+      ${Else}
+        ${If} ${FileExists} "$EXEDIR\Data\start\$epstart\*.*"
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", "$epstart").r0'
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", "$EXEDIR\Data\start\$epstart").r0'
+          StrCpy $epstart "-$epstart"
+        ${ElseIf} ${FileExists} "$epdata\start\$epstart\*.*"
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", "$epstart").r0'
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", "$epdata\start\$epstart").r0'
+          StrCpy $epstart "-$epstart"
+        ${Else}
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", ).r0'
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", ).r0'
+          StrCpy $epstart ""
+        ${EndIf}
+      ${EndIf}
       
       ${GetOptions} $cmdLineParams '/VERSION=' $R0
       IfErrors read_cmd_line_ver
+      ${Explode} $R1  " " $R0
+      Pop $R0
+      ${For} $R3 2 $R1
+        Pop $R4
+      ${Next}
       StrCpy $option_version $R0
       ${StrRep} $cmdLineParams $cmdLineParams "/VERSION=$option_version" ""
+      ## Check to see if any of the known 
+  
     read_cmd_line_ver:
       ClearErrors
-      StrCpy $emacs_exe "emacs-$option_version.exe"
+      StrCpy $emacs_exe "emacs-$option_version$epstart.exe"
       IfFileExists "$EXEDIR\App\emacs-$option_version\lisp" emacs_ver_done
       
       IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 +2
@@ -554,7 +718,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       WriteIniStr "$epdata\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version" $2
       
       StrCpy $option_version $2
-      StrCpy $emacs_exe "emacs-$option_version.exe"
+      StrCpy $emacs_exe "emacs-$option_version$epstart.exe"
       
       Goto emacs_ver_done
     abort_run:
@@ -625,12 +789,10 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       ${GetOptions} $cmdLineParams '/DOS' $R0
       IfErrors no_dos
       StrCpy $option_dos " -nw"
-      StrCpy $emacs_exe "emacs-$option_version-dos.exe"
+      StrCpy $emacs_exe "emacs-$option_version$epstart-dos.exe"
       StrCpy $emacs_client_exe "emacsclient.exe"
     no_dos:
       ClearErrors
-      
-      
       ;; Now take out all known parameters
       
       ${StrRep} $cmdLineParams $cmdLineParams "/Q" ""
@@ -648,10 +810,10 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       
       StrCmp "" $option_dos setupwin setupdos
     setupdos:
-      StrCpy $server_file "$TEMP\ep\epd-$option_version\server"
+      StrCpy $server_file "$TEMP\ep\epd-$option_version$epstart\server"
       Goto end
     setupwin:
-      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"
+      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server"
     end:
       ## Change protocol spaces to %20
       StrCpy $0 $cmdLineParams 15
@@ -948,16 +1110,16 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     StrCmp "" $option_dos setupdos setupwin
     ## Now Setup server
     setupwin:
-      IfFileExists "$TEMP\ep\EmacsPortable.App-Server-$option_version"  0 +2
-      RmDir /r "$TEMP\ep\EmacsPortable.App-Server-$option_version"
-      CreateDirectory "$TEMP\ep\EmacsPortable.App-Server-$option_version"
-      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server"
+      IfFileExists "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart"  0 +2
+      RmDir /r "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart"
+      CreateDirectory "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart"
+      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server"
       Goto end
     setupdos:
-      IfFileExists "$TEMP\ep\epd-$option_version"  0 +2
-      RmDir /r "$TEMP\ep\epd-$option_version"
-      CreateDirectory "$TEMP\ep\epd-$option_version"
-      StrCpy $server_file "$TEMP\ep\epd-$option_version\server"
+      IfFileExists "$TEMP\ep\epd-$option_version$epstart"  0 +2
+      RmDir /r "$TEMP\ep\epd-$option_version$epstart"
+      CreateDirectory "$TEMP\ep\epd-$option_version$epstart"
+      StrCpy $server_file "$TEMP\ep\epd-$option_version$epstart\server"
     end:
       ClearErrors
   FunctionEnd
@@ -1122,9 +1284,9 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     StrCmp "" $option_dos setupwin_client setupdos_client
     setupdos_client:
       ${If} $cmdLineParams == ""
-        StrCpy $cmd_args '-d 0 --server-file "$TEMP\ep\epd-$option_version\server" $cmdLineParams'
+        StrCpy $cmd_args '-d 0 --server-file "$TEMP\ep\epd-$option_version$epstart\server" $cmdLineParams'
       ${Else}
-        StrCpy $cmd_args '-t -d 0 --server-file "$TEMP\ep\epd-$option_version\server"'
+        StrCpy $cmd_args '-t -d 0 --server-file "$TEMP\ep\epd-$option_version$epstart\server"'
       ${EndIf}
       goto end_client
     setupwin_client:
@@ -1142,13 +1304,25 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
           StrCpy $R9 " -c"
         ${EndIf}
       ${Else}
-        StrCpy $R9 " -c"
+        ${StrRep} $0 $cmdLineParams "--eval " ""
+        ${If} $0 == $cmdLineParams
+          ${StrRep} $0 $cmdLineParams "-e " ""
+          ${If} $0 == $cmdLineParams
+            StrCpy $R9 " -c"
+          ${Else}
+            ## An eval, don't use -c.
+            StrCpy $R9 ""
+          ${EndIf}
+        ${Else}
+          ## An eval, don't use -c.
+          StrCpy $R9 ""
+        ${EndIf}
       ${EndIf}
-      StrCpy $cmd_args `$R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" $cmdLineParams`
+      StrCpy $cmd_args `$R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" $cmdLineParams`
       StrCmp "$cmdLineParams" "" +5
       Goto end_client
     colorsync:
-      StrCpy $cmd_args `--server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
+      StrCpy $cmd_args `--server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
     end_client:
       StrCpy $emacs "$cmd $cmd_args"
       ClearErrors
@@ -1161,6 +1335,8 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit 
+    ${GetParameters} $cmdLineParams
+    
     # Get local installation.
     ReadRegStr $0 HKCU "Software\EmacsPortable.App" ""
     ClearErrors
@@ -1170,17 +1346,20 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       ${IfNot} $1 == $0
         # Call From locally installed EmacsPortable.App
         GetFullPathName $1 "$EXEDIR\Data"
+        ClearErrors
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPDATA", "$1").r1'
-        ${GetParameters} $cmdLineParams
         Exec '"$0\EmacsPortableApp.exe" $cmdLineParams'
         Abort
       ${EndIf}
     ${EndIf}
+    
     ReadEnvStr $epdata "EPDATA"
     ClearErrors
+    
     ${If} $epdata == ""
       StrCpy $epdata "$EXEDIR\Data"
-    ${EndIf}
+    ${EndIf}  
+    ClearErrors
   FunctionEnd
   
 #+END_SRC
@@ -1231,7 +1410,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
         IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
         StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
         SetOutPath $home
-        Exec '"$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
+        Exec '"$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
       loop_next:
         FindNext $0 $1
         Goto loop_proxy
@@ -1240,7 +1419,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
       start_emacs:
         StrCmp $option_colorsync "" 0 cant_sync
         ${emacs_setup}
-        WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version" "1"
+        WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version$epstart" "1"
         StrCmp "" $option_batch +2 0
         StrCmp "" $option_silent start_emacs_dos start_emacs_regular
         StrCmp "" $option_dos 0 start_emacs_dos
@@ -1299,14 +1478,11 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
         StrCmp "1" $option_daemon 0 found_running_emacs
         StrCmp "" $option_q 0 found_running_emacs
         StrCpy $cnt 300
-        IfFileExists "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe" +2 0
-        CopyFiles /SILENT "$EXEDIR\App\eps\EmacsPortableServer.exe" \
-            "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe"
-        Exec "$EXEDIR\App\eps\EmacsPortableServer-$option_version.exe $option_version"
+        Exec "$EXEDIR\App\eps\EmacsPortableServer.exe"
       look_for_running_emacs:
-        FindProcDLL::FindProc "emacs-$option_version.exe"
+        FindProcDLL::FindProc "emacs-$option_version$epstart.exe"
         StrCmp "$R0" "1" found_running_emacs
-        FindProcDLL::FindProc "emacs-$option_version-dos.exe"
+        FindProcDLL::FindProc "emacs-$option_version$epstart-dos.exe"
         StrCmp "$R0" "1" found_running_emacs 
         Sleep 1000 # Wait 1 seconds for emacs process to start.
         IntOp $cnt $cnt - 1

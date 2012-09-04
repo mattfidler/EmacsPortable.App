@@ -468,8 +468,16 @@ work correctly.
     "Used to add back the kill emacs functions when a new emacs window is opened."
     (when ep-kill-emacs-query-functions
       (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
-      (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
-        (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver )))
+      (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver
+                                   (if (and (getenv "EPSTART")
+                                            (not (string= "" (getenv "EPSTART"))))
+                                       (concat "-" (getenv "EPSTART"))
+                                     "")))
+        (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver
+                             (if (and (getenv "EPSTART")
+                                      (not (string= "" (getenv "EPSTART"))))
+                                 (concat "-" (getenv "EPSTART"))
+                               ""))))
       (setq ep-kill-emacs-query-functions nil))
     ad-do-it)
   
@@ -477,16 +485,32 @@ work correctly.
     "Used to add back the kill emacs functions when a new emacs window is opened."
     (when ep-kill-emacs-query-functions
       (setq kill-emacs-query-functions ep-kill-emacs-query-functions)
-      (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
-        (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver )))
+      (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver
+                                   (if (and (getenv "EPSTART")
+                                                (not (string= "" (getenv "EPSTART"))))
+                                       (concat "-" (getenv "EPSTART"))
+                                     "")))
+        (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver
+                             (if (and (getenv "EPSTART")
+                                      (not (string= "" (getenv "EPSTART"))))
+                                 (concat "-" (getenv "EPSTART"))
+                               ""))))
       (setq ep-kill-emacs-query-functions nil))
     ad-do-it)
   
   (defadvice server-execute (around ep-daemon-new-frame activate)
     "Used to delete the %TEMP%/hidden-%EMACSVER% file"
     ad-do-it
-    (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
-      (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver ))))
+    (when (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver
+                                 (if (and (getenv "EPSTART")
+                                          (not (string= "" (getenv "EPSTART"))))
+                                     (concat "-" (getenv "EPSTART"))
+                                   "")))
+      (delete-file (concat (getenv "TEMP") "/hidden-" emacs-ver
+                           (if (and (getenv "EPSTART")
+                                                (not (string= "" (getenv "EPSTART"))))
+                               (concat "-" (getenv "EPSTART"))
+                             "")))))
   
   (defvar ep-kill-emacs-query-functions nil
     "Variable to save `kill-emacs-query-functions'")
@@ -499,7 +523,16 @@ work correctly.
             (sf (selected-frame)))
         (select-frame (new-frame))
         (when rename
-          (modify-frame-parameters (selected-frame) (list (cons 'name (concat "___EmacsPortableDaemon_" emacs-ver "___"))))
+          (modify-frame-parameters (selected-frame)
+                                   (list
+                                    (cons 'name
+                                          (concat "___EmacsPortableDaemon_"
+                                                  emacs-ver 
+                                                  (if (and (getenv "EPSTART")
+                                                           (not (string= "" (getenv "EPSTART"))))
+                                                      (concat "_" (getenv "EPSTART"))
+                                                    "")
+                                                  "___"))))
           (select-frame sf))
         (if (= 0 (length arg))
             (cond
@@ -512,6 +545,7 @@ work correctly.
   
   (setq ido-default-file-method 'selected-window)
   (setq ido-default-buffer-method 'selected-window)
+  
 #+end_src
 
 * Start the Emacs Server
@@ -521,7 +555,11 @@ work correctly.
       (setq server-auth-dir (concat (getenv "TEMP")
                                     (if window-system 
                                         "\\EmacsPortable.App-Server-"
-                                      "\\epd-") emacs-ver))
+                                      "\\epd-") emacs-ver
+                                      (if (and (getenv "EPSTART")
+                                               (not (string= (getenv "EPSTART") "")))
+                                          (concat "-" (getenv "EPSTART"))
+                                        "")))
       (when (not (file-exists-p server-auth-dir))
         (make-directory server-auth-dir t))
       (require 'server)
@@ -661,8 +699,16 @@ killed. Using this we can create a function that:
       (if (not ep-emacs-kill-frame) nil
         (setq ep-emacs-kill-frame nil)
         (setq ep-kill-emacs-query-functions kill-emacs-query-functions)
-        (unless (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver ))
-          (with-temp-file (concat (getenv "TEMP") "/hidden-" emacs-ver)
+        (unless (file-exists-p (concat (getenv "TEMP") "/hidden-" emacs-ver
+                                       (if (and (getenv "EPSTART")
+                                                (not (string= "" (getenv "EPSTART"))))
+                                           (concat "-" (getenv "EPSTART"))
+                                         "")))
+          (with-temp-file (concat (getenv "TEMP") "/hidden-" emacs-ver
+                                  (if (and (getenv "EPSTART")
+                                           (not (string= "" (getenv "EPSTART"))))
+                                      (concat "-" (getenv "EPSTART"))
+                                    ""))
             (insert "hidden")))
         (setq kill-emacs-query-functions nil)
         t)))
@@ -691,8 +737,16 @@ The last step is to call this when the last frame is being deleted.
             ret)
         (when (and ep-server (= 2 (length frames)))
           (mapc (lambda(frame)
-                  (setq server-found (or server-found (string= (concat "___EmacsPortableDaemon_" emacs-ver "___")
-                                                               (format "%s" (frame-parameter frame 'name))))))
+                  (setq server-found 
+                        (or server-found
+                            (string= (concat "___EmacsPortableDaemon_"
+                                             emacs-ver
+                                             (if (and (getenv "EPSTART")
+                                                      (not (string= "" (getenv "EPSTART"))))
+                                                 (concat "_" (getenv "EPSTART"))
+                                               "")
+                                             "___")
+                                     (format "%s" (frame-parameter frame 'name))))))
                 frames)
           (when server-found
             (setq ret t)))
@@ -756,9 +810,11 @@ ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
                               ))
                     (insert "-")
                     (insert emacs-ver)
+                    (when (and (getenv "EPSTART")
+                               (not (string= "" (getenv "EPSTART"))))
+                      (insert (format " (%s)" (getenv "EPSTART"))))
                     (insert " %b")
-                    (buffer-substring (point-min) (point-max))
-                    )
+                    (buffer-substring (point-min) (point-max)))
                   '(buffer-file-name ": %f")))
     (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
   
@@ -927,34 +983,27 @@ the implementation
 * Start a shared startup-script, if present.
 Start the appropriate startup script
 #+BEGIN_SRC emacs-lisp
-  (let ((epi
-         (expand-file-name "EmacsPortableApp.ini"
-                           (expand-file-name "ini"
-                                             (or (getenv "EPDATA")
-                                                 (expand-file-name "Data"
-                                                                   (expand-file-name ".." usb-app-dir)))))))
-    (when (file-exists-p epi)
-      (let ((start-dir))
-        (with-temp-buffer
-          (insert-file-contents epi)
-          (goto-char (point-min))
-          (when (re-search-forward "^[ \t]*[sS]tartup[ \t]*=[ \t]*\\(.*?\\)[ \t]*$" nil t)
-            (setq start-dir (match-string 1))))
-        (when start-dir
-          (setq start-dir (expand-file-name (concat "~" start-dir "/")))
-          (message "Using startup at %s" start-dir)
-          (cond
-           ((file-exists-p (expand-file-name ".emacs" start-dir))
-            (load (expand-file-name ".emacs" start-dir))
-            (message "Loaded %s/.emacs" start-dir))
-           
-           ((file-exists-p (expand-file-name "init.el" start-dir))
-            (load (concat (replace-regexp-in-string "/$" "" start-dir t t) "/init"))
-            (message "Loaded %s/init" (replace-regexp-in-string "/$" "" start-dir t t)))
-           
-           ((file-exists-p (expand-file-name  "site-start.el" (expand-file-name "site-lisp" start-dir)))
-            (load (concat (expand-file-name "site-lisp" start-dir) "/site-start"))
-            (message "Loaded %s/site-start/site-lisp" start-dir)))))))
+  (when (and (getenv "EPSTART")
+             (not (string= "" (getenv "EPSTART")))
+             (getenv "EPSTARTDIR")
+             (file-exists-p (getenv "EPSTARTDIR")))
+    (let ((start-dir (getenv "EPSTARTDIR")))
+      (when start-dir
+        (setq start-dir (expand-file-name (getenv "EPSTARTDIR")))
+        (message "Using startup at %s" start-dir)
+        (cond
+         ((file-exists-p (expand-file-name ".emacs" start-dir))
+          (load (expand-file-name ".emacs" start-dir))
+          (message "Loaded %s/.emacs" start-dir))
+         
+         ((file-exists-p (expand-file-name "init.el" start-dir))
+          (load (concat (replace-regexp-in-string "/$" "" start-dir t t) "/init"))
+          (message "Loaded %s/init" (replace-regexp-in-string "/$" "" start-dir t t)))
+         
+         ((file-exists-p (expand-file-name  "site-start.el" (expand-file-name "site-lisp" start-dir)))
+          (load (concat (expand-file-name "site-lisp" start-dir) "/site-start"))
+          (message "Loaded %s/site-start/site-lisp" start-dir))))))
+  
   
 #+END_SRC
 

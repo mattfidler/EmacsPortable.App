@@ -7,9 +7,6 @@ runs off a USB drive under either Windows, or Mac OSX.
 ** Download for Emacs 24
 The following downloads are available:
 - [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.1-ep0.01.exe][Emacs 24.1]]
-- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.1-ep0.01-emacs24-starter-kit.exe][Emacs 24.1 with emacs 24 starter kit]]
-- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.1-ep0.01-ergoemacs.exe][Emacs 24.1 with ergoemacs]]
-- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.1-ep0.01-prelude.exe][Emacs 24.1 with prelude]]
 ** Using Pre-releases
 Under windows, you can do a net-install by using EmacsOptions.  This
 net install can be performed in two ways:
@@ -242,7 +239,7 @@ that are changed from a standard emacs distribution:
    allow recent files to save correctly (for instance ~usb for the usb
    drive).
    
-3. Install fonts on different computers to allow a favorite fond to be
+3. Install fonts on different computers to allow a favorite font to be
    used in emacs for all distributions.  In windows this is done by
    making the font available to windows during the session.
 ** Emacs aliases
