@@ -51,6 +51,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   
   Var option_batch
   Var option_debug
+  Var option_silent
   Var option_debug_from_ini
   var option_dos
   var option_q
@@ -66,7 +67,6 @@ EmacsPortable.App uses the loading bar to startup emacs.
   var option_daemon
   var option_colorsync
   var option_updateproxy
-  var option_silent
   var option_help
   var option_cmd
   
@@ -645,7 +645,7 @@ From http://nsis.sourceforge.net/Explode
       
       ## GetOptions readst the WHOLE string so things like
       ## EmacsPortableApp /VERSION=24.1 --eval "(message (symbol-name 'ok))" wil not work.
-  
+      
       ${GetOptions} $cmdLineParams '/START=' $R0
       ${If} ${Errors}
         ClearErrors
@@ -997,15 +997,20 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   !define dllcp `!insertmacro _dllcp`
   !macro _dllcp FILENAME FILETO
+    DetailPrint "$EXEDIR\App\${FILENAME} -> $emacs_dir\${FILETO}"
     ${IfNot} ${FileExists} "$emacs_dir\${FILETO}"
       ${If} ${FileExists} "$EXEDIR\App\${FILENAME}"
         CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs_dir\${FILETO}"
-        ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+        ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.7z"
           SetOutPath "$TEMP\ep"
           ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
-            nsExec::ExecToLog /OEM "$\"$EXEDIR\App\7z\7z.exe$\" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}"
+            nsExec::ExecToLog /OEM "$\"$EXEDIR\App\7z\7z.exe$\" a -mx9 -t7z $EXEDIR\App\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
+            Push $0
+            Exch
+            Pop $0
+            Pop $0
           ${Else}
-            ExecWait "$\"$EXEDIR\App\7z\7zG.exe$\" a -mx9 -tzip $EXEDIR\App\emacs-$option_version\ext-bin.zip $R5emacs-$option_version\bin\${FILETO}"
+            ExecWait "$\"$EXEDIR\App\7z\7zG.exe$\" a -mx9 -t7z $EXEDIR\App\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
           ${EndIf}
         ${EndIf}
       ${EndIf}
@@ -1039,29 +1044,29 @@ From http://nsis.sourceforge.net/Explode
     ${ReadINIStrWithDefault} $R0 $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Zip" "0"
     StrCmp "$R0" "0" extract_zip zip_binaries
   extract_zip:
-    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bare-bin.7z"
       ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
-        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
+        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.7z" -o"$EXEDIR\App" -mmt'
       ${Else}
-        ExecWait '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.zip" -o"$EXEDIR\App"'
+        ExecWait '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.7z" -o"$EXEDIR\App" -mmt'
       ${EndIf}
       ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bin\emacs.exe"
-        Delete "$EXEDIR\App\emacs-$option_version\bare-bin.zip"
+        Delete "$EXEDIR\App\emacs-$option_version\bare-bin.7z"
       ${EndIf}
     ${EndIf}
-    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.7z"
       ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
-        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
+        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.7z" -o"$EXEDIR\App" -mmt' 
       ${Else}
-        ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.zip" -o"$EXEDIR\App"'
+        ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.7z" -o"$EXEDIR\App" -mmt'
       ${EndIf}
       ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bin\emacsclient.exe"
-        Delete "$EXEDIR\App\emacs-$option_version\ext-bin.zip"
+        Delete "$EXEDIR\App\emacs-$option_version\ext-bin.7z"
       ${EndIf}
     ${EndIf}
     Goto end
   zip_binaries:
-    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.zip" end
+    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.7z" end
     Pop $R0
     
     StrCmp $R0 "" end found_7z
@@ -1070,8 +1075,8 @@ From http://nsis.sourceforge.net/Explode
       SetOutPath "$EXEDIR\App"
       DetailPrint "Zipping binary files"
       SetOutPath "$EXEDIR\App"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" a -mx9 -tzip emacs-$option_version\bare-bin.zip emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X'
-      ExecWait '"$EXEDIR\App\7z\7zG.exe"  a -mx9 -tzip emacs-$option_version\ext-bin.zip \
+      ExecWait '"$EXEDIR\App\7z\7zG.exe" a -mx9 -t7z emacs-$option_version\bare-bin.7z emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X -mmt -ms=on -m0=PPMd'
+      ExecWait '"$EXEDIR\App\7z\7zG.exe"  a -mx9 -t7z emacs-$option_version\ext-bin.7z \
           emacs-$option_version\bin\emacsclient.exe \
           emacs-$option_version\bin\runemacs.exe \
           emacs-$option_version\bin\cmd*.exe \
@@ -1080,7 +1085,7 @@ From http://nsis.sourceforge.net/Explode
           emacs-$option_version\bin\move*.exe \
           emacs-$option_version\bin\*tags*.exe \
           emacs-$option_version\bin\dd*.exe \
-          emacs-$option_version\bin\dd*.exe'
+          emacs-$option_version\bin\dd*.exe -mmt -m0=PPMd -ms=off'
       ## Should remove but after we test 
       RmDir /R "$EXEDIR\App\emacs-$option_version\bin"
     end:
@@ -1534,7 +1539,11 @@ From http://nsis.sourceforge.net/Explode
         Goto end
       no_debug:
         DetailPrint "Setup emacs options"
-        MessageBox MB_YESNO|MB_ICONEXCLAMATION "EmacsPortable.App already running, Attach gdb?" IDYES attach_gdb IDNO end
+        ${If} $option_silent == ""
+          MessageBox MB_YESNO|MB_ICONEXCLAMATION "EmacsPortable.App already running, Attach gdb?" IDYES attach_gdb IDNO end
+        ${Else}
+          Goto attach_gdb
+        ${EndIf}
       attach_gdb:
         ${SetEnv}
         ${If} ${FileExists} "$msys\bin\gdb.exe"

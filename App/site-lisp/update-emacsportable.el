@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Thu Jun  7 16:07:47 2012 (-0500)
 ;; Version:
-;; Last-Updated: Fri Aug 24 14:41:24 2012 (-0500)
+;; Last-Updated: Fri Sep  7 10:26:38 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 30
+;;     Update #: 31
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -48,7 +48,7 @@
 (setq usb-app-dir (expand-file-name (concat (file-name-directory (or
                                                                   load-file-name
                                                                   buffer-file-name)) "../")))
-
+;;;###autoload
 (defun offical-emacs ()
   "Update Official releases"
   (interactive)

@@ -30,27 +30,21 @@
       ${If} ${FileExists} "$INSTDIR\App\emacs-${VER}\MacOS"
         DetailPrint "Mac OS Binaries already found."
       ${Else}
-        ${If} $R0 != ""
-          ReadINIStr $R1 "$INSTDIR\App\ini\mirrors.ini" "${VER}" "mac"
-          ${IfNot} ${FileExists} "$TEMP\emacsMac\EmacsMac.dmg"
-            SetOutPath "$TEMP\emacsMac"
-            inetc::get $R1 "$TEMP\emacsMac\emacsMac.dmg"
+        ReadINIStr $R1 "$INSTDIR\App\ini\mirrors.ini" "${VER}" "mac"
+        ${IfNot} ${FileExists} "$TEMP\emacsMac\EmacsMac.dmg"
+          SetOutPath "$TEMP\emacsMac"
+          inetc::get $R1 "$TEMP\emacsMac\emacsMac.dmg"
+        ${EndIf}
+        SetOutPath $TEMP\emacsMac
+        ExecWait '"$EXEDIR\App\7z\7zG.exe" e EmacsMac.dmg 2.hfs'
+        ${If} ${FileExists} "$TEMP\emacsMac\2.hfs"
+          ExecWait  '"$EXEDIR\App\7z\7zG.exe" x -y 2.hfs"'
+          ${If} ${FileExists} "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS"
+            CopyFiles /SILENT "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS" \
+                "$INSTDIR\App\emacs-${VER}\MacOS"
           ${EndIf}
-          DetailPrint "cmd /c $\"cd $TEMP\emacsMac & $\"$\"$R0$\"$\" e EmacsMac.dmg$\""
-          ExecDos::exec  "cmd /c $\"cd $TEMP\emacsMac & $\"$\"$R0$\"$\" e EmacsMac.dmg 2.hfs$\""
-          ${If} ${FileExists} "$TEMP\emacsMac\2.hfs"
-            DetailPrint "cmd /c $\"cd $TEMP\emacsMac & $\"$\"$R0$\"$\" x -y 2.hfs $\""
-            ExecDos::exec  "cmd /c $\"cd $TEMP\emacsMac & $\"$\"$R0$\"$\" x -y 2.hfs$\""
-            ${If} ${FileExists} "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS"
-              CopyFiles /SILENT "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS" \
-                  "$INSTDIR\App\emacs-${VER}\MacOS"
-            ${EndIf}
-          ${Else}
-            DetailPrint "Could not find 2.hfs"
-          ${EndIf}
-          RmDir /R "$TEMP\emacsMac"
         ${Else}
-          DetailPrint "Could not find 7zip, cannot download mac binaries"
+          DetailPrint "Could not find 2.hfs"
         ${EndIf}
         RmDir /R "$TEMP\emacsMac"
       ${EndIf}

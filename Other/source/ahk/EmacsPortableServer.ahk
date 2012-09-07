@@ -118,6 +118,7 @@ While (Pexist == 1)
            pid%I% := Errorlevel
            If (LastPID == 0){
               ReqChangeMenu = 1
+              ;;TrayTip, %cDesc%, Detected Running %cDesc%, 10, 1
            }
            Pexist = 1
            
@@ -155,6 +156,7 @@ While (Pexist == 1)
            pid%I% := 0
            If (LastPID != 0){
               ReqChangeMenu = 1
+              ;;TrayTip, %cDesc%, Detected Stopped %cDesc%, 10, 1
            }
            If (ChangeMenu == 1){
              IniWrite 0, %TEMP%\ep-pid.ini ,exec, %A_LoopField%
@@ -191,6 +193,7 @@ While (Pexist == 1)
   }
   Sleep 50
 }
+TrayTip, Remove Tray Icon, EmacsPortable.App does not detect any running instances of emacs, 10, 1
 ExitApp
 return
 

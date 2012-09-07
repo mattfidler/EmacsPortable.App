@@ -4,6 +4,27 @@
 * Introduction
 EmacsPortable.App attempts to make a portable version of Emacs that
 runs off a USB drive under either Windows, or Mac OSX.
+
+The features of this distribution:
+- Automatic Registering of extensions (and org-protocol)
+  - Will use LiberKey when requsted
+  - Will generate an appropriate Info.plist for Mac OS X
+- Temporarily Install of fonts
+  - Temporarily install fonts on windows so you can always carry your
+    favorite mono-spaced font
+  - Copy the fonts to ~/Library/Fonts under Mac OSX
+    - The fonts you use should be free, so you are not copying fonts
+      that should not be copied 
+*Window Only Features:*
+- Psuedo-Daemon
+- Finding support applications and dictionaries
+- Starting gdb or attaching debugger
+- Updating and downloading the latest emacs, even if EmacsPortable.App
+  hasn't released a new launcher.
+
+In windows, this distribution also allows concurrent versions of emacs
+to be run, with different startup options.  
+
 * Download
 ** Download for Emacs 24
 The following downloads are available:
@@ -200,7 +221,19 @@ registry.
 
 In addition this tries to set an option to maximize new frames.
 ** Download
-EmacsPortable.App updates 
+EmacsPortable.App can download and run the versions of Emacs from the
+mac repository and windows repository and package them so they work
+with the EmacsPortable.App launcher.
+
+If the EmacsOptions list of emacs versions is out of date, it can be
+updated by the following procedure:
+- Start EmacsPortable.App
+- Type =M-x official-emacs=
+
+This will update the emacs list of official binaries from [[http://emacsformacosx.com/][GNU Emacs
+For Mac OS X]] and [[http://www.gnu.org/software/emacs/][GNU Emacs]] websites.
+
+
 ** Network Install
 ** Build Launcher
 ** Unix Components

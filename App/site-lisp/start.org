@@ -1270,3 +1270,13 @@ Explanation
           (expand-file-name "mathtoweb.jar" "~app/jar")))
 #+END_SRC
 
+* Setup EmacsPortable build/update functions
+These functions allow updating/building of EmacsPortable.App
+distributions.
+
+#+BEGIN_SRC emacs-lisp
+  (autoload 'offical-emacs "update-emacsportable" nil t)
+  (autoload 'build-nsi "build-nsi" nil t)
+  
+#+END_SRC
+

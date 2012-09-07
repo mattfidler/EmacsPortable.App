@@ -43,10 +43,10 @@ Allows NSIS to call emacs for batch processing.
   Function ExtractZip
     Push $R0
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" end
-    IfFileExists "$INSTDIR\App\emacs-$option_version\bare-bin.zip" 0 end
-    IfFileExists "$INSTDIR\App\emacs-$option_version\ext-bin.zip" 0 end
-    ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$INSTDIR\App\emacs-$option_version\bare-bin.zip" -o$TEMP\ep'
-    ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$INSTDIR\App\emacs-$option_version\ext-bin.zip" -o$TEMP\ep"'
+    IfFileExists "$INSTDIR\App\emacs-$option_version\bare-bin.7z" 0 end
+    IfFileExists "$INSTDIR\App\emacs-$option_version\ext-bin.7z" 0 end
+    ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$INSTDIR\App\emacs-$option_version\bare-bin.7z" -o$TEMP\ep'
+    ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$INSTDIR\App\emacs-$option_version\ext-bin.7z" -o$TEMP\ep"'
     Goto end
     end:
       ClearErrors

@@ -901,7 +901,7 @@ From http://nsis.sourceforge.net/Explode
       # Only write if emacs exists.
       
       ${If} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bin\emacsclient.exe"
-      ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bare-bin.zip"
+      ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bare-bin.7z"
         ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
       ${EndIf}
       ${WriteCB} $hCtl_behavior_StartupScript "Startup"
@@ -2474,7 +2474,7 @@ FunctionEnd
               ${EndIf}
             ${EndIf}
             ${If} ${FileExists} "$EXEDIR\App\emacs-$download_emacs_version\bin\emacsclient.exe"
-            ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$download_emacs_version\bare-bin.zip"
+            ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$download_emacs_version\bare-bin.7z"
               WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
                   "Version" "$download_emacs_version"
             ${EndIf}
@@ -2729,16 +2729,16 @@ FunctionEnd
             DetailPrint "Error opening $TEMP\ep\build.cmd"
           ${Else}
             ;; Unzip binaries.
-            ${If} ${FileExists} "$EXEDIR\App\$7\bare-bin.zip"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\bare-bin.zip" -o"$EXEDIR\App"'
+            ${If} ${FileExists} "$EXEDIR\App\$7\bare-bin.7z"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\bare-bin.7z" -o"$EXEDIR\App"'
               ${If} ${FileExists} "$EXEDIR\App\$7\bin\emacs.exe"
-                Delete "$EXEDIR\App\$7\bare-bin.zip"
+                Delete "$EXEDIR\App\$7\bare-bin.7z"
               ${EndIf}
             ${EndIf}
-            ${If} ${FileExists} "$EXEDIR\App\$7\ext-bin.zip"
-              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\ext-bin.zip" -o"$EXEDIR\App"'
+            ${If} ${FileExists} "$EXEDIR\App\$7\ext-bin.7z"
+              ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\ext-bin.7z" -o"$EXEDIR\App"'
               ${If} ${FileExists} "$EXEDIR\App\$7\bin\emacsclient.exe"
-                Delete "$EXEDIR\App\$7\ext-bin.zip"
+                Delete "$EXEDIR\App\$7\ext-bin.7z"
               ${EndIf}
             ${EndIf}
             FileWrite $4 "@path $EXEDIR\App\ahk\App\AutoHotkey\Compiler;%PATH%$\r$\n"
