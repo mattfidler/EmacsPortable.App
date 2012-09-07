@@ -2478,6 +2478,13 @@ FunctionEnd
               WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
                   "Version" "$download_emacs_version"
             ${EndIf}
+  
+            FindProcDLL::FindProc "EmacsPortableServer.exe"
+  
+            ${If} $R0 == "1"
+              WriteIniStr "$TEMP\ep\ep-refresh-server.ini" "one" "one" "one"
+            ${EndIf}
+  
             ${If} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
               ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
             ${Else}

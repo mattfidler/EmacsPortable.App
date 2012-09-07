@@ -6,9 +6,9 @@
 ;; Maintainer: 
 ;; Created: Wed Aug 29 11:58:51 2012 (-0500)
 ;; Version: 
-;; Last-Updated: Thu Aug 30 15:12:28 2012 (-0500)
+;; Last-Updated: Tue Sep  4 16:28:03 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 107
+;;     Update #: 109
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
@@ -89,6 +89,7 @@
       (delete-file build-nsi-batch-file)
       (setq build-nsi-batch-file nil))))
 
+;;;###autoload
 (defun build-nsi ()
   "Build NSI based on current install"
   (interactive)
@@ -310,6 +311,8 @@ FunctionEnd
       (insert bat))
     (start-process-shell-command "build-nsi" "*build-nsi*" bat)
     (set-process-sentinel (get-process "build-nsi") 'build-nsi-setinel)))
+
+(provide 'build-nsi)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; build-nsi.el ends here
 

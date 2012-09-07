@@ -1,5 +1,12 @@
-#SingleInstance, Ignore
+#SingleInstance, Force
 #NoEnv
+
+;; http://www.autohotkey.com/community/viewtopic.php?t=80397
+GetModuleExeName(p_id) {
+   for process in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process where ProcessId=" p_id)
+      return process.ExecutablePath
+}
+
 DetectHiddenWindows, on
 
 
@@ -115,6 +122,8 @@ While (Pexist == 1)
            Pexist = 1
            
            If (ChangeMenu == 1){
+             tmp := GetModuleExeName(pid%I%)
+             IniWrite %tmp%, %TEMP%\ep-pid.ini ,exec, %A_LoopField%
              Menu, Menu%I%, add, New Frame, MenuHandler
              Menu, Menu%I%, add, Hidden Daemon, MenuHandler
              Loop, parse, CmdLst, `n 
@@ -148,20 +157,37 @@ While (Pexist == 1)
               ReqChangeMenu = 1
            }
            If (ChangeMenu == 1){
+             IniWrite 0, %TEMP%\ep-pid.ini ,exec, %A_LoopField%
              Menu, tray, add, Start %cDesc% ,MenuHandler 
            } 
+        }
+        If (ChangeMenu == 1){
+          tmp := pid%I%
+          IniWrite %tmp%, %TEMP%\ep-pid.ini ,pid, %A_LoopField%
         }
       }
   }
   If (ChangeMenu == 1){
+            
     Menu, tray, add  ; Creates a separator line.
     Menu, tray, add, Options, MenuHandler
+    Menu, tray, add, Refresh, MenuHandler
     Menu, tray, add, Exit, MenuHandler
   }
   ChangeMenu = 0
   If (ReqChangeMenu == 1){
      ChangeMenu = 1
      ReqChangeMenu = 0
+  }
+  IfExist, %TEMP%\ep-refresh-server.ini 
+  {
+     FileDelete %TEMP%\ep-refresh-server.ini
+     Reload
+  }
+  IfExist, %TEMP%\ep\ep-refresh-server.ini
+  { 
+     FileDelete %TEMP%\ep\ep-refresh-server.ini
+     Reload
   }
   Sleep 50
 }
@@ -180,6 +206,8 @@ If (A_ThisMenuItem == "Hidden Daemon"){
    hideshow%J% := DoHide
    Sleep 50
    ReqChangeMenu = 1
+} Else If (A_ThisMenuItem == "Refresh" && A_ThisMenu == "Tray"){
+  IniWrite one, %TEMP%\ep-refresh-server.ini ,two, three
 } Else If (A_ThisMenuItem == "Options" && A_ThisMenu == "Tray"){
   Run %EPOTHER%..\EmacsOptions.exe, %EPOTHER%..\
 } Else If (A_ThisMenuItem == "Exit" && A_ThisMenu == "Tray"){

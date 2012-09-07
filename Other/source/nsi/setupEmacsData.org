@@ -8,6 +8,9 @@ This sets up Emacs Data Directory according to PAF specifications.
 #+BEGIN_SRC nsis
   !macro _setupData DIR
     # Setup Data
+    IfFileExists "${DIR}\Data\ShellNew" +2
+    CreateDirectory "${DIR}\Data\ShellNew"
+  
     IfFileExists "${DIR}\Data\AllUsers" +2
     CreateDirectory "${DIR}\Data\AllUsers"
   

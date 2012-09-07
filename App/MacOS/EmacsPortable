@@ -18,9 +18,12 @@ TEMP=/tmp/
 EMACSAPP=`echo $EMACSDIR | sed 's/Contents.*/App/'`
 EMACSDAT=`echo $EMACSDIR | sed 's/Contents.*/Data/'`
 
-EPINI=$EMACSDAT/ini/EmacsPortableApp.ini
+cp $EMACSDAT/ini/EmacsPortableApp.ini /tmp/epi.ini
 
-EMACSVER=`cat $EPINI | egrep "[vV]ersion *= *" | tr -d '\15' | cut -f 2 -d "="`
+EPINI=/tmp/epi.ini
+./flip.osx -u /tmp/epi.ini
+#./flip.osx -t /tmp/epi.ini
+EMACSVER=`cat $EPINI | egrep "[Mm]ac[vV]ersion *= *" | tr -d '\15' | cut -f 2 -d "="`
 GEOMETRY=`cat $EPINI | egrep "[Gg]eometry *= *" | tr -d '\15' | cut -f 2 -d "="`
 FOREGROUND=`cat $EPINI | egrep "[Ff]oreground *= *" | tr -d '\15' | cut -f 2 -d "="`
 BACKGROUND=`cat $EPINI | egrep "[Bb]ackground *= *" | tr -d '\15' | cut -f 2 -d "="`
@@ -30,6 +33,7 @@ MAXIMIZED=`cat $EPINI | egrep "[Mm]ax *= *" | tr -d '\15' | cut -f 2 -d "="`
 FULLWIDTH=`cat $EPINI | egrep "[Ff]ull[Ww]idth *= *" | tr -d '\15' | cut -f 2 -d "="`
 
 FULLHEIGHT=`cat $EPINI | egrep "[Ff]ull[Hh]eight *= *" | tr -d '\15' | cut -f 2 -d "="`
+EPSTART=`cat $EPINI | egrep "[Ss]tartup *= *" | tr -d \15 | cut -f 2 -d "="`
 
 OPT=""
 
@@ -37,31 +41,33 @@ OPT=""
 ##     OPT="$OPT --geometry $GEOMETRY"
 ## fi
 
-if [ "$BACKGROUND" != "" ]; then
-    OPT="$OPT -bg $BACKGROUND"
-fi
-
 if [ "$FOREGROUND" != "" ]; then
-    OPT="$OPT -fg $FOREGROUND"
+   OPT="$OPT -fg $FOREGROUND"
 fi
 
-if [ "$MAXIMIZED" == "1" ]; then
-    OPT="$OPT -mm"
+if [ "$BACKGROUND" != "" ]; then
+  OPT="$OPT -bg $BACKGROUND"
 fi
 
-if [ "$FULLWIDTH" == "1" ]; then
-    OPT="$OPT -fw"
-fi
+## if [ "$MAXIMIZED" == "1" ]; then
+##    OPT="$OPT -mm"
+## fi
 
-if [ "$FULLHEIGHT" == "1" ]; then
-    OPT="$OPT -fh"
-fi
+## if [ "$FULLWIDTH" == "1" ]; then
+##    OPT="$OPT -fw"
+## fi
+
+## if [ "$FULLHEIGHT" == "1" ]; then
+##    OPT="$OPT -fh"
+## fi
 
 ## Set Emacs Specific Directories
 
 
 EMACSDATA="${EMACSAPP}/emacs-${EMACSVER}/etc"
 EMACSDOC="${EMACSAPP}/emacs-${EMACSVER}/etc"
+
+cp $EMACSAPP/fonts/*.* ~/Library/Fonts
 
 EMACSLOADPATH=$EMACSAPP/emacs-$EMACSVER/lisp/:$EMACSAPP/site-lisp/
 
@@ -96,7 +102,6 @@ echo EMACSDIR: $EMACSDIR
 
 echo EMACSVER: $EMACSVER
 
-
 echo EMACSAPP: $EMACSAPP
 echo EMACSDATA: $EMACSDATA
 echo EMACSLOADPATH: $EMACSLOADPATH
@@ -105,6 +110,10 @@ echo FOREGROUND: $FOREGROUND
 echo BACKGROUND: $BACKGROUND
 echo OPT: $OPT
 echo DATPATH: $DATPATH
+echo EPSTART: $EPSTART
+
+EPSTARTDIR=$EMACSAPP/../Data/start/$EPSTART
+echo EPSTARTDIR: $EPSTARTDIR
 
 if [ -e $DATPATH/ini/Environment.ini ]; then
     rm /tmp/ep-environment.sh
@@ -136,6 +145,8 @@ export EMACSDATA
 export EMACSLOADPATH
 export EMACSDOC
 export EMACSVER 
+export EPSTART
+export EPSTARTDIR
 
 REALVER=`$EMACSDIR/Emacs --version 2>&1 | head -n1 | sed 's/[^0-9]*\([0-9].*\)/\1/'`
 
@@ -145,4 +156,5 @@ if ! [ -e $EMACSDATA/DOC-$REALVER ]; then
     cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
 fi 
 echo  $OPT
-$EMACSDIR/Emacs --debug-init $OPT
+rm $EPINI
+$EMACSDIR/Emacs $OPT

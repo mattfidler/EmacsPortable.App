@@ -1,5 +1,6 @@
 #+TITLE: EmacsPortable.App
 #+AUTHOR: Matthew L. Fidler
+#+OPTIONS: LaTeX:t
 * Introduction
 EmacsPortable.App attempts to make a portable version of Emacs that
 runs off a USB drive under either Windows, or Mac OSX.
@@ -390,12 +391,22 @@ Emacs doesn't know about by a similar manner as the general paths,
 above. 
 *** Unix Manual Paths
 ** Java-based Apps
-EmacsPortable supports [[http://plantuml.sourceforge.net/download.html][PlantUML]] and [[http://ditaa.sourceforge.net/][ditaa]] for [[http://orgmode.org][org-mode]] assuming that
-[[http://portableapps.com/apps/utilities/java_portable_launcher][JavaPortable]] is installed. 
+EmacsPortable supports [[http://plantuml.sourceforge.net/download.html][PlantUML]], [[http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl][MathToWeb]] and [[http://ditaa.sourceforge.net/][ditaa]] for [[http://orgmode.org][org-mode]] assuming that
+[[http://portableapps.com/apps/utilities/java_portable_launcher][JavaPortable]] is installed.
+
 
 [[http://plantuml.sourceforge.net/download.html][PlantUML]] requires =dot= from GraphViz.  Therefore, GraphVizPortable
 would need to be installed for [[http://plantuml.sourceforge.net/download.html][PlantUML]] to work. 
 
+** Imagemagick
+Imagemagick is used for many Emacs Applications.  EmacsPortableApp
+attempts to detect a portable version of EmacsPortableApp or see if
+Imagemagick is installed on the computer.
+
+A portable version of Imagemagic is found [[ftp://ftp.imagemagick.org/pub/ImageMagick/binaries/ImageMagick-6.7.9-3-Q16-windows.zip][at ftp.imagemagick.org]]
+By extracting the portable version in the =PortableApps= or
+=LiberKey\MyApps= EmacsPortable.App will add this to the path.  This
+assumes the Imagemagick directory is =ImageMagick-6.7.9-3=
 ** Python based Apps
 By installing [[http://www.portablepython.com][Python Portable]] into your =PortableApps= Directory,
 python is available to Emacs.  This is useful for installing Bazaar,

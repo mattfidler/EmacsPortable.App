@@ -23,6 +23,11 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 #+END_SRC
 * Set Font
 #+BEGIN_SRC emacs-lisp
+  (when (getenv "EPSTART")
+    (setenv "EPSTART" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTART")))
+    (setenv "EPSTARTDIR" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTARTDIR")))
+    )
+  
   (let ((epi (expand-file-name (if (getenv "EPDATA")
                                    (concat (getenv "EPDATA") "/ini/EmacsPortableApp.ini")
                                  "../Data/ini/EmacsPortableApp.ini") (getenv "EPOTHER")))
@@ -222,8 +227,16 @@ EmacsPortableApp.exe launcher.
                                                             (concat usb-app-dir "../Data/src/")))))
             ,@(mapcar
                (lambda(x)
-                 `(,(replace-regexp-in-string "^~*\\(.*?\\)[/\\]*$" "\\1" (car x))
-                   . ,(expand-file-name (cdr x))))
+                 `(,(replace-regexp-in-string "^~*\\(.*?\\)[/\\]*$" "\\1" (format "%s" (car x)))
+                   . ,(if (not (string-match "^:" (if (listp (cdr x))
+                                                      (car (cdr x))
+                                                    (cdr x))))
+                          (expand-file-name (if (listp (cdr x))
+                                                      (car (cdr x))
+                                                    (cdr x)))
+                        (if (listp (cdr x))
+                                                      (car (cdr x))
+                                                    (cdr x)))))
                EmacsPortable-aliases)
             ,@(mapcar
                (lambda(x)
@@ -990,6 +1003,10 @@ Start the appropriate startup script
     (let ((start-dir (getenv "EPSTARTDIR")))
       (when start-dir
         (setq start-dir (expand-file-name (getenv "EPSTARTDIR")))
+        ;; Make sure that the ELPA directories are per each startup group.
+        (unless (file-exists-p (expand-file-name "elpa" (getenv "EPSTARTDIR")))
+          (make-directory (expand-file-name "elpa" (getenv "EPSTARTDIR")) t))
+        (setq package-user-dir (expand-file-name "elpa" (getenv "EPSTARTDIR")))
         (message "Using startup at %s" start-dir)
         (cond
          ((file-exists-p (expand-file-name ".emacs" start-dir))
@@ -1239,4 +1256,17 @@ This attempts to sync color options with the startup options in EmacsPortable.Ap
   
 #+END_SRC
 
+
+* Setup org-mode files
+** MathToWeb
+See [[http://orgmode.org/manual/Working-with-LaTeX-math-snippets.html#fn-1][Working with @LaTeX{} math snippets - The Org Manual]] for MathToWeb
+Explanation
+
+#+BEGIN_SRC emacs-lisp
+  (when (file-exists-p "~app/jar/mathtoweb.jar")
+    (setq org-latex-to-mathml-convert-command
+          "java -jar %j -unicode -force -df %o %I"
+          org-latex-to-mathml-jar-file
+          (expand-file-name "mathtoweb.jar" "~app/jar")))
+#+END_SRC
 

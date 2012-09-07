@@ -8,7 +8,6 @@ This sets up the Emacs Path and environment.
 #+BEGIN_SRC nsis
  Var usb
  Var usbs
- Var globalMD5
 #+END_SRC
 ** StrSlash
 #+BEGIN_SRC nsis
@@ -146,100 +145,33 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
   
 #+END_SRC
 
-** Load Cache
-#+BEGIN_SRC nsis
-  
-  Function LoadCache
-    Pop $0
-    EnumINI::SectionNames "$0"
-    Pop $R0
-    StrCmp $R0 "error" done_cache
-    loop_cache:
-      IntCmp $R0 "0" done_cache done_cache 0
-      Pop $R1
-      StrCmp $R1 "portable" next_cache
-      StrCmp $globalMD5 "" skip_md5
-      ReadIniStr $9 "$0" "$R1" "Drive"
-      Call AddPortable
-    skip_md5:
-      EnumINI::Section "$0" "$R1"
-      Pop $R2
-      StrCmp "$R2" "error" next_cache
-    loop_env:
-      IntCmp $R2 "0" next_cache next_cache 0
-      Pop $R3
-      ReadIniStr $R4 "$0" "$R1" "$R3"
-      ${If} $R3 == "PATH"
-        DetailPrint "Path Add: $R4"
-        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R4;$3").r2'
-      ${ElseIf} $R3 == "MANPATH"
-        DetailPrint "Man Add: $R4"
-        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("MANPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MANPATH", "$R4;$3").r2'
-      ${ElseIf} $R3 == "INFOPATH"
-        DetailPrint "Info Add: $R4"
-        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("INFOPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$R4;$3").r2'
-      ${ElseIf} $R3 == "DICPATH"
-        DetailPrint "DicPath Add: $R4"
-        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("DICPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("DICPATH", "$R4;$3").r2'
-      ${ElseIf} $R3 != "Drive"
-      ${AndIf} $R3 != "MD5"
-        DetailPrint "Env: $R3=$R4"
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R4").r2'
-      ${EndIf}
-    next_env:
-      IntOp $R2 $R2 - 1
-      Goto loop_env
-    next_cache:
-      IntOp $R0 $R0 - 1
-      Goto loop_cache
-    done_cache:
-      ClearErrors
-  FunctionEnd
-  !macro LoadCache CACHE
-    Push "${CACHE}"
-    Call LoadCache
-  !macroend
-  
-  !define LoadPortable `!insertmacro LoadCache "$EPEXE\Data\ini\$0-cache.ini"`
-  !define LoadExedir `!insertmacro LoadCache "$EPEXE\Data\ini\exedir-cache.ini"`
-  !define LoadLocal `!insertmacro LoadCache "$EPEXE\Data\ini\$0-cache.ini"`
-  
-#+END_SRC
-
 ** Get Drive Variables
 #+BEGIN_SRC nsis
+  Var globalMD5
   
   Function GetPortable
     ; $9    "drive letter"  (a:\ c:\ ...)
     ; $8    "drive type"    (FDD HDD ...)
     DetailPrint "Checking Drive $9 ($EPEXE\App\ini\paths.ini)"
-    System::Call 'Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i("$9",,${NSIS_MAX_STRLEN},.r0,,,,${NSIS_MAX_STRLEN})'
-    Exch $0
-    Pop $0
-    IntFmt $0 "%08X" $0
     StrCpy $globalMD5 ""
     ${GetMD5} "$9*.*" $R3
     StrCmp "$R3" "" 0 +3
     DetailPrint "Nothing On Drive."
     Goto done_portable
     DetailPrint "MD5: $R3"
-    ReadIniStr $R4 "$EPEXE\Data\ini\$0-cache.ini" "portable" "MD5"
+    ReadIniStr $R4 "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5"
     ${If} $R4 == "$R3"
-      ReadIniStr $R0 "$EPEXE\Data\ini\$0-cache.ini" "portable" "Drive"
+      ReadIniStr $R0 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
       ${If} "$R0" != "$9"
-        ${RIF} "$EPEXE\Data\ini\$0-cache.ini" "$R0" "$9"
+        ${RIF} "$EPEXE\Data\ini\portable-cache.ini" "$R0" "$9"
       ${EndIf}
       StrCpy $globalMD5 "1"
       StrCpy "$R8" "StopGetDrives"
       Goto done_portable
     ${EndIf}
-    DeleteIniSec "$EPEXE\Data\ini\$0-cache.ini" "portable"
-    WriteIniStr "$EPEXE\Data\ini\$0-cache.ini" "portable" "MD5" "$R3"
-    WriteIniStr "$EPEXE\Data\ini\$0-cache.ini" "portable" "Drive" "$9"
+    DeleteIniSec "$EPEXE\Data\ini\portable-cache.ini" "portable"
+    WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "MD5" "$R3"
+    WriteIniStr "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive" "$9"
     
     ## Now look for each portable Directory.
     StrCpy $R8 ""
@@ -260,7 +192,6 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       Goto loop_portable
       
     done_portable:
-      ${LoadPortable}
     search_local:
       ${If} $R8 == "StopGetDrives"
         Push $0
@@ -449,12 +380,78 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
     Call AddLocal
   
   FunctionEnd
-    
-  !insertmacro AddIt "portable" "$EPEXE\Data\ini\$0-cache.ini" "$EPEXE\App\ini\paths.ini"
+  
+  
+  !insertmacro AddIt "portable" "$EPEXE\Data\ini\portable-cache.ini" "$EPEXE\App\ini\paths.ini"
   !insertmacro AddIt "exedir" "$EPEXE\Data\ini\exedir-cache.ini" "$EPEXE\App\ini\paths.ini"
   !insertmacro AddIt "local" "$EPEXE\Data\ini\$0-cache.ini" "$EPEXE\App\ini\paths.ini"
   
 #+END_SRC
+
+** Load Cache
+#+BEGIN_SRC nsis
+  
+  Function LoadCache
+    Pop $0
+    EnumINI::SectionNames "$0"
+    Pop $R0
+    StrCmp $R0 "error" done_cache
+    loop_cache:
+      IntCmp $R0 "0" done_cache done_cache 0
+      Pop $R1
+      StrCmp $R1 "portable" next_cache
+      StrCmp $globalMD5 "" skip_md5
+      ReadIniStr $9 "$0" "$R1" "Drive"
+      Call AddPortable
+    skip_md5:
+      EnumINI::Section "$0" "$R1"
+      Pop $R2
+      StrCmp "$R2" "error" next_cache
+    loop_env:
+      IntCmp $R2 "0" next_cache next_cache 0
+      Pop $R3
+      ReadIniStr $R4 "$0" "$R1" "$R3"
+      ${If} $R3 == "PATH"
+        DetailPrint "Path Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R4;$3").r2'
+      ${ElseIf} $R3 == "MANPATH"
+        DetailPrint "Man Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("MANPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MANPATH", "$R4;$3").r2'
+      ${ElseIf} $R3 == "INFOPATH"
+        DetailPrint "Info Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("INFOPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$R4;$3").r2'
+      ${ElseIf} $R3 == "DICPATH"
+        DetailPrint "DicPath Add: $R4"
+        System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("DICPATH", .r3, ${NSIS_MAX_STRLEN}).r2'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("DICPATH", "$R4;$3").r2'
+      ${ElseIf} $R3 != "Drive"
+      ${AndIf} $R3 != "MD5"
+        DetailPrint "Env: $R3=$R4"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("$R3", "$R4").r2'
+      ${EndIf}
+    next_env:
+      IntOp $R2 $R2 - 1
+      Goto loop_env
+    next_cache:
+      IntOp $R0 $R0 - 1
+      Goto loop_cache
+    done_cache:
+      ClearErrors
+  FunctionEnd
+  !macro LoadCache CACHE
+    Push "${CACHE}"
+    Call LoadCache
+  !macroend
+  
+  !define LoadPortable `!insertmacro LoadCache "$EPEXE\Data\ini\portable-cache.ini"`
+  !define LoadExedir `!insertmacro LoadCache "$EPEXE\Data\ini\exedir-cache.ini"`
+  !define LoadLocal `!insertmacro LoadCache "$EPEXE\Data\ini\$0-cache.ini"`
+  
+#+END_SRC
+
 ** Get Registry Paths
 #+BEGIN_SRC nsis
   !macro _DirExists _a _b _t _f
@@ -598,6 +595,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       ${GetDrives} "FDD+HDD" "GetPortable"
       Call GetExedir
       Call GetLocaldir
+      ${LoadPortable}
       ${LoadExedir}
       ${GetComputerName} $0
       ${LoadLocal}
@@ -625,20 +623,8 @@ This converts USB:/ and EXEDIR:/ to the appropriate values
     StrCmp "$1" "USB:\" home_usb home_exe
     home_usb:
       StrCpy $R0 $R0 "" 5
-      ReadEnvStr $9 "EPDATA"
-      ClearErrors
-      ${If} $9 == ""
-        StrCpy $9 $EPEXE 3
-      ${Else}
-        StrCpy $9 $9 3
-      ${EndIf}
-      System::Call 'Kernel32::GetVolumeInformation(t,t,i,*i,*i,*i,t,i) i("$9",,${NSIS_MAX_STRLEN},.r9,,,,${NSIS_MAX_STRLEN})'
-      Exch $9
-      Pop $9
-      IntFmt $9 "%08X" $9
-      
-      IfFileExists "$EPEXE\Data\ini\$9-cache.ini" 0 not_found
-      ReadIniStr $R1 "$EPEXE\Data\ini\$9-cache.ini" "portable" "Drive"
+      IfFileExists "$EPEXE\Data\ini\portable-cache.ini" 0 not_found
+      ReadIniStr $R1 "$EPEXE\Data\ini\portable-cache.ini" "portable" "Drive"
       IfFileExists "$R1$R0" 0 not_found
       StrCpy "$usb" "$R1"
       StrCpy "$usbs" "$R1" -1

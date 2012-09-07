@@ -24,7 +24,7 @@ UninstallIcon "..\img\ico\trash_empty.ico"
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis
+#+BEGIN_SRC nsis 
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -1165,7 +1165,7 @@ From http://nsis.sourceforge.net/Explode
     ${EndIf}
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
     ClearErrors
-	Goto skip_font
+        Goto skip_font
     IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
     ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
     IfErrors skip_font
@@ -1308,7 +1308,12 @@ From http://nsis.sourceforge.net/Explode
         ${If} $0 == $cmdLineParams
           ${StrRep} $0 $cmdLineParams "-e " ""
           ${If} $0 == $cmdLineParams
-            StrCpy $R9 " -c"
+            ${StrRep} $0 $cmdLineParams "org-protocol:/" ""
+            ${If} $0 == $cmdLineParams
+              StrCpy $R9 " -c"
+            ${Else}
+              StrCpy $R9 "" ## org protocol, don't add -c.
+            ${EndIf}
           ${Else}
             ## An eval, don't use -c.
             StrCpy $R9 ""
@@ -1528,8 +1533,38 @@ From http://nsis.sourceforge.net/Explode
         ${EndIf}
         Goto end
       no_debug:
-        HideWindow
-        MessageBox MB_OK|MB_ICONSTOP "EmacsPortable.App already running, cannot debug the startup."
+        DetailPrint "Setup emacs options"
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION "EmacsPortable.App already running, Attach gdb?" IDYES attach_gdb IDNO end
+      attach_gdb:
+        ${SetEnv}
+        ${If} ${FileExists} "$msys\bin\gdb.exe"
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$msys").r0'
+          StrCpy $cmd "$msys\bin\gdb.exe"
+        ${ElseIf} ${FileExists} "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\PortableApps\CommonFiles\MinGW").r0'
+          StrCpy $cmd "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
+        ${ElseIf} ${FileExists} "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\Apps\CommonFiles\MinGW").r0'
+          StrCpy $cmd "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"
+        ${ElseIf} ${FileExists} "$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe"
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\LiberKey\MyApps\CommonFiles\MinGW").r0'
+          StrCpy $cmd "$usbs\LiberKey\MyApps\CommonFiles\MinGW\bin\gdb.exe"
+        ${ElseIf} ${FileExists} "$cygwin\bin\gdb.exe"
+          StrCpy $cmd "$cygwin\bin\gdb.exe"
+        ${Else}
+          MessageBox MB_OK "Cannot find gdb."
+          Goto end
+        ${EndIf}
+        ReadIniStr $0 "$TEMP\ep\ep-pid.ini" "pid" "$emacs_exe"
+        ReadIniStr $1 "$TEMP\ep\ep-pid.ini" "exec" "$emacs_exe"
+        StrCpy $cmd_args "--pid=$0"
+        ${If} ${FileExists} "$EXEDIR\App\gdbinit"
+        ${AndIf} $cmd  != "$cygwin\bin\gdb.exe"
+          StrCpy $cmd_args '$cmd_args --eval-command "source $EXEDIR\App\gdbinit"'
+        ${EndIf}
+        StrCpy $cmd_args '$cmd_args --eval-command "Continue" $1'
+        ${Execute} '"$cmd" $cmd_args' "$home" $R1
+        Pop $R0
         Goto end
       cant_sync:
         HideWindow

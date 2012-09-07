@@ -10,23 +10,26 @@ I want:
  - CRC check
  - Good compression
 #+BEGIN_SRC nsis
-CRCCheck On
-RequestExecutionLevel user
-; Best Compression
-SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Caption "Loading EmacsPortable.App"
-Subcaption 3 " "
-XPStyle on
-OutFile "..\..\..\App\eps\ep-assoc.exe"
-Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\ico\trash_empty.ico"
-!include "LogicLib.nsh"
-!define SHCNE_ASSOCCHANGED 0x08000000
-!define SHCNF_IDLIST 0
-var EPEXE 
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Caption "Loading EmacsPortable.App"
+  Subcaption 3 " "
+  XPStyle on
+  OutFile "..\..\..\App\eps\ep-assoc.exe"
+  Icon "..\img\ico\appicon.ico"
+  UninstallIcon "..\img\ico\trash_empty.ico"
+  !include "LogicLib.nsh"
+  !define SHCNE_ASSOCCHANGED 0x08000000
+  !define SHCNF_IDLIST 0
+  !define SHCNF_FLUSH        0x1000
+  var EPEXE
+  var UseLiberKey
+  var UseOrgProtocol 
 #+END_SRC
 
 ** User Interface
@@ -190,6 +193,46 @@ Function un.Explode
   Push $explArrCount
 FunctionEnd
 #+END_SRC
+** Get File Extension
+http://nsis.sourceforge.net/Get_extension_of_file
+#+BEGIN_SRC nsis
+  !define GetFileExt `!insertmacro GetFileExt "" `
+  !define UnGetFileExt `!insertmacro GetFileExt "un." `
+  !macro GetFileExt un EXT FILE
+    Push ${FILE}
+    Call ${un}GetFileExt
+    Pop ${EXT}
+  !macroend
+  !macro _GetFileExt un
+    Function ${un}GetFileExt
+      Exch $0 ; input string
+      Push $1
+      Push $2
+      StrCpy $1 0
+      loop:
+        IntOp $1 $1 - 1
+        StrCpy $2 $0 1 $1
+        StrCmp $2 "" empty
+        StrCmp $2 "\" empty
+        StrCmp $2 "." found
+        Goto loop
+      empty:
+        StrCpy $0 ""
+        goto exit
+      found:
+        IntOp $1 $1 + 1
+        StrCpy $0 $0 "" $1
+      exit:
+        Pop $2
+        Pop $1
+        Exch $0
+    FunctionEnd
+  !macroend
+  
+  !insertmacro _GetFileExt ""
+  !insertmacro _GetFileExt "un."
+#+END_SRC
+
 * Register/Unregister Associations
 Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.sourceforge.net/FileAssoc
 ** Register Associations
@@ -199,34 +242,53 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
     Pop $R8 ; Description
     StrCpy $R6 $R9 "" 1
     DetailPrint "$R9=$R8"
-    ReadRegStr $R7 HKCR $R9 ""  ; read current file association
-    StrCmp "$R7" "" NoBackup  
-    ;; Should we associate this as the main action?
-    ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "primary" "$R6"
-    ClearErrors
-    StrCmp "$R2" "1" 0 not_primary
-    DetailPrint "$R9 has an alernative association, overwriting"
-    WriteRegStr HKCR $R9 "ep_backup_val" "$R7"  ; backup current value
-    NoBackup:
-      DetailPrint "$R9 is a new association"
-      WriteRegStr HKCR $R9 "" "$R8"  ; set our file association
-      ReadRegStr $9 HKCR $R8 ""
-      StrCmp $9 "" 0 Skip
-      WriteRegStr HKCR "$R9" "" "$R8"
-      WriteRegStr HKCR "$R9\shell" "" "open"
-      WriteRegStr HKCR "$R9\DefaultIcon" "" "$EPEXE\App\document.ico"
-    Skip:
-      WriteRegStr HKCR "$R9\shell\open\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
-      WriteRegStr HKCR "$R9\shell\edit" "" "Edit $R8"
-      WriteRegStr HKCR "$R9\shell\edit\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
-      Goto end
-    not_primary:
-      DetailPrint "$R9 has an alernative association, Adding action"
-      WriteRegStr HKCR "$R9\shell\edit_emacs_portable_app" "" 'Edit $R8 (EmacsPortable.App)'
-      WriteRegStr HKCR "$R9\shell\edit_emacs_portable_app\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
-    end:
-      DetailPrint "$R9 should be registered to EmacsPortable.App"
+    ${If} $R8 != "Org-Protocol"
+      ${If} $UseLiberKey != "1"
+        ReadRegStr $R7 HKCR $R9 ""  ; read current file association
+        ClearErrors
+        ${If} $R7 != ""
+          ## This Key exists.
+          ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "primary" "$R6"
+          ClearErrors
+          ${If} $R2 == "1"
+            ## Should be a primary assocation.
+            DetailPrint "$R9 has an alernative association, overwriting"
+            WriteRegStr HKCR $R9 "ep_backup_val" "$R7"  ; backup current value
+          ${Else}
+            ## Should be added as secondary action.
+            DetailPrint "$R9 has an alernative association, Adding action"
+            WriteRegStr HKCR "$R9\shell\edit_emacs_portable_app" "" 'Edit $R8 (EmacsPortable.App)'
+            WriteRegStr HKCR "$R9\shell\edit_emacs_portable_app\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
+          ${EndIf}
+        ${Else}
+          ## This Key does not exit.  Add as primary.
+          DetailPrint "$R9 is a new association"
+          WriteRegStr HKCR $R9 "" "$R8"  ; set our file association
+          ReadRegStr $9 HKCR $R8 ""
+          ${If} $9 == ""
+            WriteRegStr HKCR "$R9" "" "$R8"
+            WriteRegStr HKCR "$R9\shell" "" "open"
+            WriteRegStr HKCR "$R9\DefaultIcon" "" "$EPEXE\App\document.ico"
+          ${EndIf}
+          WriteRegStr HKCR "$R9\shell\open\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
+          WriteRegStr HKCR "$R9\shell\edit" "" "Edit $R8"
+          WriteRegStr HKCR "$R9\shell\edit\command" "" '"$EPEXE\EmacsPortableApp.exe" "%1"'
+        ${EndIf}
+        DetailPrint "$R9 should be registered to EmacsPortable.App"
+        ClearErrors
+      ${EndIf}
+    ${EndIf}
+    ## Add org-protocol link association.
+    ${If} $UseOrgProtocol == "1"
+      ReadRegStr $R7 HKCR $R9 ""  ; read current file association
       ClearErrors
+      ${If} $R7 != ""
+        DetailPrint "Add org-link to $R9"
+        ## This Key exists, Add org-link
+        WriteRegStr HKCR "$R9\shell\orgstorelink" "" "Org Store &Link (org-protocol+wscript)"
+        WriteRegStr HKCR "$R9\shell\orgstorelink\command" "" "wscript.exe $\"$EPEXE\App\vbs\org-link.vbs$\" $\"%1$\""
+      ${EndIf}
+    ${EndIf}
   FunctionEnd
   
 #+END_SRC
@@ -235,25 +297,38 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
   Function un.RegisterExtension
     Pop $R9 ; Extension
     Pop $R8 ; Description
-    ReadRegStr $R7 HKCR '$R9\shell\edit_emacs_portable_app' ""
-    StrCmp $R7 "" 0 not_primary
     
-    ReadRegStr $R7 HKCR $R9 ""
-    StrCmp $R8 $R7 0 end ; Not created by EmacsPortable.App
-    ReadRegStr $R7 HKCR $R9 "ep_backup_val"
-    IfErrors +3
+    ReadRegStr $R7 HKCR '$R9\shell\orgstorelink' ""
     ClearErrors
-    StrCmp $R7 "" 0 restore
-    DeleteRegKey HKCR $R9
-    Goto end
-    restore:
-      WriteRegStr HKCR $R9 "" $R7
-      DeleteRegValue HKCR $R9 "ep_backup_val"
-      DeleteRegKey HKCR $R8
-    not_primary:
-      DeleteRegKey HKCR "$R9\shell\edit_emacs_portable_app"
-    end:
+    ${If} $R7 != ""
+      ## Org Link exists, delete
+      DeleteRegKey HKCR "$R9\shell\orgstorelink"
+    ${EndIf}
+    ${If} $R8 != "Org-Protocol" 
+      ReadRegStr $R7 HKCR '$R9\shell\edit_emacs_portable_app' ""
       ClearErrors
+      ${If} $R7 != ""
+        ## Not Primary
+        DeleteRegKey HKCR "$R9\shell\edit_emacs_portable_app"
+      ${Else}
+        ${If} $UseLiberKey != "1"
+          ReadRegStr $R7 HKCR $R9 ""
+          ${If} $R8 == $R7
+            ReadRegStr $R7 HKCR $R9 "ep_backup_val"
+            ${If} ${Errors}
+              ClearErrors
+              DeleteRegKey HKCR $R9
+            ${Else}
+              ## Restore Backup Key
+              WriteRegStr HKCR $R9 "" $R7
+              DeleteRegValue HKCR $R9 "ep_backup_val"
+              DeleteRegKey HKCR $R8
+            ${EndIf}
+          ${EndIf}
+        ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    ClearErrors
   FunctionEnd 
 #+END_SRC
 
@@ -266,24 +341,33 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
     GetFullPathName /SHORT $EPEXE "..\.."
     Goto +2
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-
-    ${IfNot} ${FileExists} "$EXEDIR\rm-ep-local.exe"
-      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
-      ClearErrors
-      StrCmp $R0 "1" extless
+    ClearErrors
+    ${IfNot} ${FileExists} $EPEXE\Data\ini\assoc.ini
+      SetOutPath $EPEXE\Data\ini
+      CopyFiles /SILENT $EPEXE\App\ini\assoc.ini $EPEXE\Data\ini\assoc.ini
     ${EndIf}
-
+    StrCpy $UseLiberKey "0"
+    ${IfNot} ${FileExists} "$EXEDIR\rm-ep-local.exe"
+      ReadIniStr $UseLiberKey "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+      ClearErrors
+    ${Else}
+      ## Already locally installed settings.
+      Goto end
+    ${EndIf}
+    ReadIniStr $UseOrgProtocol "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
+    ClearErrors
+    
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Assoc"
     ClearErrors
     StrCmp $R0 "1" 0 end
     ## Now Get Association information
-    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    EnumINI::Section "$EPEXE\Data\ini\assoc.ini" "assoc"
     Pop $R0
     StrCmp $R0 "error" done_assoc
     loop_assoc:
       IntCmp $R0 "0" done_assoc done_assoc 0
       Pop $R1
-      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "assoc" "$R1"
       ${Explode}  $0  "," "$R2"
       ${For} $1 1 $0
         Pop $2
@@ -304,13 +388,27 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
         Call RegisterExtension
         StrCpy $R9 "1"
       ${EndIf}
+      ## Now add Shell->New items from Data\ShellNew
+      FindFirst $0 $1 $EPEXE\Data\ShellNew\*.*
+      ${While} $1 != ""
+        ${If} $1 != "."
+        ${AndIf} $1 != ".."
+          ${GetFileExt} $2 $1
+          ${If} $2 != ""
+            StrCpy $2 ".$2"
+            ##WriteRegStr HKCR "$2\ShellNew" "NullFile" ""
+            WriteRegStr HKCR "$2\ShellNew" "FileName" "$EPEXE\Data\ShellNew\$1"
+          ${EndIf}
+        ${EndIf}
+        FindNext $0 $1
+      ${EndWhile}
       ${If} $R9 == "1"
         ${If} ${FileExists} "$EXEDIR\rm-ep-local.exe"
           writeUninstaller "$EXEDIR\rm-ep-assoc.exe"
         ${Else}
           writeUninstaller "$TEMP\ep\rm-ep-assoc.exe"
         ${EndIf}
-        System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
+        System::Call "shell32::SHChangeNotify(i,i,i,i) (${SHCNE_ASSOCCHANGED}, ${SHCNF_FLUSH}, 0, 0)"
       ${EndIf}
     end:
       ClearErrors      
@@ -337,17 +435,29 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
     ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
     StrCpy $R0 ""
     IfFileExists "$INSTDIR\rm-ep-local.exe" +2
-    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+    ReadIniStr $UseLiberKey "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
     ClearErrors
     
-    StrCmp $R0 "1" extless
-    EnumINI::Section "$EPEXE\App\ini\assoc.ini" "assoc"
+    ## Now add Shell->New items from Data\ShellNew
+    FindFirst $0 $1 $EPEXE\Data\ShellNew\*.*
+    ${While} $1 != ""
+      ${If} $1 != "."
+      ${AndIf} $1 != ".."
+        ${UnGetFileExt} $2 $1
+        ${If} $2 != ""
+          StrCpy $2 ".$2"
+          DeleteRegKey HKCR "$2\ShellNew" 
+        ${EndIf}
+      ${EndIf}
+      FindNext $0 $1
+    ${EndWhile}
+    EnumINI::Section "$EPEXE\Data\ini\assoc.ini" "assoc"
     Pop $R0
     StrCmp $R0 "error" done_assoc
     loop_assoc:
       IntCmp $R0 "0" done_assoc done_assoc 0
       Pop $R1
-      ReadINIStr $R2 "$EPEXE\App\ini\assoc.ini" "assoc" "$R1"
+      ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "assoc" "$R1"
       ${unExplode}  $0  "," "$R2"
       ${For} $1 1 $0
         Pop $2
@@ -372,6 +482,7 @@ Adapted from http://nsis.sourceforge.net/File_Association and http://nsis.source
       System::Call 'shell32.dll::SHChangeNotify(i, i, i, i) v (${SHCNE_ASSOCCHANGED}, ${SHCNF_IDLIST}, 0, 0)'
       ClearErrors
   SectionEnd
+  
 #+END_SRC
 
 

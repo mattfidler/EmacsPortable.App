@@ -40,45 +40,45 @@ EmacsPortable.App uses the loading bar to startup emacs.
 * Setup Registry
 ** Register Org-Protocol
 #+BEGIN_SRC nsis
-Function RegOrgProtocol
-  ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
-  StrCmp $R0 "1" 0 end
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
-    IfErrors look_for_acrobat 0
-    IfFileExists "$R0\Javascripts" 0 look_for_acrobat
-    StrCpy $R0 "$R0\Javascripts"
-    Goto install_org_protocol_js
-    
-  look_for_acrobat:
-    ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
-    IfErrors register_protocol 0
-    IfFileExists "$R0\Javascripts" 0 register_protocol
-    StrCpy $R0 "$R0\Javascripts"
-    
-  install_org_protocol_js:
-    IfFileExists "$EPEXE\App\js\org-capture.js" 0 +2
-    CopyFiles /SILENT "$EPEXE\App\js\org-capture.js" "$R0\org-capture.js"
-    IfFileExists "$EPEXE\App\js\org-remember.js" 0 +2
-    CopyFiles /SILENT "$EPEXE\App\js\org-remember.js" "$R0\org-remember.js"
-    IfFileExists "$EPEXE\App\js\org-store-link.js" 0 +2
-    CopyFiles /SILENT "$EPEXE\App\js\org-store-link.js" "$R0\org-store-link.js"
-  register_protocol:
-    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
-    ClearErrors
-    StrCmp $R0 "1" end
-    WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "" "URL:Org Protocol"
-    WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
-    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell" "" ""
-    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open" "" ""
-    WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open\command" "" "$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
-    
-    ## Add Right Click org-protocol actions.
-    WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink" "" "Org Store &Link (org-protocol+wscript)"
-    WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink\command" "" "wscript.exe $\"$EPEXE\App\vbs\org-link.vbs$\" $\"%1$\""
-  end:
-    # End
-FunctionEnd
-!define RegOrgProtocol "Call RegOrgProtocol"
+  Function RegOrgProtocol
+    ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
+    StrCmp $R0 "1" 0 end
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
+      IfErrors look_for_acrobat 0
+      IfFileExists "$R0\Javascripts" 0 look_for_acrobat
+      StrCpy $R0 "$R0\Javascripts"
+      Goto install_org_protocol_js
+      
+    look_for_acrobat:
+      ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe" "Path"
+      IfErrors register_protocol 0
+      IfFileExists "$R0\Javascripts" 0 register_protocol
+      StrCpy $R0 "$R0\Javascripts"
+      
+    install_org_protocol_js:
+      IfFileExists "$EPEXE\App\js\org-capture.js" 0 +2
+      CopyFiles /SILENT "$EPEXE\App\js\org-capture.js" "$R0\org-capture.js"
+      IfFileExists "$EPEXE\App\js\org-remember.js" 0 +2
+      CopyFiles /SILENT "$EPEXE\App\js\org-remember.js" "$R0\org-remember.js"
+      IfFileExists "$EPEXE\App\js\org-store-link.js" 0 +2
+      CopyFiles /SILENT "$EPEXE\App\js\org-store-link.js" "$R0\org-store-link.js"
+    register_protocol:
+      ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
+      ClearErrors
+      StrCmp $R0 "1" right_click
+      WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "" "URL:Org Protocol"
+      WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
+      WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell" "" ""
+      WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open" "" ""
+      WriteRegStr HKEY_CLASSES_ROOT "org-protocol\shell\open\command" "" "$\"$EPEXE\EmacsPortableApp.exe$\" $\"%1$\""
+    right_click:
+      ## Add Right Click org-protocol actions.
+      WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink" "" "Org Store &Link (org-protocol+wscript)"
+      WriteRegStr HKEY_CLASSES_ROOT "*\shell\orgstorelink\command" "" "wscript.exe $\"$EPEXE\App\vbs\org-link.vbs$\" $\"%1$\""
+    end:
+      # End
+  FunctionEnd
+  !define RegOrgProtocol "Call RegOrgProtocol"
 #+END_SRC
 
 ** Register Edit With
