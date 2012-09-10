@@ -145,3 +145,5 @@ Readme.org_archive
 /Other/source/nsi/emacsportablerun.nsi
 /Other/source/nsi/emacsLocal.nsi
 /Other/source/nsi/emacsSendTo.nsi
+/App/gtk/bin/libpng14-14.dll
+/App/gtk/manifest/libpng_1.4.3-1_win32.mft

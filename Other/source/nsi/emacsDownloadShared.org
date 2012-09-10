@@ -376,6 +376,7 @@ it alone when OTHER_SEC is read-only.
       IfFileExists "$TEMP\${WHAT}-bin.zip" 0 g32_exit
       
       nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\${WHAT}-bin.zip" -o"$TEMP\ep-gw32"'
+
       StrCpy $R0 "${WHAT}"
       StrCpy $R1 "bin"
       ${Locate} "$TEMP\ep-gw32" "" "AddGW"

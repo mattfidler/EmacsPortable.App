@@ -5,17 +5,17 @@
 ;; Author: Matthew L. Fidler
 ;; Maintainer: 
 ;; Created: Wed Aug 29 11:58:51 2012 (-0500)
-;; Version: 
-;; Last-Updated: Tue Sep  4 16:28:03 2012 (-0500)
+;; Version:
+;; Last-Updated: Mon Sep 10 11:17:47 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 109
+;;     Update #: 112
 ;; URL: 
 ;; Keywords: 
 ;; Compatibility: 
 ;; 
 ;; Features that might be required by this library:
 ;;
-;;   Required feature `build-nsi' was not provided.
+;;   None
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -311,6 +311,17 @@ FunctionEnd
       (insert bat))
     (start-process-shell-command "build-nsi" "*build-nsi*" bat)
     (set-process-sentinel (get-process "build-nsi") 'build-nsi-setinel)))
+
+;;;###autoload
+(defun build-nsi-check ()
+  "Checks the capabilities of the current emacs."
+  (interactive)
+  (message "Additional Support\nPNG: %s\nJPEG: %s\nTIFF: %s\nGIF: %s\nGnuTLS: %s"
+           (image-type-available-p 'png)
+           (image-type-available-p 'jpeg)
+           (image-type-available-p 'tiff)
+           (image-type-available-p 'gif)
+           (gnutls-available-p)))
 
 (provide 'build-nsi)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

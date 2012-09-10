@@ -76,6 +76,18 @@ OutFile "..\..\..\App\eps\download-unix.exe"
     !include "emacsdownload-gw32.nsi"
     !include "emacsdownload-ezwin.nsi"
     !insertmacro InsertAddEZW
+    SectionGroup "GTK Libraries" sec_gtk_libraries ; Collapsed
+      ; Description:
+      ; GTK Libraries -- Only libpng 1.4 is needed for later emacs releases
+      Section /o "Libpng 1.4" sec_libpng_1_4 ; Checked
+        ; Description:
+        ; Libpng 1.4 for Png image support
+        inetc::get "http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/libpng_1.4.3-1_win32.zip" "$TEMP\libpng.zip"
+        SetOutPath "$EPEXE\App\gtk"
+        nsExec::ExecToLog /OEM '"$EPEXE\App\7z\7z.exe" x "$TEMP\libpng.zip" -o"$EPEXE\App\gtk"'
+        Pop $0
+      SectionEnd ; sec_libpng_1_4
+    SectionGroupEnd ; sec_gtk_libraries
   SectionGroupEnd ; sec_add_unix_program
   
   SectionGroup "Remove Installed Unix Programs" sec_remove_installed_unix_programs ; Collapsed
@@ -83,6 +95,15 @@ OutFile "..\..\..\App\eps\download-unix.exe"
     ; Remove Installed Unix Programs
     !include "emacsdownload-rgw32.nsi"
     !include "emacsdownload-rezwin.nsi"
+    SectionGroup "Remove GTK Libraries" sec_remove_gtk_libraries ; Collapsed
+      ; Description:
+      ; Remove GTK Libraries
+      Section /o "Remove LibPng 1.4" sec_remove_libpng_1_4 ; Unchecked (/o)
+        ; Description:
+        ; Remove LibPng 1.4
+        RmDir /r "$EPEXE\App\gtk"      
+      SectionEnd ; sec_remove_libpng_1_4
+    SectionGroupEnd ; sec_remove_gtk_libraries
   SectionGroupEnd ; sec_remove_installed_unix_programss
   
   Section "-hidden section"
@@ -99,10 +120,19 @@ OutFile "..\..\..\App\eps\download-unix.exe"
   ;Description(s)
   LangString DESC_sec_add_unix_programs ${LANG_ENGLISH} "These are unix programs you can use to support EmacsPortable.App"
   LangString DESC_sec_remove_installed_unix_programs ${LANG_ENGLISH} "Remove Installed Unix Programs"
+  LangString DESC_sec_gtk_libraries ${LANG_ENGLISH} "GTK Libraries -- Only libpng 1.4 is needed for later emacs releases"
+  LangString DESC_sec_libpng_1_4 ${LANG_ENGLISH} "Libpng 1.4 for Png image support"
+  LangString DESC_sec_remove_gtk_libraries ${LANG_ENGLISH} "Remove GTK Libraries"
+  LangString DESC_sec_remove_libpng_1_4 ${LANG_ENGLISH} "Remove LibPng 1.4"
   
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_libpng_1_4} $(DESC_sec_remove_libpng_1_4)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_gtk_libraries} $(DESC_sec_remove_gtk_libraries)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_remove_installed_unix_programs} $(DESC_sec_remove_installed_unix_programs)
     !insertmacro MUI_DESCRIPTION_TEXT ${sec_add_unix_programs} $(DESC_sec_add_unix_programs)
+    ;--------------------------------
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_libpng_1_4} $(DESC_sec_libpng_1_4)
+    !insertmacro MUI_DESCRIPTION_TEXT ${sec_gtk_libraries} $(DESC_sec_gtk_libraries)
     
     ${GW32_DESC}
     ${GW32E_DESC}
@@ -115,25 +145,39 @@ OutFile "..\..\..\App\eps\download-unix.exe"
 * Functions
 ** Initialization
 #+BEGIN_SRC nsis
-  Function .onInit
-    IfFileExists "$EXEDIR\..\..\EmacsOptions.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
-    Goto found_epexe
-    
-    IfFileExists "$EXEDIR\..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
-    Goto found_epexe
-    
-    
-    ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
-    found_epexe:
+    Function .onInit
+      IfFileExists "$EXEDIR\..\..\EmacsOptions.exe" 0 +3
+      GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
+      Goto found_epexe
       
-      StrCpy $INSTDIR $EPEXE
-      SetOutPath "$TEMP\ep"
-      Delete "$TEMP\ep\unix-download.ini"
-      ${G32_INI}
-      ${EZWIN_INI}
-      ${RREZWIN_INI}
-      ${RG32_INI}
-  FunctionEnd
+      IfFileExists "$EXEDIR\..\..\EmacsPortableApp.exe" 0 +3
+      GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
+      Goto found_epexe
+      
+      
+      ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"
+      found_epexe:
+        
+        StrCpy $INSTDIR $EPEXE
+        SetOutPath "$TEMP\ep"
+        Delete "$TEMP\ep\unix-download.ini"
+        
+        ${If} ${FileExists} "$EPEXE\App\gtk\bin\libpng14-14.dll"
+          SectionGetFlags ${sec_libpng_1_4} $0
+          IntOp $0 ${SF_RO} | $0
+          SectionSetFlags ${sec_libpng_1_4} $0
+          SectionGetText ${sec_libpng_1_4} $0
+          StrCpy $0 "$0 (Installed)"
+          SectionSetText ${sec_libpng_1_4} $0
+        ${Else}
+          SectionSetText ${sec_remove_libpng_1_4} ""
+          SectionSetFlags ${sec_libpng_1_4} ${SF_SELECTED}
+        ${EndIf}
+        
+        ${G32_INI}
+        ${EZWIN_INI}
+        ${RREZWIN_INI}
+        ${RG32_INI}
+    FunctionEnd
+    
 #+END_SRC
