@@ -2478,6 +2478,10 @@ FunctionEnd
               WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
                   "Version" "$download_emacs_version"
             ${EndIf}
+            ${If} ${FileExists} "$EXEDIR\App\emacs-$download_emacs_version\MacOS\Emacs"
+              WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
+                  "MacVersion" "$download_emacs_version"
+            ${EndIf}
   
             FindProcDLL::FindProc "EmacsPortableServer.exe"
   
