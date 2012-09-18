@@ -212,7 +212,7 @@ FunctionEnd
          (insert (format "File \"%s\"\n"
                          (replace-regexp-in-string "/" "\\" x t t))))
        (remove-if (lambda(x)
-                    (string-match "EmacsPortableApp-" x))
+                    (string-match "\\(EmacsPortableApp-\\|EmacsInstall\\)" x))
                   (directory-files (expand-file-name "~ep/") t ".*[.]exe")))
       (insert (format "File \"%s\*.html\"\n" tmp))
       (insert (format "File \"%s\*.org\"" tmp))
