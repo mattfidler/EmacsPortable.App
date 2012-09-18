@@ -25,8 +25,7 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 #+BEGIN_SRC emacs-lisp
   (when (getenv "EPSTART")
     (setenv "EPSTART" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTART")))
-    (setenv "EPSTARTDIR" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTARTDIR")))
-    )
+    (setenv "EPSTARTDIR" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTARTDIR"))))
   
   (let ((epi (expand-file-name (if (getenv "EPDATA")
                                    (concat (getenv "EPDATA") "/ini/EmacsPortableApp.ini")
@@ -232,11 +231,11 @@ EmacsPortableApp.exe launcher.
                                                       (car (cdr x))
                                                     (cdr x))))
                           (expand-file-name (if (listp (cdr x))
-                                                      (car (cdr x))
-                                                    (cdr x)))
+                                                (car (cdr x))
+                                              (cdr x)))
                         (if (listp (cdr x))
-                                                      (car (cdr x))
-                                                    (cdr x)))))
+                            (car (cdr x))
+                          (cdr x)))))
                EmacsPortable-aliases)
             ,@(mapcar
                (lambda(x)
@@ -300,7 +299,13 @@ EmacsPortableApp.exe launcher.
                              ,(expand-file-name x "~/.emacs.d")))))
      (remove-if
       (lambda(x)
-        (or (string-match "^[.]+$" x)
+        (or (string-match (format "^%s$"
+                                  (regexp-opt
+                                   '("eshell"
+                                     "url"
+                                     "var"
+                                     "."
+                                     ".." ) t)) x)
             (not (file-directory-p (expand-file-name x "~/.emacs.d")))))
       (directory-files (expand-file-name "~/.emacs.d"))))
     
@@ -365,7 +370,6 @@ EmacsPortableApp.exe launcher.
   (eval-after-load 'package (ep-rebuild-aliases))  
   
 #+end_src
-**** TODO Add Custom abbreviations
 *** Recent Files
 Recent files are saved to the =Other/saves/= directory.  Additionally,
 the saves are based on the computer name so that system idiosyncrasies
@@ -958,7 +962,7 @@ the implementation
 #+END_SRC
 * Fix Proxy settings for various programs
 #+BEGIN_SRC emacs-lisp
-  (defun refresh-proxy (&optional process event)
+  (defun refresh-proxy (&optional process event sync)
     "Refreshes proxy settings"
     (interactive)
     (let ((el-proxy (expand-file-name (concat usb-app-dir "../App/eps/ep-proxy.exe")))
@@ -966,20 +970,26 @@ the implementation
           (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el")))
           (proc process))
       (when process
-        (message "Proxy settings were retrieved."))
+        (message "Proxy settings were retrieved (%s)." event))
       (if (file-exists-p proxy)
           (progn
             (load-file proxy)
             (delete-file proxy))
         (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy)
                    (not proc))
-          (message "Starting to lookup proxy information")
-          (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
-                                    el-proxy))
-          (set-process-sentinel proc 'refresh-proxy)
+          (message "Starting to lookup proxy information (%s)" el-proxy)
+          (if (not sync)
+              (progn
+                (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
+                                          el-proxy))
+                (set-process-sentinel proc 'refresh-proxy))
+            (shell-command-to-string el-proxy))
+          
           (when (file-exists-p proxy)
             (load-file proxy)
-            (delete-file proxy))))
+            (delete-file proxy)
+            (message "Proxy settings were retrieved.")
+            (setq process t))))
       ;; Setup Git
       (if (and process
                (executable-find "git")
@@ -990,9 +1000,33 @@ the implementation
         (if (and process
                  (executable-find "git"))
             (shell-command-to-string (concat "git config --global --unset http.proxy"))))))
-  (refresh-proxy)
+  (refresh-proxy nil nil t)
   
 #+END_SRC
+* Fix saving settings for various computers
+When using EmacsPortable.App in Windows & MacOS, a single =~/.ido.last=
+caching mechanism does not work.  The windows file history causes the
+Mac version to choke and not startup.  Strangely UNIX-based
+file systems do not understand the =c:/= caching.  Therefore, I am
+going to change the =~/.ido.last= to
+=Data/saves/ido-last-system-name= that way there is an ido-completion
+for each system that EmacsPortable runs on.  This is true for many
+save files.
+
+#+BEGIN_SRC emacs-lisp
+  (setq desktop-dirname (concat usb-site-lisp-dir "../Data/saves/desktop-"
+                                system-name)
+        save-place-file (concat usb-site-lisp-dir "../Data/saves/places-"
+                                system-name)
+        ido-save-directory-list-file (concat usb-site-lisp-dir
+                                             "../Data/saves/ido-last-" system-name)
+        bookmark-default-file (concat usb-site-lisp-dir "../Data/saves/emacs-"
+                                      system-name ".bmk"))
+  (when (not (file-exists-p desktop-dirname))
+    (make-directory desktop-dirname t))
+#+END_SRC
+
+
 * Start a shared startup-script, if present.
 Start the appropriate startup script
 #+BEGIN_SRC emacs-lisp

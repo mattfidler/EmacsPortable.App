@@ -592,14 +592,19 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
 #+BEGIN_SRC nsis
   !macro SetEnv
     ${If} $usb == ""
-      ${GetDrives} "FDD+HDD" "GetPortable"
-      Call GetExedir
-      Call GetLocaldir
-      ${LoadPortable}
-      ${LoadExedir}
-      ${GetComputerName} $0
-      ${LoadLocal}
-      Call SetupReg
+      ReadEnvStr $0 "EPENVSETUP"
+      ${If} ${Errors}
+        ClearErrors
+        ${GetDrives} "FDD+HDD" "GetPortable"
+        Call GetExedir
+        Call GetLocaldir
+        ${LoadPortable}
+        ${LoadExedir}
+        ${GetComputerName} $0
+        ${LoadLocal}
+        Call SetupReg
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPENVSETUP", "1").r0'
+      ${EndIf}
     ${EndIf}
   !macroend
   !define SetEnv `!insertmacro SetEnv`

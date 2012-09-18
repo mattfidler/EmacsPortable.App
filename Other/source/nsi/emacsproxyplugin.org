@@ -35,7 +35,7 @@ I want:
 #+END_SRC
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
-#+BEGIN_SRC nsis
+#+BEGIN_SRC nsis 
   AutoCloseWindow true
   ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
 #+END_SRC
@@ -159,8 +159,8 @@ EmacsPortable.App uses the loading bar to startup emacs.
 #+BEGIN_SRC nsis
   Section "Main" sec_main
     HideWindow
-    IfFileExists "..\..\EmacsPortableApp.exe" 0 +3
-    GetFullPathName /SHORT $EPEXE "..\.."
+    IfFileExists "$EXEDIR\..\..\EmacsPortableApp.exe" 0 +3
+    GetFullPathName /SHORT $EPEXE "$EXEDIR\..\.."
     Goto ep_set
     IfFileExists "$EXEDIR\ep.ini" 0 +3
     ReadINIStr $EPEXE "$EXEDIR\ep.ini" "EmacsPortableApp" "EXEDIR"

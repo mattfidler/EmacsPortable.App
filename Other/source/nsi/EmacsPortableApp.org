@@ -207,6 +207,7 @@ FunctionEnd
       CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version$epstart.exe"
       Goto end
     not_found:
+
       MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
       ExecWait "$EXEDIR\EmacsOptions.exe"
       ExecWait "$EXEDIR\EmacsPortableApp.exe"

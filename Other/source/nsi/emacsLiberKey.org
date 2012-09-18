@@ -206,18 +206,20 @@ This registers EmacsPortable.App file-type associations with liberkey.
     loop_assoc:
       IntCmp $R0 "0" done_assoc done_assoc 0
       Pop $R1
-      ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "assoc" "$R1"
-      ${Explode}  $9  "," "$R2"
-      ${For} $8 1 $9
-        Pop $7
-        ${xml::RootElement} $0 $1
-        ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]' $0
-        DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"] $0'
-        StrCmp "$0" "-1" +3
-        Call FoundExt
-        Goto +2
-        Call MissingExt
-      ${Next}
+      ${If} $R1 != "Org-Protocol"
+        ReadINIStr $R2 "$EPEXE\Data\ini\assoc.ini" "assoc" "$R1"
+        ${Explode}  $9  "," "$R2"
+        ${For} $8 1 $9
+          Pop $7
+          ${xml::RootElement} $0 $1
+          ${xml::XPathNode} '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"]' $0
+          DetailPrint '/KeyFileAssoc/AppsAssoc/FileType[@ext="$7"] $0'
+          StrCmp "$0" "-1" +3
+          Call FoundExt
+          Goto +2
+          Call MissingExt
+        ${Next}
+      ${EndIf}
       IntOp $R0 $R0 - 1
       Goto loop_assoc
     done_assoc:

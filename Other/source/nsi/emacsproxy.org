@@ -85,6 +85,7 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     Pop $9
     Pop $8
     Pop $7
+    DetailPrint "Setup Proxy ($7)"
     Call SetupSerial
     ClearErrors
     StrCpy $PROXY_IDE ""
