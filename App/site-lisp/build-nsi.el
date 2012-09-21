@@ -11,7 +11,7 @@
 ;;     Update #: 112
 ;; URL: 
 ;; Keywords: 
-;; Compatibility: 
+;; Compatibility:
 ;; 
 ;; Features that might be required by this library:
 ;;
@@ -57,8 +57,9 @@
   (let (changed-out
         out2
         lst)
-    (insert (format "\nSetOutPath \"%s\"" out-path))
-    (message "Constructing %s" out-path)
+    (unless (string-match ";" out-path)
+      (insert (format "\nSetOutPath \"%s\"" out-path))
+      (message "Constructing %s" out-path))
     (when file-list
       (mapc 
        (lambda(file)
@@ -76,7 +77,7 @@
              (insert (format "\nSetOutPath \"%s\"" out-path))
              (setq changed-out nil))
            (insert (format "\nFile \"%s\""
-                             (replace-regexp-in-string "/" "\\\\" file))))))
+                           (replace-regexp-in-string "/" "\\\\" file))))))
        file-list))
     (symbol-value 'ret)))
 
@@ -122,6 +123,7 @@ AutoCloseWindow true
 !include \"FileFunc.nsh\"
 
 !include \"MUI2.nsh\"
+
 Name \"EmacsPortable.App\"
 BrandingText \"EmacsPortable.App\"
 
@@ -130,6 +132,7 @@ OutFile \"\"
 !define MUI_HEADERIMAGE
 
 !define MUI_HEADERIMAGE_BITMAP \"..\\img\\headerimage.bmp\" ; 150x57 pixels
+!define MUI_HEADERIMAGE_BITMAP_NOSTRETCH
 !define MUI_HEADERIMAGE_UNBITMAP \"..\\img\\headerimage.bmp\" ; 150x57 pixels
 
 !define MUI_WELCOMEFINISHPAGE_BITMAP \"..\\img\\welcome.bmp\" ;164x314 pixels
@@ -137,11 +140,13 @@ OutFile \"\"
 
 !define MUI_ABORTWARNING
 !define MUI_UNABORTWARNING
+
 !define MUI_PAGE_HEADER_TEXT \"EmacsPortable.app\"
 !define MUI_PAGE_HEADER_SUBTEXT \"Emacs on the Go\"
 
 !define MUI_COMPONENTSPAGE_SMALLDESC
 !define MUI_HEADERIMAGE_RIGHT
+
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE \"..\\gpl-3.0.rtf\"
 !insertmacro MUI_PAGE_DIRECTORY
@@ -150,8 +155,8 @@ OutFile \"\"
 ;MUI_PAGE_STARTMENU pageid variable
 !insertmacro MUI_PAGE_INSTFILES
 
-
 !insertmacro MUI_LANGUAGE \"English\"
+
 Var PA
 Var PG
 Function GetDriveVars
