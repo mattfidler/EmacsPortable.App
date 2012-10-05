@@ -195,6 +195,12 @@ FunctionEnd
 ** Setup Emacs EXE
 #+BEGIN_SRC nsis
   Function SetupEmacsExe
+    ${If} $epstart == "-"
+      StrCpy $epstart ""
+    ${EndIf}
+    ${If} $option_q != ""
+      StrCpy $epstart "-q"
+    ${EndIf}
     StrCmp "" $option_dos setupwin setupdos
     setupdos:
       IfFileExists "$emacs_dir\emacs-$option_version$epstart-dos.exe" end 
@@ -207,7 +213,7 @@ FunctionEnd
       CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version$epstart.exe"
       Goto end
     not_found:
-
+  
       MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
       ExecWait "$EXEDIR\EmacsOptions.exe"
       ExecWait "$EXEDIR\EmacsPortableApp.exe"

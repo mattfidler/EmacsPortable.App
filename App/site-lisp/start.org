@@ -1304,6 +1304,32 @@ Explanation
           (expand-file-name "mathtoweb.jar" "~app/jar")))
 #+END_SRC
 
+** PlantUML
+To use PlantUML in org mode the setup is detailed at the website:
+[[http://eschulte.me/babel-dev/DONE-integrate-plantuml-support.html][Org-babel-dev: DONE integrate plantuml support]].
+
+If the jar is found in =~app/jar/plantuml.jar= and graphviz portable
+is installed, you may set the required variables below:
+#+BEGIN_SRC emacs-lisp
+  (when (file-exists-p "~app/jar/plantuml.jar")
+    (setq org-plantuml-jar-path
+          (expand-file-name "~app/jar/plantuml.jar"))
+    (setq plantuml-jar-path
+          (expand-file-name "~app/jar/plantuml.jar")))
+  
+#+END_SRC
+
+Note that you will have to add the following to org-mode languages:
+
+#+BEGIN_SRC emacs-lisp :tangle no
+;; active Org-babel languages
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '(;; other Babel languages
+   (plantuml . t)))
+#+END_SRC
+
+
 * Setup EmacsPortable build/update functions
 These functions allow updating/building of EmacsPortable.App
 distributions.
