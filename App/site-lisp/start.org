@@ -1340,3 +1340,15 @@ distributions.
   
 #+END_SRC
 
+
+* Setup Yasnippet information
+ This sets up the yansippets located under =~data/snippets=
+ #+BEGIN_SRC emacs-lisp
+   (when (not (file-exists-p (expand-file-name "~data/snippets")))
+     (make-directory (expand-file-name "~data/snippets")))
+   
+   (if (fboundp 'yas-load-directory)
+       (yas-load-directory  (expand-file-name "~data/snippets"))
+     (when (fboundp 'yas/load-directory)
+       (yas/load-directory  (expand-file-name "~data/snippets"))))
+ #+END_SRC
