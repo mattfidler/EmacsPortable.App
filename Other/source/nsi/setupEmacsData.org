@@ -60,6 +60,6 @@ This sets up Emacs Data Directory according to PAF specifications.
     CreateDirectory "${DIR}\Data\lisp\src"
   
   !macroend
-  !define setupData '!insertmacro "_setupData" $EXEDIR'
+  !define setupData '!insertmacro "_setupData" $EXEDIR\..\..'
   !define setupInstallData '!insertmacro "_setupData" $INSTDIR'
 #+END_SRC

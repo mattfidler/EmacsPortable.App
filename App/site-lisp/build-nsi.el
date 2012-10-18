@@ -49,7 +49,7 @@
 ;;
 ;;; Code:
 
-(defvar ep-ver 0.01
+(defvar ep-ver 0.02
   "Version for EmacsPortable.")
 
 (defun build-nsi-file (file-list out-path &optional exclude-reg)

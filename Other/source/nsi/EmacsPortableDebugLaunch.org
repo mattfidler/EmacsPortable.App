@@ -1,0 +1,10 @@
+#+title: Debug Launcher
+#+author: Matthew L. Fidler
+#+PROPERTY: tangle EmacsPortableDebugLaunch.nsi
+* Introduction
+This is a way to Launch EmacsPortableApp via the debugger.s
+* Load it
+#+BEGIN_SRC nsis
+!define __EP_DEBUG__
+!include "EmacsPortableApp.nsi"
+#+END_SRC

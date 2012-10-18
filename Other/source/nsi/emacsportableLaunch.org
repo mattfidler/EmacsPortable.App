@@ -1,0 +1,35 @@
+#+title: Launch EmacsPortable.App
+#+author: Matthew L. Fidler
+#+PROPERTY: tangle emacsportableLaunch.nsi
+* Introduction
+Select Emacs Portable App based on whether the debug launcher is
+selected.
+* Launcher
+#+BEGIN_SRC nsis
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Icon "..\img\ico\appicon.ico"
+  OutFile "..\..\..\EmacsPortableApp.exe"
+  
+  CRCCheck On
+  WindowIcon Off
+  SilentInstall Silent
+  AutoCloseWindow True
+  RequestExecutionLevel user
+  !include "FileFunc.nsh"
+  !include "LogicLib.nsh"
+  
+  Section
+    Var /GLOBAL cmdLineParams
+    ${GetParameters} $cmdLineParams
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "DebugLaunch"
+    ClearErrors
+    ${If} $R0 == "1"
+      Exec '"$EXEDIR\App\eps\epl.exe" $cmdLineParams'
+    ${Else}
+      Exec '"$EXEDIR\App\eps\ep.exe" $cmdLineParams'
+    ${EndIf}
+  SectionEnd
+#+END_SRC

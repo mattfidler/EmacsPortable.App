@@ -28,7 +28,7 @@ to be run, with different startup options.
 * Download
 ** Download for Emacs 24
 The following downloads are available:
-- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.2-ep0.01.exe][Emacs 24.2]]
+- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.2-ep0.02.exe][Emacs 24.2]]
 ** Using Pre-releases
 Under windows, you can do a net-install by using EmacsOptions.  This
 net install can be performed in two ways:

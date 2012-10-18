@@ -7,26 +7,33 @@ I want:
  - user level execution
  - CRC check
 #+BEGIN_SRC nsis
-CRCCheck On
-RequestExecutionLevel user
-; Best Compression
-SetCompress Auto
-SetCompressor /SOLID lzma
-SetCompressorDictSize 32
-SetDatablockOptimize On
-Caption "Loading EmacsPortable.App"
-Subcaption 3 " "
-XPStyle on
-OutFile "..\..\..\EmacsPortableApp.exe"
-Icon "..\img\ico\appicon.ico"
-UninstallIcon "..\img\ico\trash_empty.ico"
+  CRCCheck On
+  RequestExecutionLevel user
+  ; Best Compression
+  SetCompress Auto
+  SetCompressor /SOLID lzma
+  SetCompressorDictSize 32
+  SetDatablockOptimize On
+  Caption "Loading EmacsPortable.App"
+  Subcaption 3 " "
+  XPStyle on
+  !ifdef __EP_DEBUG__
+    OutFile "..\..\..\App\eps\epl.exe"
+    Icon "..\img\ico\bug.ico"
+    !else 
+    OutFile "..\..\..\App\eps\ep.exe"
+    Icon "..\img\ico\appicon.ico"
+  !endif
+  UninstallIcon "..\img\ico\trash_empty.ico"
 #+END_SRC
 
 ** User Interface
 EmacsPortable.App uses the loading bar to startup emacs.
 #+BEGIN_SRC nsis 
-  AutoCloseWindow true
-  ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+  !ifndef __EP_DEBUG__
+    AutoCloseWindow true
+    ChangeUI all "${NSISDIR}\Contrib\UIs\LoadingBar_Icon.exe"
+  !endif
 #+END_SRC
 
 ** Variables
@@ -215,8 +222,8 @@ FunctionEnd
     not_found:
   
       MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
-      ExecWait "$EXEDIR\EmacsOptions.exe"
-      ExecWait "$EXEDIR\EmacsPortableApp.exe"
+      ExecWait "$EXEDIR\..\..\EmacsOptions.exe"
+      ExecWait "$EXEDIR\..\..\EmacsPortableApp.exe"
       Abort
     end:
       #
@@ -535,7 +542,7 @@ From http://nsis.sourceforge.net/Explode
     StrCpy $option_dos ""
     StrCpy $option_q ""
     StrCpy $option_version "24.1"
-    FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+    FindFirst $0 $1 $EXEDIR\..\emacs-*.*
     ${While} $1 != ""
       StrCpy $option_version $1 "" 6
 	  FindNext $0 $1 
@@ -565,27 +572,27 @@ From http://nsis.sourceforge.net/Explode
     
     FindProcDLL::FindProc "emacs-$option_version-$epstart.exe"
     StrCmp $R0 "1" already_running
-    FindFirst $0 $1 "$EXEDIR\App\emacs-*"
+    FindFirst $0 $1 "$EXEDIR\..\emacs-*"
     StrCpy $2  ""
     StrCpy $3 ""
     loop_find_running:
       StrCmp "$1" "" not_running 0
       StrCpy $1 $1 "" 6
       ${If} $2 != ""
-      ${AndIfNot} ${FileExists} "$EXEDIR\EmacsPortableApp-$2.exe"
-        CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$2.exe"
+      ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
+        CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
         StrCpy $3 "1"
       ${EndIf}
       ${If} $3 != ""
-      ${AndIfNot} ${FileExists} "$EXEDIR\EmacsPortableApp-$1.exe"
-        CopyFiles /SILENT "$EXEDIR\App\eps\ver-shortcut.exe" "$EXEDIR\EmacsPortableApp-$1.exe"
+      ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
+        CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
       ${EndIf}
       FindProcDLL::FindProc "emacs-$1.exe"
       ${If} $R0 == "1"
         StrCpy $option_version $1
         StrCpy $epstart ""
       ${Else}
-        FindFirst $3 $4 $EXEDIR\App\emacs-*.*
+        FindFirst $3 $4 $EXEDIR\..\emacs-*.*
         ${While} $4 != ""
           ${If} $4 != "."
           ${AndIf} $4 != ".."
@@ -672,9 +679,9 @@ From http://nsis.sourceforge.net/Explode
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", ).r0'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", ).r0'
       ${Else}
-        ${If} ${FileExists} "$EXEDIR\Data\start\$epstart\*.*"
+        ${If} ${FileExists} "$EXEDIR\..\..\Data\start\$epstart\*.*"
           System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", "$epstart").r0'
-          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", "$EXEDIR\Data\start\$epstart").r0'
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", "$EXEDIR\..\..\Data\start\$epstart").r0'
           StrCpy $epstart "-$epstart"
         ${ElseIf} ${FileExists} "$epdata\start\$epstart\*.*"
           System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTART", "$epstart").r0'
@@ -685,6 +692,10 @@ From http://nsis.sourceforge.net/Explode
           System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPSTARTDIR", ).r0'
           StrCpy $epstart ""
         ${EndIf}
+      ${EndIf}
+  
+      ${If} $epstart == "-"
+        StrCpy $epstart ""
       ${EndIf}
       
       ${GetOptions} $cmdLineParams '/VERSION=' $R0
@@ -701,12 +712,12 @@ From http://nsis.sourceforge.net/Explode
     read_cmd_line_ver:
       ClearErrors
       StrCpy $emacs_exe "emacs-$option_version$epstart.exe"
-      IfFileExists "$EXEDIR\App\emacs-$option_version\lisp" emacs_ver_done
+      IfFileExists "$EXEDIR\..\emacs-$option_version\lisp" emacs_ver_done
       
-      IfFileExists "$EXEDIR\EmacsPortableApp-$option_version.exe" 0 +2
-      Delete "$EXEDIR\EmacsPortableApp-$option_version.exe"
+      IfFileExists "$EXEDIR\..\..\EmacsPortableApp-$option_version.exe" 0 +2
+      Delete "$EXEDIR\..\..\EmacsPortableApp-$option_version.exe"
       
-      FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+      FindFirst $0 $1 $EXEDIR\..\emacs-*.*
     loop_ver:
       StrCmp $1 "" done_ver
       StrCpy $1 $1 "" 6
@@ -891,12 +902,13 @@ From http://nsis.sourceforge.net/Explode
   Function GetHomePath
     Var /GLOBAL OHOME
     System::Call 'Kernel32::GetEnvironmentVariable(t, t, i) i("HOME", .r0, ${NSIS_MAX_STRLEN}).r1'
-    StrCpy $OHOME $0
+    StrCpy $OHOME $0            #
     
     ${ReadINIStrWithDefault} $option_home $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Home" "EXEDIR:\Data\Home"
     ${StrSlash} "$option_home" "/"  
     StrCpy $option_home_usb ""
     StrCpy $option_home $R0
+    
     
     ## Make sure doesn't end with /
     StrCpy $R0 $option_home "" -1
@@ -916,9 +928,9 @@ From http://nsis.sourceforge.net/Explode
       StrCpy "$R0" $option_home 4
       ${If} $R0 == "Data"
         StrCpy $option_home $option_home "" 4
-        StrCpy $home "$epdata\$option_home"
+        GetFullPathName /SHORT $home "$epdata\$option_home"
       ${Else}
-        StrCpy $home "$EXEDIR\$option_home"
+        GetFullPathName /SHORT $home "$EXEDIR\..\..\$option_home"
       ${EndIf}
       Goto end
     home_exists:
@@ -991,11 +1003,11 @@ From http://nsis.sourceforge.net/Explode
 ** Setup Emacs Specific Environment Variables
 #+BEGIN_SRC nsis
   Function SetupDirs
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\App\emacs-$option_version\etc").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\App\emacs-$option_version\etc").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\App\site-lisp;$EXEDIR\App\emacs-$option_version\lisp").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\App\emacs-$option_version\info").r0'
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\Other\").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs-$option_version\etc").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs-$option_version\etc").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\lisp").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\info").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\..\..\Other\").r0'
   FunctionEnd
   !define SetupDirs "Call SetupDirs"
 #+END_SRC
@@ -1004,20 +1016,20 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   !define dllcp `!insertmacro _dllcp`
   !macro _dllcp FILENAME FILETO
-    DetailPrint "$EXEDIR\App\${FILENAME} -> $emacs_dir\${FILETO}"
+    DetailPrint "$EXEDIR\..\${FILENAME} -> $emacs_dir\${FILETO}"
     ${IfNot} ${FileExists} "$emacs_dir\${FILETO}"
-      ${If} ${FileExists} "$EXEDIR\App\${FILENAME}"
-        CopyFiles /SILENT "$EXEDIR\App\${FILENAME}" "$emacs_dir\${FILETO}"
-        ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.7z"
+      ${If} ${FileExists} "$EXEDIR\..\${FILENAME}"
+        CopyFiles /SILENT "$EXEDIR\..\${FILENAME}" "$emacs_dir\${FILETO}"
+        ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\ext-bin.7z"
           SetOutPath "$TEMP\ep"
-          ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
-            nsExec::ExecToLog /OEM "$\"$EXEDIR\App\7z\7z.exe$\" a -mx9 -t7z $EXEDIR\App\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
+          ${If} ${FileExists} "$EXEDIR\..\7z\7z.exe"
+            nsExec::ExecToLog /OEM "$\"$EXEDIR\..\7z\7z.exe$\" a -mx9 -t7z $EXEDIR\..\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
             Push $0
             Exch
             Pop $0
             Pop $0
           ${Else}
-            ExecWait "$\"$EXEDIR\App\7z\7zG.exe$\" a -mx9 -t7z $EXEDIR\App\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
+            ExecWait "$\"$EXEDIR\..\7z\7zG.exe$\" a -mx9 -t7z $EXEDIR\..\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
           ${EndIf}
         ${EndIf}
       ${EndIf}
@@ -1026,15 +1038,15 @@ From http://nsis.sourceforge.net/Explode
   
   Function CpDll
     StrCpy $R5 $TEMP 2
-    IfFileExists "$EXEDIR\App\ini\copy.ini" 0 end_copy
-    EnumINI::Section "$EXEDIR\App\ini\copy.ini" "copy"
+    IfFileExists "$EXEDIR\..\ini\copy.ini" 0 end_copy
+    EnumINI::Section "$EXEDIR\..\ini\copy.ini" "copy"
     Pop $R0
     StrCmp $R0 "error" end_copy
     loop:
       IntCmp "$R0" "0" end_copy
       Pop $R1
       DetailPrint "Trying to copy $R1 ($R0)"
-      ReadIniStr $R2 "$EXEDIR\App\ini\copy.ini" "copy" "$R1"
+      ReadIniStr $R2 "$EXEDIR\..\ini\copy.ini" "copy" "$R1"
       ${dllcp} $R1 $R2
       IntOp $R0 $R0 - 1
       Goto loop
@@ -1048,42 +1060,52 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   Function CreateZip
     Push $R0
+    Push $R1
     ${ReadINIStrWithDefault} $R0 $epdata\ini\EmacsPortableApp.ini "EmacsPortableApp" "Zip" "0"
     StrCmp "$R0" "0" extract_zip zip_binaries
-  extract_zip:
-    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bare-bin.7z"
-      ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
-        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.7z" -o"$EXEDIR\App" -mmt'
-      ${Else}
-        ExecWait '"$EXEDIR\App\7z\7z.exe" "$EXEDIR\App\emacs-$option_version\bare-bin.7z" -o"$EXEDIR\App" -mmt'
+    extract_zip:
+      ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\bare-bin.7z"
+        ${If} ${FileExists} "$EXEDIR\..\7z\7z.exe"
+          GetFullPathName /SHORT $R1 "$EXEDIR\..\"
+          SetOutPath $R1
+          nsExec::ExecToLog /OEM '"$EXEDIR\..\7z\7z.exe" x "$EXEDIR\..\emacs-$option_version\bare-bin.7z" -o$R1 -mmt -y'
+        ${Else}
+          GetFullPathName /SHORT $R1 "$EXEDIR\..\"
+          SetOutPath $R1
+          ExecWait '"$EXEDIR\..\7z\7z.exe" x "$EXEDIR\..\emacs-$option_version\bare-bin.7z" -o$R1 -mmt -y'
+        ${EndIf}
+        ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\bin\emacs.exe"
+          Delete "$EXEDIR\..\emacs-$option_version\bare-bin.7z"
+        ${EndIf}
       ${EndIf}
-      ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bin\emacs.exe"
-        Delete "$EXEDIR\App\emacs-$option_version\bare-bin.7z"
+      ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\ext-bin.7z"
+        ${If} ${FileExists} "$EXEDIR\..\7z\7z.exe"
+          GetFullPathName /SHORT $R1 "$EXEDIR\..\"
+          SetOutPath $R1
+          nsExec::ExecToLog /OEM '"$EXEDIR\..\7z\7z.exe" x "$EXEDIR\..\emacs-$option_version\ext-bin.7z" -o$R1 -mmt -y' 
+        ${Else}
+          GetFullPathName /SHORT $R1 "$EXEDIR\..\"
+          SetOutPath $R1
+          ExecWait '"$EXEDIR\..\7z\7z.exe" x "$EXEDIR\..\emacs-$option_version\ext-bin.7z" -o$R1 -mmt -y'
+        ${EndIf}
+        ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\bin\emacsclient.exe"
+          Delete "$EXEDIR\..\emacs-$option_version\ext-bin.7z"
+        ${EndIf}
       ${EndIf}
-    ${EndIf}
-    ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\ext-bin.7z"
-      ${If} ${FileExists} "$EXEDIR\App\7z\7z.exe"
-        nsExec::ExecToLog /OEM '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.7z" -o"$EXEDIR\App" -mmt' 
-      ${Else}
-        ExecWait '"$EXEDIR\App\7z\7zG.exe" "$EXEDIR\App\emacs-$option_version\ext-bin.7z" -o"$EXEDIR\App" -mmt'
-      ${EndIf}
-      ${If} ${FileExists} "$EXEDIR\App\emacs-$option_version\bin\emacsclient.exe"
-        Delete "$EXEDIR\App\emacs-$option_version\ext-bin.7z"
-      ${EndIf}
-    ${EndIf}
-    Goto end
-  zip_binaries:
-    IfFileExists "$EXEDIR\App\emacs-$option_version\ext-bin.7z" end
-    Pop $R0
-    
-    StrCmp $R0 "" end found_7z
+      Goto end
+    zip_binaries:
+      IfFileExists "$EXEDIR\..\emacs-$option_version\ext-bin.7z" end
+      Pop $R1
+      Pop $R0
+      
+      StrCmp $R0 "" end found_7z
     found_7z:
       ## Now zip
-      SetOutPath "$EXEDIR\App"
+      SetOutPath "$EXEDIR\.."
       DetailPrint "Zipping binary files"
-      SetOutPath "$EXEDIR\App"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" a -mx9 -t7z emacs-$option_version\bare-bin.7z emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X -mmt -ms=on -m0=PPMd'
-      ExecWait '"$EXEDIR\App\7z\7zG.exe"  a -mx9 -t7z emacs-$option_version\ext-bin.7z \
+      SetOutPath "$EXEDIR\.."
+      ExecWait '"$EXEDIR\..\7z\7zG.exe" a -mx9 -t7z emacs-$option_version\bare-bin.7z emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X -mmt -ms=on -m0=PPMd'
+      ExecWait '"$EXEDIR\..\7z\7zG.exe"  a -mx9 -t7z emacs-$option_version\ext-bin.7z \
           emacs-$option_version\bin\emacsclient.exe \
           emacs-$option_version\bin\runemacs.exe \
           emacs-$option_version\bin\cmd*.exe \
@@ -1094,7 +1116,7 @@ From http://nsis.sourceforge.net/Explode
           emacs-$option_version\bin\dd*.exe \
           emacs-$option_version\bin\dd*.exe -mmt -m0=PPMd -ms=off'
       ## Should remove but after we test 
-      RmDir /R "$EXEDIR\App\emacs-$option_version\bin"
+      RmDir /R "$EXEDIR\..\emacs-$option_version\bin"
     end:
       ClearErrors
       Pop $R0
@@ -1105,10 +1127,10 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   !include "emacsCall.nsh"
   Function SetupContents
-    IfFileExists "$EXEDIR\Contents\Info.plist" end 0
+    IfFileExists "$EXEDIR\..\..\Contents\Info.plist" end 0
     Call AddEmacsPath
     StrCmp $found_emacs "" end 0
-    StrCpy $R0 "$EXEDIR\App\MacOS\build-plist.el"
+    StrCpy $R0 "$EXEDIR\..\MacOS\build-plist.el"
     ${StrSlash} "$R0" "/"
     ${ExecHide} "$found_emacs\emacs.exe -Q --batch -l $R0 -f build-app-info" "$found_emacs" $R1
     end:
@@ -1167,21 +1189,21 @@ From http://nsis.sourceforge.net/Explode
       ${EndIf}
       ${If} $cmd != "$emacs_dir\$emacs_exe"
         StrCpy $cmd_args '"$emacs_dir\$emacs_exe"'
-        ${If} ${FileExists} "$EXEDIR\App\gdbinit"
+        ${If} ${FileExists} "$EXEDIR\..\gdbinit"
         ${AndIf} $cmd  != "$cygwin\bin\gdb.exe"
-          StrCpy $cmd_args '$cmd_args --eval-command "source $EXEDIR\App\gdbinit"'
+          StrCpy $cmd_args '$cmd_args --eval-command "source $EXEDIR\..\gdbinit"'
         ${EndIf}
         StrCpy $cmd_args '$cmd_args --eval-command "Run '
         StrCpy $found_gdb "1"
       ${EndIf}
     ${EndIf}
-    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\EmacsPortableApp.exe").r0'
+    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPEXE", "$EXEDIR\..\..\EmacsPortableApp.exe").r0'
     ClearErrors
         Goto skip_font
-    IfFileExists "$EXEDIR\App\ini\fonts.ini" 0 skip_font
-    ReadINIStr $R0 $EXEDIR\App\ini\fonts.ini "fonts1" "$option_font"
+    IfFileExists "$EXEDIR\..\ini\fonts.ini" 0 skip_font
+    ReadINIStr $R0 $EXEDIR\..\ini\fonts.ini "fonts1" "$option_font"
     IfErrors skip_font
-    ReadINIStr $R1 $EXEDIR\App\ini\fonts.ini "fonts2" "$option_font"
+    ReadINIStr $R1 $EXEDIR\..\ini\fonts.ini "fonts2" "$option_font"
     IfErrors 0 +2
     StrCpy "$R1" "-*-*-*-c-*-iso8859-1"
     ClearErrors
@@ -1237,7 +1259,7 @@ From http://nsis.sourceforge.net/Explode
     Call CreateZip
     DetailPrint "Extract Binaries"
     Call ExtractZip
-    IfFileExists "$EXEDIR\App\emacs-$option_version\bin" +3  
+    IfFileExists "$EXEDIR\..\emacs-$option_version\bin" +3  
     IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
     StrCpy "$emacs_dir" "$TEMP\ep\emacs-$option_version\bin"
     DetailPrint "Remove Stale Emacs Server, if it exists"
@@ -1258,27 +1280,27 @@ From http://nsis.sourceforge.net/Explode
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R0;$3").r2'
     DetailPrint "Setup emacs options"
     ${EmacsCmd}
-    WriteIniStr "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR" "$EXEDIR"
-    SetOutPath "$EXEDIR\App\eps"
-    EnumINI::Section "$EXEDIR\App\ini\plugins.ini" "plugins"
+    WriteIniStr "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR\..\.." "$EXEDIR\..\.."
+    SetOutPath "$EXEDIR\..\eps"
+    EnumINI::Section "$EXEDIR\..\ini\plugins.ini" "plugins"
     Pop $R0 
     StrCmp $R0 "error" done_plugins
     loop_plugins:
       IntCmp $R0 "0" done_plugins done_plugins 0
       Pop $R1
-      ReadINIStr $R2 "$EXEDIR\App\ini\plugins.ini" "plugins" "$R1"
-      IfFileExists "$EXEDIR\App\eps\$R1" 0 +6
-      IfFileExists "$EXEDIR\App\eps\rm-$R1" 0 +3
+      ReadINIStr $R2 "$EXEDIR\..\ini\plugins.ini" "plugins" "$R1"
+      IfFileExists "$EXEDIR\$R1" 0 +6
+      IfFileExists "$EXEDIR\rm-$R1" 0 +3
       DetailPrint "$R2 has already been installed"
       Goto +9
       DetailPrint "Setup $R2"
       ## Wait for the Plug-in to finish before launching emacs?
-      ReadINIStr $R3 "$EXEDIR\App\ini\plugins.ini" "wait.for" "$R1"
+      ReadINIStr $R3 "$EXEDIR\..\ini\plugins.ini" "wait.for" "$R1"
       IfErrors +4
       StrCmp "$R3" "1" 0 +3
-      ExecWait "$EXEDIR\App\eps\$R1"
+      ExecWait "$EXEDIR\$R1"
       Goto +2
-      Exec "$EXEDIR\App\eps\$R1"
+      Exec "$EXEDIR\$R1"
       ClearErrors
       IntOp $R0 $R0 - 1
       Goto loop_plugins
@@ -1359,10 +1381,10 @@ From http://nsis.sourceforge.net/Explode
     ClearErrors
     ${IfNot} $0 == ""
       GetFullPathName $0 $0
-      GetFullPathName $1 $EXEDIR
+      GetFullPathName $1 $EXEDIR\..\..
       ${IfNot} $1 == $0
         # Call From locally installed EmacsPortable.App
-        GetFullPathName $1 "$EXEDIR\Data"
+        GetFullPathName $1 "$EXEDIR\..\..\Data"
         ClearErrors
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPDATA", "$1").r1'
         Exec '"$0\EmacsPortableApp.exe" $cmdLineParams'
@@ -1374,7 +1396,7 @@ From http://nsis.sourceforge.net/Explode
     ClearErrors
     
     ${If} $epdata == ""
-      StrCpy $epdata "$EXEDIR\Data"
+      StrCpy $epdata "$EXEDIR\..\..\Data"
     ${EndIf}  
     ClearErrors
   FunctionEnd
@@ -1384,14 +1406,14 @@ From http://nsis.sourceforge.net/Explode
 * Main Script
 #+BEGIN_SRC nsis
   Section "Main" sec_mainN
-    StrCpy "$INSTDIR" "$EXEDIR"
+    StrCpy "$INSTDIR" "$EXEDIR\..\.."
     StrLen $R2 $EXEFILE
-    ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
-      ExecWait '"$EXEDIR\EmacsOptions.exe" /7z'
+    ${IfNot} ${FileExists} "$EXEDIR\..\7z\7zG.exe"
+      ExecWait '"$EXEDIR\..\..\EmacsOptions.exe" /7z'
     ${EndIf}
     ${If} $R2  == 12
-      Exec "$EXEDIR\EmacsPortableApp.exe"
-    ${ElseIfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+      Exec "$EXEDIR\..\..\EmacsPortableApp.exe"
+    ${ElseIfNot} ${FileExists} "$EXEDIR\..\7z\7zG.exe"
       MessageBox MB_ICONEXCLAMATION|MB_OK "Cannot find 7zip.  Cannot run this program..."
     ${Else}
       ${GetWindowsVersion} $R0
@@ -1404,15 +1426,15 @@ From http://nsis.sourceforge.net/Explode
       DetailPrint "Setup Data"
       ${setupData}
       SetOutPath "$TEMP\ep"
-      StrCpy $EPEXE $EXEDIR
+      StrCpy $EPEXE $EXEDIR\..\..
       StrCmp $option_updateproxy "" 0 sync_proxy
-      StrCpy "$emacs_dir" "$EXEDIR\App\emacs-$option_version\bin"
+      StrCpy "$emacs_dir" "$EXEDIR\..\emacs-$option_version\bin"
       IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
       StrCpy "$emacs_dir" "$TEMP\ep\emacs-$option_version\bin"
       FindProcDLL::FindProc "$emacs_exe"
       StrCmp $R0 "1" start_emacsclient start_emacs
       sync_proxy:
-        FindFirst $0 $1 "$EXEDIR\App\emacs-*"
+        FindFirst $0 $1 "$EXEDIR\..\emacs-*"
       loop_proxy:
         HideWindow
         StrCmp $1 "" done_proxy
@@ -1421,8 +1443,8 @@ From http://nsis.sourceforge.net/Explode
         StrCmp "$R0" "1" 0 loop_next
         DetailPrint "$1 is running"
         StrCpy $2 $1 "" 6
-        IfFileExists "$EXEDIR\App\emacs-$2\bin\emacsclient.exe" 0 +3
-        StrCpy $3 "$EXEDIR\App\emacs-$2\bin\emacsclient.exe"
+        IfFileExists "$EXEDIR\..\emacs-$2\bin\emacsclient.exe" 0 +3
+        StrCpy $3 "$EXEDIR\..\emacs-$2\bin\emacsclient.exe"
         Goto +3
         IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
         StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
@@ -1495,7 +1517,7 @@ From http://nsis.sourceforge.net/Explode
         StrCmp "1" $option_daemon 0 found_running_emacs
         StrCmp "" $option_q 0 found_running_emacs
         StrCpy $cnt 300
-        Exec "$EXEDIR\App\eps\EmacsPortableServer.exe"
+        Exec "$EXEDIR\EmacsPortableServer.exe"
       look_for_running_emacs:
         FindProcDLL::FindProc "emacs-$option_version$epstart.exe"
         StrCmp "$R0" "1" found_running_emacs
@@ -1574,9 +1596,9 @@ From http://nsis.sourceforge.net/Explode
         ReadIniStr $0 "$TEMP\ep\ep-pid.ini" "pid" "$emacs_exe"
         ReadIniStr $1 "$TEMP\ep\ep-pid.ini" "exec" "$emacs_exe"
         StrCpy $cmd_args "--pid=$0"
-        ${If} ${FileExists} "$EXEDIR\App\gdbinit"
+        ${If} ${FileExists} "$EXEDIR\..\gdbinit"
         ${AndIf} $cmd  != "$cygwin\bin\gdb.exe"
-          StrCpy $cmd_args '$cmd_args --eval-command "source $EXEDIR\App\gdbinit"'
+          StrCpy $cmd_args '$cmd_args --eval-command "source $EXEDIR\..\gdbinit"'
         ${EndIf}
         StrCpy $cmd_args '$cmd_args --eval-command "Continue" $1'
         ${Execute} '"$cmd" $cmd_args' "$home" $R1
@@ -1637,7 +1659,7 @@ This removes registry settings, fonts and other settings.
       Delete "$TEMP\ep\ep-RemoveReg.exe"
     done:
       SetOutPath "$TEMP\ep"
-      ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR"
+      ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "$EXEDIR\..\.."
       IfFileExists "$TEMP\ep\rm-ep-proxy.exe" 0 +2
       ExecWait "$TEMP\ep\rm-ep-proxy.exe"
       EnumINI::Section "$EPEXE\App\ini\plugins.ini" "plugins"
