@@ -159,10 +159,23 @@ If the =Data/ini/EmacsPortableApp.ini= file contains an ini Home Entry
   [EmacsPortableApp]
   Home=USB:/Documents/
 #+END_SRC
-The USB directory is changed for what EmacsPortableApp deems is the
-usb directory.  This setting uses the PortableApps Documents Directory
-as the home-directory.  This is slightly different depending on the
-platform. 
+USB represents the USB directory. This setting uses the PortableApps Documents Directory
+as the home-directory.  
+
+The USB directory is determined as follows:
+ - /Under Windows/
+   - Checks each removable and hard drive for an =.emacs= or =_emacs=
+     file under the specified directory.  For example
+     EmacsPortable.App would check =e:\Documents\.emacs= and
+     =f:\Document\.emacs=.  If it found =f:\Document\.emacs=, If it
+     exists, it assumes that the USB drive is =f:\=
+   - Checks each drive for a =PortableApps= directory.  If found it
+     assumes that this is the usb drive
+   - Checks for =Apps\EmacsPortable.App=,=EmacsPortable.App= or
+     =PortableApps\EmacsPortable.App= it assumes this is the USB drive
+   - If not found, it will set the USB directory to the installed directory.
+ - /Under Mac OS X/
+   - Assumes the usb directory is the =/Volumes/USB-NAME/= directory.
 
 The advantage of this methodology is that under windows, Emacs can be
 copied to the hard-drive to speed up the run-time, and the
