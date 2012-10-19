@@ -855,7 +855,7 @@ From http://nsis.sourceforge.net/Explode
     
     gpa:
       StrCmp $option_home_usb "" set_usb 0
-      IfFileExists "$9$optiona_home_usb" 0 is_emacs_portable
+      IfFileExists "$9$option_home_usb" 0 is_emacs_portable
       IfFileExists "$9$option_home_usb\.emacs" set_home 0
       IfFileExists "$9$option_home_usb\_emacs" set_home 0
       IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_home
