@@ -270,24 +270,28 @@ EmacsPortableApp.exe launcher.
       (when (file-exists-p (concat usb-drive-letter "LiberKey/MyDocuments"))
         (add-to-list 'ep-start-dirs `("doc" . ,(expand-file-name (concat usb-drive-letter "LiberKey/MyDocuments"))))))
     
-    (when (boundp 'custom-theme-directory)
+    (when (and (boundp 'custom-theme-directory)
+               (not (string= (expand-file-name user-emacs-directory) (expand-file-name custom-theme-directory)))
+               (file-exists-p custom-theme-directory))
+      
       (add-to-list 'ep-start-dirs `("themes" . ,custom-theme-directory))
       (add-to-list 'ep-start-dirs `("theme" . ,custom-theme-directory)))
     
-    (when (boundp 'package-user-dir)
+    (when (and (boundp 'package-user-dir) (file-exists-p package-user-dir))
       (add-to-list 'ep-start-dirs `("elpa" . ,package-user-dir)))
     
-    (when (boundp 'el-get-dir)
+    (when (and (boundp 'el-get-dir) (file-exists-p el-get-dir))
       (add-to-list 'ep-start-dirs `("el-get" . ,el-get-dir)))
     
     (when (boundp 'yas/snippet-dirs)
       (let ((snips (if (listp yas/snippet-dirs)
                        (nth 0 yas/snippet-dirs)
                      yas/snippet-dirs)))
-        (add-to-list 'ep-start-dirs `("snips" . ,snips))
-        (add-to-list 'ep-start-dirs `("snip" . ,snips))
-        (add-to-list 'ep-start-dirs `("snippets" . ,snips))
-        (add-to-list 'ep-start-dirs `("snippet" . ,snips))))
+        (when (file-exists-p snips)
+          (add-to-list 'ep-start-dirs `("snips" . ,snips))
+          (add-to-list 'ep-start-dirs `("snip" . ,snips))
+          (add-to-list 'ep-start-dirs `("snippets" . ,snips))
+          (add-to-list 'ep-start-dirs `("snippet" . ,snips)))))
     
     (mapc
      (lambda(x)

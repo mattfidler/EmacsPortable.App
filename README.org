@@ -310,7 +310,6 @@ directories are:
 | ~system/    | Data/start/system            | System-based Customizations         |
 | ~usb/       | USB Drive                    | USB Drive                           |
 | ~user/      | Data/start/user              | User-based Customizations           |
-| ~themes/    | Var =custom-theme-directory= | Custom Theme Directory              |
 |-------------+------------------------------+-------------------------------------|
 
 
@@ -324,27 +323,23 @@ In addition to these aliases, the following aliases are also defined:
 
 - =~el-get=, is an alias for the el-get package directory
 - =~elpa=, is an alias for the user elpa package directory
-- =~theme= or =~themes=, is an alias for the emacs24 themes directory
+- =~theme= or =~themes=, is an alias for the emacs24 themes directory,
+  (as long as the themes directory is /not/ the =user-emacs-directory=).
 - =~snip=, =~snips=, =~snippets=, =~snippet=, is an alias for
   yasnippets snippets.
+- All the startup scripts in =Data/start= have an alias created for them.
 
 Custom aliases may be added by customizing =EmacsPortable-aliases=.
 
 ** Font installation
 Will install specific fonts, if needed.
-*** STARTED Allow Mac to install specific fonts.
-
 * How It Works
 ** Fonts
 *** Windows
 Under windows the fonts in the =App/fonts/= directory are temporarily
-installed by opening them using =fontview= (if they are not already
-installed on the base system).  This is done by a autohotkey script.
-Once Emacs Exits, the fonts are "uninstalled" by closing the fontview
-window.  Currently this is done by showing the window and then closing
-it.
+installed/registered. Once Emacs Exits, the fonts are unregistered.
 *** Mac OS X
-Currently unsupported.
+Copies fonts in the =App/fonts/= directory to =~/Library/Fonts/=
 ** DOS Version
 The dos version starts up emacs in a dos command prompt window. When
 trying to do anything with the =EmacsPortableDOS= command, it will
