@@ -858,14 +858,29 @@ From http://nsis.sourceforge.net/Explode
       IfFileExists "$9$option_home_usb" 0 is_emacs_portable
       IfFileExists "$9$option_home_usb\.emacs" set_home 0
       IfFileExists "$9$option_home_usb\_emacs" set_home 0
-      IfFileExists "$9PortableApps\EmacsPortable.App\EmacsPortableApp.exe" set_home
-      IfFileExists "$9Apps\EmacsPortable.App\EmacsPortableApp.exe" set_home
+      ${If} ${FileExists} "$EPEXE\App\ini\paths.ini"
+        Push $R0
+        Push $R1
+        EnumINI::Section "$EPEXE\App\ini\paths.ini" "portable.dirs"
+        Pop $R0
+        ${If} $R0 != "error"
+          ${DoUntil} $R0 == "0"
+            Pop $R1
+            ${If} ${FileExists} "$9$R1"
+              StrCpy $home "$9$option_home_usb"
+              StrCpy $PA "$9PortableApps" 
+            ${EndIf}
+            IntOp $R0 $R0 - 1
+          ${Loop}
+        ${EndIf}
+        Pop $R1
+        Pop $R0
+      ${EndIf}
+      
       IfFileExists "$9EmacsPortable.App\EmacsPortableApp.exe" set_home
-      IfFileExists "$9PotableApps" set_home
       Goto findcygwin
       
     set_home:
-      StrCpy $PA "$9PortableApps" 
       StrCpy $home "$9$option_home_usb"
       Goto set_usb
       

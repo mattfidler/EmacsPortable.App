@@ -171,8 +171,10 @@ The USB directory is determined as follows:
      exists, it assumes that the USB drive is =f:\=
    - Checks each drive for a =PortableApps= directory.  If found it
      assumes that this is the usb drive
-   - Checks for =Apps\EmacsPortable.App=,=EmacsPortable.App= or
-     =PortableApps\EmacsPortable.App= it assumes this is the USB drive
+   - Checks for =Apps=,=EmacsPortable.App= or =PortableApps=,
+     =LiberKey\Apps=, etc (the directories found in App/paths.ini
+     portable.dirs). When found, EmacsPortable.App assumes the drive
+     where the directory is found is the USB drive.
    - If not found, it will set the USB directory to the installed directory.
  - /Under Mac OS X/
    - Assumes the usb directory is the =/Volumes/USB-NAME/= directory.
