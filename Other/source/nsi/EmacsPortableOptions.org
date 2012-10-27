@@ -493,6 +493,215 @@ From http://nsis.sourceforge.net/Explode
     Push $explArrCount
   FunctionEnd
 #+END_SRC
+** Extract 7zip
+#+BEGIN_SRC nsis
+  !macro install7z
+    ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
+      SetOutPath "$EXEDIR\App\7z"
+      File "..\..\..\App\7z\7zG.exe"
+      File "..\..\..\App\7z\7z.*"
+      File "..\..\..\App\7z\7zCon.sfx"
+      File "..\..\..\App\7z\License.txt"
+    ${EndIf}
+  !macroend
+  !define install7z `!insertmacro install7z`
+#+END_SRC
+
+** Download and install NSIS
+#+BEGIN_SRC nsis
+  !macro installNsis
+    ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
+      Call DownloadNSIS
+    ${EndIf}
+  !macroend
+  !define installNsis `!insertmacro installNsis`
+#+END_SRC
+** Download and install Autohotkey
+#+BEGIN_SRC nsis
+  !macro installAhk
+    ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
+      Call DownloadAHK
+    ${EndIf}
+  !macroend
+  !define installAhk `!insertmacro installAhk`
+  
+#+END_SRC
+
+
+** CopyFiles if Newer macro
+#+BEGIN_SRC nsis
+  ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  ; CopyFilesIfNewer based on MoveFolder
+  ;
+  ; Author: mlf176f2 changes to MoveFolder to CopyFolder
+  ; Author:  theblazingangel@aol.com (for the AutoPatcher project - www.autopatcher.com)
+  ; Created: June 2007
+  ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
+  
+  ;==================
+  ; CopyFolder macro
+  ;==================
+  
+  !macro CopyFolder source destination mask
+    
+    !define COPYFOLDER_JUMP ${__LINE__}
+    
+    Push $R0
+    Push $R1
+    
+    ; Move path parameters into registers so they can be altered if necessary
+    
+    StrCpy $R0 "${source}"
+    StrCpy $R1 "${destination}"
+    
+    ; Sort out paths - remove final backslash if supplied
+    
+    Push $0
+    
+    ; Source
+    StrCpy $0 "$R0" 1 -1
+    StrCmp $0 '\' 0 +2
+    StrCpy $R0 "$R0" -1
+    
+    ; Destination
+    StrCpy $0 "$R1" 1 -1
+    StrCmp $0 '\' 0 +2
+    StrCpy $R1 "$R1" -1
+    
+    Pop $0
+    
+    ; Create destination dir
+    
+    CreateDirectory "$R1\"
+    
+    ; Add message to details-view/install-log
+    
+    DetailPrint "Moving files: $R0\${mask} to $R1\"
+    
+    ; Push registers used by ${Locate} onto stack
+    
+    Push $R6
+    Push $R7
+    Push $R8
+    Push $R9
+    
+    ; Duplicate dir structure (to preserve empty folders and such)
+    
+    ${Locate} "$R0" "/L=D" ".CopyFolder_Locate_createDir"
+    
+    ; Locate files and move (via callback function)
+    
+    ${Locate} "$R0" "/L=F /M=${mask} /S= /G=1" ".CopyFolder_Locate_moveFile"
+    
+    ; Delete subfolders left over after move
+    ; Pop registers used by ${Locate} off the stack again
+    
+    Pop $R9
+    Pop $R8
+    Pop $R7
+    Pop $R6
+    
+    ; Delete source folder if empty
+    
+    Pop $R1
+    Pop $R0
+    
+    !undef COPYFOLDER_JUMP
+    
+  !macroend
+  
+  ;==================
+  ; CopyFolder macro's ${Locate} callback functions
+  ;==================
+  
+  Function .CopyFolder_Locate_createDir
+    
+    ${If} $R6 == ""
+      Push $R2
+      StrLen $R2 "$R0"
+      StrCpy $R2 $R9 '' $R2
+      CreateDirectory "$R1$R2"
+      Pop $R2
+    ${EndIf}
+    
+    Push $R1
+    
+  FunctionEnd
+  
+  Function .CopyFolder_Locate_moveFile
+    
+    Push $R2
+    
+    ; Get path to file
+    
+    StrLen $R2 "$R0"
+    StrCpy $R2 $R9 '' $R2
+    StrCpy $R2 "$R1$R2"
+    
+    ; If destination does not already exists simply move file
+    
+    IfFileExists "$R2" +3 0
+    CopyFiles /SILENT  "$R9" "$R2"
+    goto done
+    
+    ; If overwriting without 'ifnewer' check
+    
+    ${If} $switch_overwrite == 1
+      delete "$R2"
+      CopyFiles /SILENT  "$R9" "$R2"
+      goto done
+    ${EndIf}
+    
+    ; If destination already exists
+    
+    Push $0
+    Push $1
+    Push $2
+    push $3
+    
+    GetFileTime "$R9" $0 $1
+    GetFileTime "$R2" $2 $3
+    
+    IntCmp $0 $2 0 older newer
+    IntCmp $1 $3 older older newer
+    
+    older:
+      goto time_check_done
+      
+    newer:
+      delete "$R2"
+      CopyFiles /SILENT  "$R9" "$R2"
+      
+    time_check_done:
+      
+      Pop $3
+      Pop $2
+      Pop $1
+      Pop $0
+      
+    done:
+      
+      Pop $R2
+      
+      Push $R1
+      
+  FunctionEnd
+  
+  Function .CopyFolder_Locate_deleteDir
+    
+    ${If} $R6 == ""
+      RMDir $R9
+      IntOp $R2 $R2 + 1
+    ${EndIf}
+    
+    Push $R1
+    
+  FunctionEnd
+  !define CopyFolder `!insertmacro CopyFolder`
+#+END_SRC
+
+
 * Functions
 ** Callback Functions
 *** Initialization Function
@@ -603,7 +812,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 4 "Download Components"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 5 "Net Install"
-    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 6 "Build Launcher" 
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 6 "Build/Update Launcher" 
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 7 "Install/Remove Unix Components" 
     ${If} $option_startup == "1"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 0 "$option_assoc"
@@ -2221,14 +2430,7 @@ FunctionEnd
     ${Else}
       ${If} $option_build == ""
         ${If} ${FileExists} "$EPEXE\App\ini\mirrors.ini"
-          ${IfNot} ${FileExists} "$EPEXE\App\7z\7zG.exe"
-            SetOutPath "$EPEXE\App\7z"
-            File "..\..\..\App\7z\7zG.exe"
-            File "..\..\..\App\7z\7z.*"
-            File "..\..\..\App\7z\7zCon.sfx"
-            File "..\..\..\App\7z\License.txt"
-          ${EndIf}
-  
+          ${install7z}        
           ${SetEnv}
           ${SetupProxy}
   
@@ -2370,12 +2572,10 @@ FunctionEnd
               ${EndIf}
             ${EndIf}
             ${If} $download_ahk == "1"
-            ${AndIfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
-              Call DownloadAHK
+              ${installAhk}
             ${EndIf}
             ${If} $download_nsis == "1"
-            ${AndIfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
-              Call DownloadNSIS
+              ${InstallNsis}
             ${EndIf}
             ${IfNot} ${FileExists} "$EPEXE\App\hunspell\bin\hunspell.exe"
               ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" hunspell url
@@ -2482,13 +2682,13 @@ FunctionEnd
               WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
                   "MacVersion" "$download_emacs_version"
             ${EndIf}
-  
+            
             FindProcDLL::FindProc "EmacsPortableServer.exe"
-  
+            
             ${If} $R0 == "1"
               WriteIniStr "$TEMP\ep\ep-refresh-server.ini" "one" "one" "one"
             ${EndIf}
-  
+            
             ${If} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
               ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
             ${Else}
@@ -2501,18 +2701,35 @@ FunctionEnd
             SetAutoClose true
           ${EndIf}
           ${If} $option_request_build == "1"
-            CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$EXEDIR\EmacsBuild.exe"
-            Exec "$EXEDIR\EmacsBuild.exe"
-            SetAutoClose true
+            ${installAhk}
+            ${installNsis}
+            ## First Download the EmacsPortable.App from the github master.
+            Inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" "$TEMP\ep\ep\epa.zip"
+            ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\epa.zip" -o"$TEMP\ep\ep"'
+            Delete "$TEMP\ep\ep\epa.zip"
+            FindFirst $0 $1 $TEMP\ep\ep\*.*
+            loop_epa_build:
+              StrCmp $1 "" done_epa_build
+              StrCmp $1 "." next_epa_build
+              StrCmp $1 ".." next_epa_build
+              DetailPrint $1
+              StrCpy $R1 $1
+            next_epa_build:
+              FindNext $0 $1
+              Goto loop_epa_build
+            done_epa_build:
+              FindClose $0
+              ${CopyFolder}  "$TEMP\ep\ep\$R1\" "$EXEDIR\" "*.*"
+              RmDir /r "$TEMP\ep\ep"
+              
+              # Now request the build.
+              CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$EXEDIR\EmacsBuild.exe"
+              
+              Exec "$EXEDIR\EmacsBuild.exe"
+              SetAutoClose true
           ${EndIf}
         ${Else}
-          ${IfNot} ${FileExists} "$EXEDIR\App\7z\7zG.exe"
-            SetOutPath "$EXEDIR\App\7z"
-            File "..\..\..\App\7z\7zG.exe"
-            File "..\..\..\App\7z\7z.*"
-            File "..\..\..\App\7z\7zCon.sfx"
-            File "..\..\..\App\7z\License.txt"
-          ${EndIf}
+          ${install7z}
           ## mirrors.ini not found.  Download EmacsPortableApp
           SetOutPath "$EXEDIR\App\ahk"
           SetOutPath "$TEMP\ep\ep"
@@ -2743,7 +2960,7 @@ FunctionEnd
               ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$EXEDIR\App\$7\ext-bin.7z" -o"$EXEDIR\App"'
               ${If} ${FileExists} "$EXEDIR\App\$7\bin\emacsclient.exe"
                 Delete "$EXEDIR\App\$7\ext-bin.7z"
-              ${EndIf}
+              ${EndIf}a
             ${EndIf}
             FileWrite $4 "@path $EXEDIR\App\ahk\App\AutoHotkey\Compiler;%PATH%$\r$\n"
             FileWrite $4 "@path $EXEDIR\App\nsis;%PATH%$\r$\n"
