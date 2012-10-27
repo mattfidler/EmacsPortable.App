@@ -2705,6 +2705,8 @@ FunctionEnd
             ${installAhk}
             ${installNsis}
             ## First Download the EmacsPortable.App from the github master.
+            SetOutPath "$EXEDIR\App\ahk"
+            SetOutPath "$TEMP\ep\ep"
             Inetc::get "https://github.com/mlf176f2/EmacsPortable.App/zipball/master" "$TEMP\ep\ep\epa.zip"
             ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\epa.zip" -o"$TEMP\ep\ep"'
             Delete "$TEMP\ep\ep\epa.zip"
