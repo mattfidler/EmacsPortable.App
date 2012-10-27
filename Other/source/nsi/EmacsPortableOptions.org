@@ -812,7 +812,7 @@ From http://nsis.sourceforge.net/Explode
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 3 "Visual Options"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 4 "Download Components"
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 5 "Net Install"
-    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 6 "Build/Update Launcher" 
+    ${NSD_LV_InsertItem} $hCtl_startup_options_Select 6 "Build/Update Launcher (Requires/Downloads NSIS & AHK)" 
     ${NSD_LV_InsertItem} $hCtl_startup_options_Select 7 "Install/Remove Unix Components" 
     ${If} $option_startup == "1"
       ${NSD_LV_SetCheckState} $hCtl_startup_options_Select 0 "$option_assoc"
