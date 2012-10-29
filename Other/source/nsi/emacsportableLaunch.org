@@ -24,7 +24,7 @@ selected.
   Section
     Var /GLOBAL cmdLineParams
     ${GetParameters} $cmdLineParams
-    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "DebugLaunch"
+    ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "DebugLauncher"
     ClearErrors
     ${If} $R0 == "1"
       Exec '"$EXEDIR\App\eps\epl.exe" $cmdLineParams'
@@ -32,4 +32,5 @@ selected.
       Exec '"$EXEDIR\App\eps\ep.exe" $cmdLineParams'
     ${EndIf}
   SectionEnd
+  
 #+END_SRC

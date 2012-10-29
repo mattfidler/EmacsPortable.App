@@ -786,6 +786,9 @@ From http://nsis.sourceforge.net/Explode
   Var option_unix
   
   
+  
+  
+  
   ; dialog create function
   Function fnc_startup_options_Create
     
@@ -901,11 +904,14 @@ From http://nsis.sourceforge.net/Explode
   ; handle variables
   Var hCtl_behavior
   Var hCtl_behavior_GroupBox1
-  Var hCtl_behavior_newFrame
   Var hCtl_behavior_Debug
-  Var hCtl_behavior_Label2
   Var hCtl_behavior_Daemon
+  Var hCtl_behavior_DebugLauncher
+  Var hCtl_behavior_Label2
   Var hCtl_behavior_Label1
+  Var hCtl_behavior_Label4
+  Var hCtl_behavior_newFrame
+  Var hCtl_behavior_MacVersion
   Var hCtl_behavior_StartupScript
   Var hCtl_behavior_DefaultVersion
   Var hCtl_behavior_Home_Txt
@@ -914,66 +920,16 @@ From http://nsis.sourceforge.net/Explode
   Var hCtl_behavior_ZipBin
   Var hCtl_behavior_Clean
   Var hCtl_behavior_GroupBox2
-  Var hCtl_behavior_editWith
   Var hCtl_behavior_orgProtocol
+  Var hCtl_behavior_editWith
   Var hCtl_behavior_LiberKey
   Var hCtl_behavior_SendTo
   
-  ; dialog create function
-  Function fnc_behavior_Create
-    
-    ; === behavior (type: Dialog) ===
-    nsDialogs::Create 1018
-    Pop $hCtl_behavior
-    ${If} $hCtl_behavior == error
-      Abort
-    ${EndIf}
-    !insertmacro MUI_HEADER_TEXT "EmacsPortable.App Behavior" "This allows the user to change the startup options, home directory, and what EmacsPortable.App integrates with."
-    
-    ; === Label1 (type: Label) ===
-    ${NSD_CreateLabel} 13u 19u 54u 13u "Default Version"
-    Pop $hCtl_behavior_Label1
-    
-    ; === DefaultVersion (type: DropList) ===
-    ${NSD_CreateDropList} 70u 17u 51u 12u ""
-    Pop $hCtl_behavior_DefaultVersion
-    SetCtlColors $hCtl_behavior_DefaultVersion 0x000000 0xFFFFFF
-  
-    ReadIniStr $3 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
+  Function fnc_behavior_SetStartup
+    ReadIniStr $4 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Startup"
     ClearErrors
-    StrCpy $4 ""
     
-    FindFirst $0 $1 $EXEDIR\App\emacs-*.*
-    loop_emacs:
-      StrCmp $1 "" done_emacs
-      StrCpy $1 $1 "" 6
-      StrCpy $2 $1
-      StrCmp $2 $3 0 +2
-      StrCpy $4 $2
-      ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion $1 
-      FindNext $0 $1
-      Goto loop_emacs
-    done_emacs:
-      FindClose $0
-      StrCmp $4 "" 0 +2
-      StrCpy $4 $2
-      ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $4
-      
-      ; === Label2 (type: Label) ===
-      ${NSD_CreateLabel} 134u 19u 52u 13u "Startup Script"
-      Pop $hCtl_behavior_Label2
-      
-      ; === StartupScript (type: DropList) ===
-      ${NSD_CreateDropListSorted} 190u 17u 94u 12u ""
-  
-      Pop $hCtl_behavior_StartupScript
-      SetCtlColors $hCtl_behavior_StartupScript 0x000000 0xFFFFFF
-  
-      ReadIniStr $3 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Startup"
-      ClearErrors
-      StrCpy $4 ""
-      
-      FindFirst $0 $1 $EXEDIR\Data\start\*.*
+    FindFirst $0 $1 $EXEDIR\Data\start\*.*
     loop_start:
       StrCmp $1 "" done_start
       StrCmp $1 "shared" next_start
@@ -992,76 +948,155 @@ From http://nsis.sourceforge.net/Explode
       FindClose $0
       StrCmp $4 "" 0 +2
       StrCpy $4 $2
-      ${NSD_CB_SelectString} $hCtl_behavior_StartupScript $4
+      ${NSD_CB_SelectString} $hCtl_behavior_StartupScript $4   
+  FunctionEnd
   
-      ; === GroupBox1 (type: GroupBox) ===
-      ${NSD_CreateGroupBox} 8u 7u 280u 77u "EmacsPortable.App Launching Options"
-      Pop $hCtl_behavior_GroupBox1
-      ; === Daemon (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 13u 34u 88u 14u "Use Pseudo-Daemon"
-      Pop $hCtl_behavior_Daemon
-      ${SetCheck} $hCtl_behavior_Daemon "Daemon"
   
-      
-      ; === newFrame (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 105u 34u 93u 14u "New Frame on file open"
-      Pop $hCtl_behavior_newFrame
-      ${SetUnCheck} $hCtl_behavior_newFrame "NewFrame"
-      
-      ; === Debug (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 200u 34u 84u 14u "Debug Startup (gdb)"
-      Pop $hCtl_behavior_Debug
-      ${SetUnCheck} $hCtl_behavior_Debug "Debug"
-      
-      
-      
-      ; === ZipBin (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 12u 48u 151u 14u "(Un)Zip Binaries && Run from %TEMP%"
-      Pop $hCtl_behavior_ZipBin
-      ${SetUnCheck} $hCtl_behavior_ZipBin "Zip"
-      
-      ; === Clean (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 167u 48u 117u 14u "Clean Residual Files (Stealth)"
-      Pop $hCtl_behavior_Clean
-      ${SetCheck} $hCtl_behavior_Clean "Clean"
-      
-      ; === Home_Txt (type: Text) ===
-      ${NSD_CreateText} 70u 65u 192u 11u ""
-      Pop $hCtl_behavior_Home_Txt
-      ${SetDir} $hCtl_behavior_Home_Txt "Home" "EXEDIR:/Data/Home"
+  Function fnc_behavior_SetVersions
+    ReadIniStr $4 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
+    ClearErrors
+    StrCpy $4 ""
+    
+    FindFirst $0 $1 $EXEDIR\App\emacs-*.*
+    loop_emacs:
+      StrCmp $1 "" done_emacs
+      StrCpy $1 $1 "" 6
+      StrCpy $2 $1
+      StrCmp $2 $3 0 +2
+      StrCpy $4 $2
+      ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion $1
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$1\MacOS"
+        ${NSD_CB_AddString} $hCtl_behavior_MacVersion $1
+      ${EndIf}
+      FindNext $0 $1
+      Goto loop_emacs
+    done_emacs:
+      FindClose $0
+      StrCmp $4 "" 0 +2
+      StrCpy $4 $2
+      ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $4
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$4\MacOS"
+        ${NSD_CB_SelectString} $hCtl_behavior_MacVersion $4
+      ${EndIf}
+  FunctionEnd
   
-      ; === Label3 (type: Label) ===
-      ${NSD_CreateLabel} 13u 65u 54u 13u "Home Directory"
-      Pop $hCtl_behavior_Label3
-      
-      ; === Home_Btn (type: Button) ===
-      ${NSD_CreateButton} 264u 65u 20u 11u "..."
-      Pop $hCtl_behavior_Home_Btn
-      ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
   
-      
-      ; === GroupBox2 (type: GroupBox) ===
-      ${NSD_CreateGroupBox} 8u 87u 280u 26u "Integration Options"
-      Pop $hCtl_behavior_GroupBox2
-      
-      ; === editWith (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 12u 97u 89u 14u "Right-Click $\"Edit With$\""
-      Pop $hCtl_behavior_editWith
-      ${SetCheck} $hCtl_behavior_editWith "RightEdit"
-      
-      ; === orgProtocol (type: Checkbox) ===
-      ${NSD_CreateCheckbox}  226u 97u 58u 14u "org-protocol"
-      Pop $hCtl_behavior_orgProtocol
-      ${SetCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
-      
-      ; === LiberKey (type: Checkbox) ===
-      ${NSD_CreateCheckbox} 167u 97u 47u 14u "LiberKey"
-      Pop $hCtl_behavior_LiberKey
-      ${SetUnCheck} $hCtl_behavior_LiberKey "LiberKey"
-      
-      ${NSD_CreateCheckbox} 105u 97u 47u 14u "Send To"
-      Pop $hCtl_behavior_SendTo
-      ${SetUnCheck} $hCtl_behavior_SendTo "SendTo"
+  ; dialog create function
+  Function fnc_behavior_Create
+    
+    ; === behavior (type: Dialog) ===
+    nsDialogs::Create 1018
+    Pop $hCtl_behavior
+    ${If} $hCtl_behavior == error
+      Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "EmacsPortable.App Behavior" "This allows the user to change the startup options, home directory, and what EmacsPortable.App integrates with."
+    
+    
+    ; === GroupBox1 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 7u 280u 78u "EmacsPortable.App Launching Options"
+    Pop $hCtl_behavior_GroupBox1
+    
+    ; === Debug (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 167u 58u 109u 14u "Debug Emacs with gdb"
+    Pop $hCtl_behavior_Debug
+    
+    ; === Daemon (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 46u 88u 14u "Use Pseudo-Dameon"
+    Pop $hCtl_behavior_Daemon
+    ${NSD_Check} $hCtl_behavior_Daemon
+    
+    ; === DebugLauncher (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 58u 140u 14u "Debug Launcher Startup"
+    Pop $hCtl_behavior_DebugLauncher
+    
+    ; === Label2 (type: Label) ===
+    ${NSD_CreateLabel} 128u 19u 58u 13u "Startup Script"
+    Pop $hCtl_behavior_Label2
+    
+    ; === Label1 (type: Label) ===
+    ${NSD_CreateLabel} 13u 19u 54u 13u "Default Version"
+    Pop $hCtl_behavior_Label1
+    
+    ; === Label4 (type: Label) ===
+    ${NSD_CreateLabel} 13u 33u 54u 13u "Mac Version"
+    Pop $hCtl_behavior_Label4
+    
+    ; === newFrame (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 167u 47u 95u 14u "New frame on file open"
+    Pop $hCtl_behavior_newFrame
+    
+    ; === MacVersion (type: DropList) ===
+    ${NSD_CreateDropList} 70u 31u 51u 12u ""
+    Pop $hCtl_behavior_MacVersion
+    SetCtlColors $hCtl_behavior_MacVersion 0x000000 0xFFFFFF
+    
+    ; === StartupScript (type: DropList) ===
+    ${NSD_CreateDropList} 190u 17u 94u 12u ""
+    Pop $hCtl_behavior_StartupScript
+    SetCtlColors $hCtl_behavior_StartupScript 0x000000 0xFFFFFF
+    
+    ; === DefaultVersion (type: DropList) ===
+    ${NSD_CreateDropList} 70u 17u 51u 12u ""
+    Pop $hCtl_behavior_DefaultVersion
+    SetCtlColors $hCtl_behavior_DefaultVersion 0x000000 0xFFFFFF
+    
+    ; === Home_Txt (type: Text) ===
+    ${NSD_CreateText} 190u 33u 73u 11u ""
+    Pop $hCtl_behavior_Home_Txt
+    
+    ; === Home_Btn (type: Button) ===
+    ${NSD_CreateButton} 264u 33u 20u 11u "..."
+    Pop $hCtl_behavior_Home_Btn
+    ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
+    
+    ; === Label3 (type: Label) ===
+    ${NSD_CreateLabel} 128u 33u 58u 13u "Home Directory"
+    Pop $hCtl_behavior_Label3
+    
+    ; === ZipBin (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 13u 69u 151u 14u "(Un)Zip Binaries && Run from %TEMP%"
+    Pop $hCtl_behavior_ZipBin
+    
+    ; === Clean (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 167u 69u 117u 14u "Clean Residual Files (Stealth)"
+    Pop $hCtl_behavior_Clean
+    
+    ; === GroupBox2 (type: GroupBox) ===
+    ${NSD_CreateGroupBox} 8u 95u 280u 26u "Integration Options"
+    Pop $hCtl_behavior_GroupBox2
+    
+    ; === orgProtocol (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 226u 106u 58u 14u "org-protocol"
+    Pop $hCtl_behavior_orgProtocol
+    
+    ; === editWith (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 12u 106u 89u 14u "Right-Click $\"Edit With$\""
+    Pop $hCtl_behavior_editWith
+    
+    ; === LiberKey (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 167u 106u 47u 14u "LiberKey"
+    Pop $hCtl_behavior_LiberKey
+    
+    ; === SendTo (type: Checkbox) ===
+    ${NSD_CreateCheckbox} 105u 106u 47u 14u "Send To"
+    Pop $hCtl_behavior_SendTo
+    
+    ${SetUnCheck} $hCtl_behavior_newFrame "NewFrame"
+    ${SetCheck} $hCtl_behavior_Daemon "Daemon"
+    ${SetUnCheck} $hCtl_behavior_Debug "Debug"
+    ${SetUnCheck} $hCtl_behavior_DebugLauncher "DebugLauncher"
+    ${SetUnCheck} $hCtl_behavior_ZipBin "Zip"
+    ${SetCheck} $hCtl_behavior_Clean "Clean"
+    ${SetDir} $hCtl_behavior_Home_Txt "Home" "EXEDIR:/Data/Home"
+    ${NSD_OnClick} $hCtl_behavior_Home_Btn fnc_hCtl_behavior_Home_Click
+    ${SetCheck} $hCtl_behavior_editWith "RightEdit"
+    ${SetCheck} $hCtl_behavior_orgProtocol "OrgProtocol"
+    ${SetUnCheck} $hCtl_behavior_LiberKey "LiberKey"
+    ${SetUnCheck} $hCtl_behavior_SendTo "SendTo"
+    
+    Call fnc_behavior_SetStartup
+    Call fnc_behavior_SetVersions
   FunctionEnd
   
   
@@ -1098,6 +1133,7 @@ From http://nsis.sourceforge.net/Explode
     ${If} $option_behavior == "1"
       ${WriteCheck} $hCtl_behavior_newFrame "NewFrame"
       ${WriteCheck} $hCtl_behavior_Debug "Debug"
+      ${WriteCheck} $hCtl_behavior_DebugLauncher "DebugLauncher"
       ${WriteCheck} $hCtl_behavior_Daemon "Daemon"
       ${WriteCheck} $hCtl_behavior_ZipBin "Zip"
       ${WriteCheck} $hCtl_behavior_Clean "Clean"
@@ -1112,6 +1148,9 @@ From http://nsis.sourceforge.net/Explode
       ${If} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bin\emacsclient.exe"
       ${OrIf} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\bare-bin.7z"
         ${WriteCB} $hCtl_behavior_DefaultVersion "Version"
+      ${EndIf}
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$hCtl_behavior_DefaultVersion\MacOS\Emacs"
+        ${WriteCB} $hCtl_behavior_MacVersion "MacVersion"
       ${EndIf}
       ${WriteCB} $hCtl_behavior_StartupScript "Startup"
     ${EndIf}
@@ -2994,4 +3033,4 @@ FunctionEnd
   SectionEnd
   
 #+END_SRC
-  
+

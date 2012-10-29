@@ -1,16 +1,24 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <!--
-This file was created by NSISDialogDesigner 0.9.16.0
+This file was created by NSISDialogDesigner 1.1.1.0
 http://coolsoft.altervista.org/nsisdialogdesigner
 Do not edit manually!
 -->
 <Dialog Name="behavior" Title="Dialog title..." Subtitle="Dialog subtitle...">
-  <GroupBox Name="GroupBox1" Location="12, 12" Size="426, 136" Text="EmacsPortable.App Launching Options" TabIndex="0">
-    <CheckBox Name="newFrame" Location="148, 48" Size="144, 24" Text="New frame on file open" TabIndex="0" />
-    <CheckBox Name="Debug" Location="298, 48" Size="128, 24" Text="Debug Startup (gdb)" TabIndex="0" />
-    <Label Name="Label2" Location="192, 22" Size="79, 23" Text="Startup Script" TabIndex="0" />
-    <CheckBox Name="Daemon" Location="8, 48" Size="134, 24" Text="Use Pseudo-Dameon" Checked="True" TabIndex="0" />
+  <GroupBox Name="GroupBox1" Location="12, 12" Size="426, 138" Text="EmacsPortable.App Launching Options" TabIndex="0">
+    <CheckBox Name="Debug" Location="242, 91" Size="166, 24" Text="Debug Emacs with gdb" TabIndex="0" />
+    <CheckBox Name="Daemon" Location="6, 70" Size="134, 24" Text="Use Pseudo-Dameon" Checked="True" TabIndex="0" />
+    <CheckBox Name="DebugLauncher" Location="6, 91" Size="213, 24" Text="Debug Launcher Startup" TabIndex="0" />
+    <Label Name="Label2" Location="183, 22" Size="88, 23" Text="Startup Script" TabIndex="0" />
     <Label Name="Label1" Location="8, 22" Size="83, 23" Text="Default Version" TabIndex="0" />
+    <Label Name="Label4" Location="8, 46" Size="83, 23" Text="Mac Version" TabIndex="0" />
+    <CheckBox Name="newFrame" Location="242, 72" Size="144, 24" Text="New frame on file open" TabIndex="0" />
+    <DropList Name="MacVersion" Location="95, 43" Size="77, 21" TabIndex="1" SelectedItem="two">
+      <Items>
+        <value>one</value>
+        <value>two</value>
+      </Items>
+    </DropList>
     <DropList Name="StartupScript" Location="277, 19" Size="143, 21" TabIndex="1" />
     <DropList Name="DefaultVersion" Location="95, 19" Size="77, 21" TabIndex="1" SelectedItem="one">
       <Items>
@@ -18,12 +26,12 @@ Do not edit manually!
         <value>two</value>
       </Items>
     </DropList>
-    <DirRequest Name="Home" Location="95, 104" Size="325, 20" TabIndex="2" />
-    <Label Name="Label3" Location="8, 104" Size="83, 23" Text="Home Directory" TabIndex="3" />
-    <CheckBox Name="ZipBin" Location="6, 74" Size="230, 24" Text="(Un)Zip Binaries &amp;&amp; Run from %TEMP%" TabIndex="4" />
-    <CheckBox Name="Clean" Location="242, 74" Size="178, 24" Text="Clean Residual Files (Stealth)" TabIndex="5" />
+    <DirRequest Name="Home" Location="277, 46" Size="143, 20" TabIndex="2" />
+    <Label Name="Label3" Location="183, 46" Size="88, 23" Text="Home Directory" TabIndex="3" />
+    <CheckBox Name="ZipBin" Location="8, 111" Size="230, 24" Text="(Un)Zip Binaries &amp;&amp; Run from %TEMP%" TabIndex="4" />
+    <CheckBox Name="Clean" Location="242, 111" Size="178, 24" Text="Clean Residual Files (Stealth)" TabIndex="5" />
   </GroupBox>
-  <GroupBox Name="GroupBox2" Location="12, 154" Size="426, 47" Text="Integration Options" TabIndex="1">
+  <GroupBox Name="GroupBox2" Location="12, 169" Size="426, 47" Text="Integration Options" TabIndex="1">
     <CheckBox Name="orgProtocol" Location="332, 19" Size="88, 24" Text="org-protocol" TabIndex="0" />
     <CheckBox Name="editWith" Location="6, 19" Size="136, 24" Text="Right-Click &quot;Edit With&quot;" TabIndex="0" />
     <CheckBox Name="LiberKey" Location="242, 19" Size="71, 24" Text="LiberKey" TabIndex="0" />
