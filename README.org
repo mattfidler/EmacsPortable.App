@@ -3,18 +3,20 @@
 #+OPTIONS: LaTeX:t
 * Introduction
 EmacsPortable.App attempts to make a portable version of Emacs that
-runs off a USB drive under either Windows, or Mac OSX.
+runs off a USB drive under either Windows, Linux, or Mac OSX.
 
 The features of this distribution:
 - Automatic Registering of extensions (and org-protocol)
-  - Will use LiberKey when requsted
+  - Will use LiberKey when requested
   - Will generate an appropriate Info.plist for Mac OS X
+  - No support under Linux
 - Temporarily Install of fonts
   - Temporarily install fonts on windows so you can always carry your
     favorite mono-spaced font
   - Copy the fonts to ~/Library/Fonts under Mac OSX
     - The fonts you use should be free, so you are not copying fonts
-      that should not be copied 
+      that should not be copied
+  - Currently no support under Linux
 *Window Only Features:*
 - Psuedo-Daemon
 - Finding support applications and dictionaries
@@ -602,6 +604,14 @@ then:
 
 Therefore, you do not need to always manually edit proxy settings, and
 plink should work most of the time.
+*** PuTTY and R
+R can connect to remote sessions using ssh.el.  When you use PuTTY to
+connect you will need to set the following option:
+
+#+BEGIN_SRC emacs-lisp
+  (setq ssh-program "plink")
+#+END_SRC
+
 ** Bleeding edge emacs (Not supported yet)
 These are notes to use the bleeding edge emacs.
 

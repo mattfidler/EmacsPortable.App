@@ -395,10 +395,14 @@ This also attempts to speed up the recent files cleanup list by
     :type 'boolean
     :group 'EmacsPortable)
   
+  (defun ep-not-file-remote-p (file &optional identification connected)
+    "Do not keep remote files"
+    (not (file-remote-p file identification connected)))
+  
   (when EmacsPortable-start-recentf
     (condition-case err
         (progn
-          (setq recentf-keep '(file-remote-p file-readable-p))
+          (setq recentf-keep '(ep-not-file-remote-p file-readable-p))
           (setq recentf-auto-cleanup 'mode)
           (setq recentf-max-menu-items 20)
           (setq recentf-max-saved-items 1000)

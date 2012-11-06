@@ -141,7 +141,7 @@
         (when (re-search-backward "<div id=\"content\">" nil t)
           (replace-match "<div id=\"header-wrapper\"><div id=\"header\"><div id=\"logo\">")
           (when (re-search-forward "</h1>" nil t)
-            (insert "<p>Run Emacs Portably on Windows and Mac OSX</p></div></div></div><div id=\"page\"><div id=\"page-bgtop\"><div id=\"page-bgbtm\"><div id=\"page-content\">")
+            (insert "<p>Run Emacs Portably on Windows, Linux and Mac OSX</p></div></div></div><div id=\"page\"><div id=\"page-bgtop\"><div id=\"page-bgbtm\"><div id=\"page-content\">")
             (when (re-search-forward "<div id=\"outline-container-1\"" nil t)
               (goto-char (match-beginning 0))
               (insert "<div id=\"content\">"))

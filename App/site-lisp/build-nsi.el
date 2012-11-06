@@ -49,9 +49,6 @@
 ;;
 ;;; Code:
 
-(defvar ep-ver 0.02
-  "Version for EmacsPortable.")
-
 (defun build-nsi-file (file-list out-path &optional exclude-reg)
   "Builds NSIS file information"
   (let (changed-out
@@ -95,6 +92,7 @@
   "Build NSI based on current install"
   (interactive)
   (let (ret
+        (ep-ver (format-time-string "%y.%m.%d"))
         tmp
         tmp2
         (tmp-file (make-temp-file "emacs-make" nil "bat"))
@@ -221,6 +219,10 @@ FunctionEnd
                   (directory-files (expand-file-name "~ep/") t ".*[.]exe")))
       (insert (format "File \"%s\*.html\"\n" tmp))
       (insert (format "File \"%s\*.org\"" tmp))
+      (insert (format "File \"%s\AppRun\"" tmp))
+      (insert (format "File \"%s\AppInfo.xml\"" tmp))
+      (insert (format "File \"%s\.DirIcon\"" tmp))
+      (insert (format "File \"%s\EmacsLinux.desktop\"" tmp))
       (build-nsi-file (directory-files "~ep/Contents" t)
                       "$INSTDIR\\Contents")
       (build-nsi-file (directory-files (concat "~app/emacs-" emacs-ver) t)

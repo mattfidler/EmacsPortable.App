@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<AppInfo>
+  <Summary xml:lang="en">EmacsPortable.App is a portable, extensible,
+  customizable text editor -- and more.</Summary>
+  <About xml:lang="en">
+    <Purpose>Text Editor</Purpose>
+    <Authors>Matthew Fidler and Gnu Emacs team</Authors>
+    <License>GNU General Public License v3</License>
+    <Homepage>https://github.com/mlf176f2/EmacsPortable.App/</Homepage>
+  </About>
+</AppInfo>
