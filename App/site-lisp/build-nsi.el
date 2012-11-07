@@ -96,7 +96,8 @@
         tmp
         tmp2
         (tmp-file (make-temp-file "emacs-make" nil "bat"))
-        (makensis (concat "@" (replace-regexp-in-string "/" "\\" (expand-file-name "~app/nsis/makensis.exe") t t)))
+        (makensis (concat "@" (replace-regexp-in-string "/" "\\"
+                                                        (expand-file-name "~app/nsis/makensis.exe") t t)))
         (bat ""))
     (setq bat
           (concat makensis " "
@@ -217,12 +218,12 @@ FunctionEnd
        (remove-if (lambda(x)
                     (string-match "\\(EmacsPortableApp-\\|EmacsInstall\\)" x))
                   (directory-files (expand-file-name "~ep/") t ".*[.]exe")))
-      (insert (format "File \"%s\*.html\"\n" tmp))
-      (insert (format "File \"%s\*.org\"" tmp))
-      (insert (format "File \"%s\AppRun\"" tmp))
-      (insert (format "File \"%s\AppInfo.xml\"" tmp))
-      (insert (format "File \"%s\.DirIcon\"" tmp))
-      (insert (format "File \"%s\EmacsLinux.desktop\"" tmp))
+      (insert (format "File \"%s*.html\"\n" tmp))
+      (insert (format "File \"%s*.org\"\n" tmp))
+      (insert (format "File \"%sApp*.xml\"\n" tmp))
+      (insert (format "File \"%sAppRun\"\n" tmp))
+      (insert (format "File \"%s.DirIcon\"\n" tmp))
+      (insert (format "File \"%s*.desktop\"\n" tmp))
       (build-nsi-file (directory-files "~ep/Contents" t)
                       "$INSTDIR\\Contents")
       (build-nsi-file (directory-files (concat "~app/emacs-" emacs-ver) t)
@@ -329,6 +330,24 @@ FunctionEnd
            (image-type-available-p 'tiff)
            (image-type-available-p 'gif)
            (gnutls-available-p)))
+;;;###autoload
+(defun build-nsi-zip ()
+  "Converts NSIS files to zip files using 7zip"
+  (interactive)
+  (let ((zip (expand-file-name "~app/7z/7zG.exe")))
+    (when (file-exists-p zip)
+      (mapc
+       (lambda(x)
+         (let ((zip-file (concat (file-name-sans-extension x) ".zip")))
+           (unless (file-exists-p zip-file) 
+             (let ((default-directory (make-temp-file "epi-" t)))
+               (shell-command-to-string (format "%s x %s -o%s" zip x default-directory))
+               (delete-directory (concat default-directory "/$PLUGINSDIR") t)
+               (shell-command-to-string (format "cmd /c \"cd %s && %s a -mx9 -tzip -r %s *.*\""
+                                                (replace-regexp-in-string "/" "\\" default-directory t t)
+                                                zip zip-file))
+               (delete-directory default-directory t)))))
+       (directory-files "~ep/" t "EmacsInstall-.*exe$")))))
 
 (provide 'build-nsi)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

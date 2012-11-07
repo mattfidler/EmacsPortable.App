@@ -7,6 +7,7 @@ Thumbs.db
 # EmacsPortable Files to Ignore #
 Other/source/nsi/EmacsInstall*.nsi
 EmacsInstall*.exe
+EmacsInstall*.zip
 /App/7z/*
 /App/ahk/*
 /App/NSIS/*
