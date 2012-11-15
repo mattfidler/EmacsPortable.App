@@ -395,14 +395,10 @@ This also attempts to speed up the recent files cleanup list by
     :type 'boolean
     :group 'EmacsPortable)
   
-  (defun ep-not-file-remote-p (file &optional identification connected)
-    "Do not keep remote files"
-    (not (file-remote-p file identification connected)))
-  
   (when EmacsPortable-start-recentf
     (condition-case err
         (progn
-          (setq recentf-keep '(ep-not-file-remote-p file-readable-p))
+          (setq recentf-exclude '(file-remote-p))
           (setq recentf-auto-cleanup 'mode)
           (setq recentf-max-menu-items 20)
           (setq recentf-max-saved-items 1000)
@@ -432,19 +428,18 @@ This also attempts to speed up the recent files cleanup list by
                               fancy-splash-image)
                              ((display-color-p)
                               (concat usb-app-dir "/img/"
-                                      (cond ((image-type-available-p 'svg)
-                                             "emacsportable.svg")
-                                            ((image-type-available-p 'png)
-                                             "emacsportable.png")
-                                            ((image-type-available-p 'jpeg)
-                                             "emacsportable.jpg")
-                                            ((image-type-available-p 'xpm)
-                                             "emacsportable.xpm")
-                                            ((<= (display-planes) 8)
-                                             (if (image-type-available-p 'xpm)
-                                                 "emacsportable.xpm"
-                                               "emacsportable.pbm"))
-                                            (t "emacsportable.pbm"))))
+                                      (cond 
+                                       ((image-type-available-p 'png)
+                                        "emacsportable.png")
+                                       ((image-type-available-p 'jpeg)
+                                        "emacsportable.jpg")
+                                       ((image-type-available-p 'xpm)
+                                        "emacsportable.xpm")
+                                       ((<= (display-planes) 8)
+                                        (if (image-type-available-p 'xpm)
+                                            "emacsportable.xpm"
+                                          "emacsportable.pbm"))
+                                       (t "emacsportable.pbm"))))
                              (t (concat usb-app-dir "/img/emacsportable.pbm"))))
            (img (create-image image-file))
            (image-width (and img (car (image-size img))))
@@ -454,13 +449,13 @@ This also attempts to speed up the recent files cleanup list by
           ;; Center the image in the window.
           (insert (propertize " " 'display
                               `(space :align-to (+ center (-0.5 . ,img)))))
-  
+          
           ;; Change the color of the XPM version of the splash image
           ;; so that it is visible with a dark frame background.
           (when (and (memq 'xpm img)
                      (eq (frame-parameter nil 'background-mode) 'dark))
             (setq img (append img '(:color-symbols (("#000000" . "gray30"))))))
-  
+          
           ;; Insert the image with a help-echo and a link.
           (make-button (prog1 (point) (insert-image img)) (point)
                        'face 'default
@@ -470,7 +465,7 @@ This also attempts to speed up the recent files cleanup list by
           (insert "\n\n")))))
   
   
-    (ep-m "Startup screen")
+  (ep-m "Startup screen")
   
 #+end_src
 
@@ -1033,8 +1028,6 @@ save files.
   (when (not (file-exists-p desktop-dirname))
     (make-directory desktop-dirname t))
 #+END_SRC
-
-
 * Start a shared startup-script, if present.
 Start the appropriate startup script
 #+BEGIN_SRC emacs-lisp
@@ -1298,7 +1291,6 @@ This attempts to sync color options with the startup options in EmacsPortable.Ap
   
 #+END_SRC
 
-
 * Setup org-mode files
 ** MathToWeb
 See [[http://orgmode.org/manual/Working-with-LaTeX-math-snippets.html#fn-1][Working with @LaTeX{} math snippets - The Org Manual]] for MathToWeb
@@ -1337,7 +1329,6 @@ Note that you will have to add the following to org-mode languages:
    (plantuml . t)))
 #+END_SRC
 
-
 * Setup EmacsPortable build/update functions
 These functions allow updating/building of EmacsPortable.App
 distributions.
@@ -1347,7 +1338,6 @@ distributions.
   (autoload 'build-nsi "build-nsi" nil t)
   
 #+END_SRC
-
 
 * Setup Yasnippet information
  This sets up the yansippets located under =~data/snippets=

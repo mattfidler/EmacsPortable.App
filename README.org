@@ -7,7 +7,7 @@ runs off a USB drive under either Windows, Linux, or Mac OSX.
 
 The features of this distribution:
 - Automatic Registering of extensions (and org-protocol)
-  - Will use LiberKey when requested
+  - Will use LiberKey when requested (Windows)
   - Will generate an appropriate Info.plist for Mac OS X
   - No support under Linux
 - Temporarily Install of fonts
@@ -25,8 +25,7 @@ The features of this distribution:
   hasn't released a new launcher.
 
 In windows, this distribution also allows concurrent versions of emacs
-to be run, with different startup options.  
-
+to be run, with different startup options. 
 * Download
 ** Download for Emacs 24
 The following downloads are available:

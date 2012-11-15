@@ -1,6 +1,7 @@
 #!/bin/bash
 SOURCE="${BASH_SOURCE[0]}"
 DIR="$( dirname "$SOURCE" )"
+OPWD=`pwd`
 
 while [ -h "$SOURCE" ]
 do 
@@ -10,9 +11,10 @@ do
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-EMACSDIR=$DIR/App/linux
-
-
+GLIBVER=`ldd --version | grep ldd | sed 's|.*) ||g'`
+MACHINE_TYPE=`uname -m`
+GLIBVER=$MACHINE_TYPE-$GLIBVER
+EMACSDIR=$DIR/App/linux-$GLIBVER
 EPUSB=`echo $EMACSDIR | sed 's/\(\/mnt\/[^\/]*\/\).*/\1/'`
 EPOTHER=`echo $EMACSDIR | sed 's/\/App.*/\/Other\//'`
 DICPATH=`echo $EMACSDIR | sed 's/\/App.*/\/App\/hunspell\/epdic/'`
@@ -32,6 +34,7 @@ EMACSVER=`cat $EPINI | grep "[Ll]inux[vV]ersion *= *" | tr -d '\15' | cut -f 2 -
 GEOMETRY=`cat $EPINI | grep "[Gg]eometry *= *" | tr -d '\15' | cut -f 2 -d "="`
 FOREGROUND=`cat $EPINI | grep "[Ff]oreground *= *" | tr -d '\15' | cut -f 2 -d "="`
 BACKGROUND=`cat $EPINI | grep "[Bb]ackground *= *" | tr -d '\15' | cut -f 2 -d "="`
+DAEMON=`cat $EPINI | grep "[Dd]aemon *= *" | tr -d '\15' | cut -f 2 -d "="`
 
 MAXIMIZED=`cat $EPINI | grep "[Mm]ax *= *" | tr -d '\15' | cut -f 2 -d "="`
 
@@ -74,19 +77,59 @@ EMACSDOC="${EMACSAPP}/emacs-${EMACSVER}/etc"
 
 EMACSLOADPATH=$EMACSAPP/emacs-$EMACSVER/lisp/:$EMACSAPP/site-lisp/
 
-EMACSDIR=$EMACSAPP/emacs-$EMACSVER/linux/bin
+## Compile if not present
+if [ ! -e "$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin/emacs-$EMACSVER" ]; then 
+    cp $EMACSAPP/emacs-$EMACSVER.tar.bz2 /tmp
+    cd /tmp
+    xterm -e tar -xvjf emacs-$EMACSVER.tar.bz2
+    cd /tmp/emacs-$EMACSVER
+    ## export CFLAGS="-m32 -march=i486"
+    ## export CXXFLAGS="-m32 -march=i486"
+    GCCVER=`gcc --version | grep gcc | sed 's|.*) ||g'`
+    xterm -e ./configure \
+        --bindir=/tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/linux-$GLIBVER/bin \
+        --libexecdir=/tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/linux-$GLIBVER/libexec \
+        --datadir=/tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/etc \
+        --info=/tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/info \
+        --prefix=/tmp/emacs-$EMACSVER-bin
+    xterm -e make
+    xterm -e make install
+    rm -rfv /tmp/emacs-$EMACSVER
+    cd /tmp/emacs-24.2-bin/App/emacs-$EMACSVER/linux-$GLIBVER/bin
+    #sed -i -e 's~/etc[^e]*emacs[^l]*liem~liem~g' emacs-$EMACSVER
+    #sed -i -e 's~/etc[^e]*emacs[^l]*lisp~lisp~g' emacs-$EMACSVER
+    #sed -i -e 's~/etc[^e]*emacs[^l]*site-lisp~site-lisp~g' emacs-$EMACSVER
+    #sed -i -e 's~/etc[^e]*emacs[^l]*etc~etc~g' emacs-$EMACSVER
+    #sed -i -e 's~/tmp[^t]*emacs-[0-9.]+-bin~././//././//~g' emacs-$EMACSVER
+    ## Move scores to the proper place snake-places and tetris-places
+    rm -rfv /tmp/emacs-$EMACSVER-bin/App/etc
+    rm -rfv /tmp/emacs-$EMACSVER-bin/App/info
+    rm -rfv /tmp/emacs-$EMACSVER-bin/lib
+    rm -rfv /tmp/emacs-$EMACSVER-bin/share
+    
+    mkdir /tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/linux-$GLIBVER/lib
+    for lib in `ldd /tmp/emacs-24.2-bin/App/emacs-24.2/linux-$GLIBVER/bin/emacs-* | sed 's/.*=> *\(.*\) (.*)/\1/g'  | sed 's/.* *(.*) *//' | sed '/^$/d'`; do
+        cp -v ${lib} /tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/linux-$GLIBVER/lib
+    done
+    mkdir $EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER
+    cp -rv /tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/linux-$GLIBVER/* $EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER
+    xterm -e rm -rfv /tmp/emacs-$EMACSVER-bin /tmp/emacs-$EMACSVER.tar.bz2
+    cd $OPWD
+fi
 
-LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$EMACSAPP/emacs-$EMACSVER/linux/lib
+EMACSDIR=$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin
 
-chmod +x $EMACSAPP/emacs-$EMACSVER/linux/bin/*
+LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/lib
+
+chmod +x $EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin/*
 
 CWD=`pwd`
-cd $EMACSAPP/emacs-$EMACSVER/linux/libexec/*/*/*/
+cd $EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/libexec/*/*/*/
 chmod +x *
 LIBDIR=`pwd`
 cd ${CWD}
 
-PATH=${PATH}:$EMACSAPP/emacs-$EMACSVER/linux/bin:${LIBDIR}
+PATH=${PATH}:$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin:${LIBDIR}
 
 OPHOME=`cat $EPINI | egrep "[Hh]ome *= *" | tr -d '\15' | cut -f 2 -d "=" | sed 's/\\\\/\\//g' | sed 's/\\/$//'`
 
@@ -163,16 +206,29 @@ export EMACSDOC
 export EMACSVER 
 export EPSTART
 export EPSTARTDIR
+##export LD_LIBRARY_PATH
 
 REALVER=`$EMACSDIR/emacs-$EMACSVER --version 2>&1 | head -n1 | sed 's/[^0-9]*\([0-9].*\)/\1/'`
 
 
 echo REALVER: $REALVER
 ##
-if ! [ -e $EMACSDATA/DOC-$REALVER ]; then
+if [ ! -e $EMACSDATA/DOC-$REALVER ]; then
     cp $EMACSDATA/DOC-X $EMACSDATA/DOC-$REALVER
 fi 
 echo  $OPT
 rm $EPINI
-$EMACSDIR/emacs-$EMACSVER $OPT $@
+
+if [ "$1" == "--kill-emacs" ]; then
+    $EMACSDIR/emacsclient -e "(kill-emacs)"
+else
+    
+    if [ "$DAEMON" == "1" ]; then
+        $EMACSDIR/emacsclient --a="" -c "$@"
+    else
+        $EMACSDIR/emacs-$EMACSVER $OPT "$@"
+    fi
+fi
+
+
 

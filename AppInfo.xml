@@ -8,4 +8,9 @@
     <License>GNU General Public License v3</License>
     <Homepage>https://github.com/mlf176f2/EmacsPortable.App/</Homepage>
   </About>
+  <AppMenu>
+    <Item option="--kill-emacs">
+      <Label>Kill Emacs (when server is running)</Label>
+    </Item>
+  </AppMenu>
 </AppInfo>
