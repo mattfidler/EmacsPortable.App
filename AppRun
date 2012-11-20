@@ -78,7 +78,10 @@ EMACSDOC="${EMACSAPP}/emacs-${EMACSVER}/etc"
 EMACSLOADPATH=$EMACSAPP/emacs-$EMACSVER/lisp/:$EMACSAPP/site-lisp/
 
 ## Compile if not present
-if [ ! -e "$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin/emacs-$EMACSVER" ]; then 
+if [ ! -e "$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin/emacs-$EMACSVER" ]; then
+    if [ ! -e $EMACSAPP/emacs-$EMACSVER.tar.bz2 ]; then
+        xterm -e wget http://ftpmirror.gnu.org/emacs/emacs-$EMACSVER.tar.bz2
+    fi
     cp $EMACSAPP/emacs-$EMACSVER.tar.bz2 /tmp
     cd /tmp
     xterm -e tar -xvjf emacs-$EMACSVER.tar.bz2
