@@ -221,7 +221,7 @@ FunctionEnd
       Goto end
     not_found:
   
-      MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version"
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version$\nEmacs Dir: $emacs_dir"
       ExecWait "$EXEDIR\..\..\EmacsOptions.exe"
       ExecWait "$EXEDIR\..\..\EmacsPortableApp.exe"
       Abort
