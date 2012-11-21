@@ -544,8 +544,10 @@ From http://nsis.sourceforge.net/Explode
     StrCpy $option_version "24.1"
     FindFirst $0 $1 $EXEDIR\..\emacs-*.*
     ${While} $1 != ""
-      StrCpy $option_version $1 "" 6
-	  FindNext $0 $1 
+      ${If} ${FileExists} $EXEDIR\..\$1\etc
+        StrCpy $option_version $1 "" 6
+      ${EndIf}
+      FindNext $0 $1 
     ${EndWhile}
     StrCpy $option_font "Inconsolata"
     StrCpy $option_font_size 18
@@ -580,11 +582,13 @@ From http://nsis.sourceforge.net/Explode
       StrCpy $1 $1 "" 6
       ${If} $2 != ""
       ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
+      ${AndIf} ${FileExists} $EXEDIR\..\emacs-$2\etc
         CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
         StrCpy $3 "1"
       ${EndIf}
       ${If} $3 != ""
       ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
+      ${AndIf} ${FileExists} $EXEDIR\..\emacs-$1\etc
         CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
       ${EndIf}
       FindProcDLL::FindProc "emacs-$1.exe"
@@ -592,7 +596,7 @@ From http://nsis.sourceforge.net/Explode
         StrCpy $option_version $1
         StrCpy $epstart ""
       ${Else}
-        FindFirst $3 $4 $EXEDIR\..\emacs-*.*
+        FindFirst $3 $4 $EXEDIR\..\..\Data\start\*.*
         ${While} $4 != ""
           ${If} $4 != "."
           ${AndIf} $4 != ".."
@@ -720,8 +724,10 @@ From http://nsis.sourceforge.net/Explode
       FindFirst $0 $1 $EXEDIR\..\emacs-*.*
     loop_ver:
       StrCmp $1 "" done_ver
-      StrCpy $1 $1 "" 6
-      StrCpy $2 $1
+      ${If} ${FileExists} $EXEDIR\..\$1\etc
+        StrCpy $1 $1 "" 6
+        StrCpy $2 $1
+      ${EndIf}
       FindNext $0 $1
       Goto loop_ver
     done_ver:
@@ -1457,18 +1463,20 @@ From http://nsis.sourceforge.net/Explode
       loop_proxy:
         HideWindow
         StrCmp $1 "" done_proxy
-        DetailPrint "Checking for running $1.exe"
-        FindProcDLL::FindProc "$1.exe"
-        StrCmp "$R0" "1" 0 loop_next
-        DetailPrint "$1 is running"
-        StrCpy $2 $1 "" 6
-        IfFileExists "$EXEDIR\..\emacs-$2\bin\emacsclient.exe" 0 +3
-        StrCpy $3 "$EXEDIR\..\emacs-$2\bin\emacsclient.exe"
-        Goto +3
-        IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
-        StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
-        SetOutPath $home
-        Exec '"$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
+        ${If} ${FileExists} $EXEDIR\..\$1\etc
+          DetailPrint "Checking for running $1.exe"
+          FindProcDLL::FindProc "$1.exe"
+          StrCmp "$R0" "1" 0 loop_next
+          DetailPrint "$1 is running"
+          StrCpy $2 $1 "" 6
+          IfFileExists "$EXEDIR\..\emacs-$2\bin\emacsclient.exe" 0 +3
+          StrCpy $3 "$EXEDIR\..\emacs-$2\bin\emacsclient.exe"
+          Goto +3
+          IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
+          StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
+          SetOutPath $home
+          Exec '"$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
+        ${EndIf}
       loop_next:
         FindNext $0 $1
         Goto loop_proxy
@@ -1596,8 +1604,8 @@ From http://nsis.sourceforge.net/Explode
         ${SetEnv}
         ${If} ${FileExists} "$msys\bin\gdb.exe"
           System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$msys").r0'
-          StrCpy $cmd "$msys\bin\gdb.exe"
-        ${ElseIf} ${FileExists} "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
+              StrCpy $cmd "$msys\bin\gdb.exe"
+            ${ElseIf} ${FileExists} "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
           System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("MSYS", "$usbs\PortableApps\CommonFiles\MinGW").r0'
           StrCpy $cmd "$usbs\PortableApps\CommonFiles\MinGW\bin\gdb.exe"
         ${ElseIf} ${FileExists} "$usbs\Apps\CommonFiles\MinGW\bin\gdb.exe"
