@@ -968,41 +968,42 @@ the implementation
   (defun refresh-proxy (&optional process event sync)
     "Refreshes proxy settings"
     (interactive)
-    (let ((el-proxy (expand-file-name (concat usb-app-dir "../App/eps/ep-proxy.exe")))
-          (delete-by-moving-to-trash nil)
-          (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el")))
-          (proc process))
-      (when process
-        (message "Proxy settings were retrieved (%s)." event))
-      (if (file-exists-p proxy)
-          (progn
-            (load-file proxy)
-            (delete-file proxy))
-        (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy)
-                   (not proc))
-          (message "Starting to lookup proxy information (%s)" el-proxy)
-          (if (not sync)
-              (progn
-                (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
-                                          el-proxy))
-                (set-process-sentinel proc 'refresh-proxy))
-            (shell-command-to-string el-proxy))
-          
-          (when (file-exists-p proxy)
-            (load-file proxy)
-            (delete-file proxy)
-            (message "Proxy settings were retrieved.")
-            (setq process t))))
-      ;; Setup Git
-      (if (and process
-               (executable-find "git")
-               (getenv "HTTP_PROXY"))
-          (progn
-            (shell-command-to-string (concat "git config --global http.proxy "
-                                             (getenv "HTTP_PROXY"))))
+    (when (eq system-type 'windows-nt)
+      (let ((el-proxy (expand-file-name (concat usb-app-dir "../App/eps/ep-proxy.exe")))
+            (delete-by-moving-to-trash nil)
+            (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el")))
+            (proc process))
+        (when process
+          (message "Proxy settings were retrieved (%s)." event))
+        (if (file-exists-p proxy)
+            (progn
+              (load-file proxy)
+              (delete-file proxy))
+          (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy)
+                     (not proc))
+            (message "Starting to lookup proxy information (%s)" el-proxy)
+            (if (not sync)
+                (progn
+                  (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
+                                            el-proxy))
+                  (set-process-sentinel proc 'refresh-proxy))
+              (shell-command-to-string el-proxy))
+            
+            (when (file-exists-p proxy)
+              (load-file proxy)
+              (delete-file proxy)
+              (message "Proxy settings were retrieved.")
+              (setq process t))))
+        ;; Setup Git
         (if (and process
-                 (executable-find "git"))
-            (shell-command-to-string (concat "git config --global --unset http.proxy"))))))
+                 (executable-find "git")
+                 (getenv "HTTP_PROXY"))
+            (progn
+              (shell-command-to-string (concat "git config --global http.proxy "
+                                               (getenv "HTTP_PROXY"))))
+          (if (and process
+                   (executable-find "git"))
+              (shell-command-to-string (concat "git config --global --unset http.proxy")))))))
   (refresh-proxy nil nil t)
   
 #+END_SRC
