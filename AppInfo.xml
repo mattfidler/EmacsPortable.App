@@ -12,5 +12,8 @@
     <Item option="--kill-emacs">
       <Label>Kill Emacs (when server is running)</Label>
     </Item>
+    <Item option="--startup-options">
+      <Label>Startup Options</Label>
+    </Item>
   </AppMenu>
 </AppInfo>
