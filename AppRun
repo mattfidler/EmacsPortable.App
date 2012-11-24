@@ -1,5 +1,4 @@
 #!/bin/bash
-
 YAD=`which yad`
 SOURCE="${BASH_SOURCE[0]}"
 DIR="$( dirname "$SOURCE" )"
@@ -236,7 +235,9 @@ function setup_emacs {
 ## Compile if not present
     if [ ! -e "$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin/emacs-$EMACSVER" ]; then
         if [ ! -e $EMACSAPP/emacs-$EMACSVER.tar.bz2 ]; then
-            download_file  http://ftpmirror.gnu.org/emacs/emacs-$EMACSVER.tar.bz2 "Emacs $EMACSVER Source"
+            cd $EMACSAPP
+            download_file  http://ftpmirror.gnu.org/emacs/emacs-$EMACSVER.tar.bz2 "Emacs $EMACSVER Source" 
+            cd -
         fi
         cp $EMACSAPP/emacs-$EMACSVER.tar.bz2 /tmp
         cd /tmp
