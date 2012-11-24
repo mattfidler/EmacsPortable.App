@@ -74,6 +74,38 @@ function emacsd_progress_start () { # show progress dialog
         done
     fi
 }
+function expand_color () {
+    local RED
+    local GREEN
+    local BLUE
+    
+    RED=$(echo $@ | tr '[:lower:]' '[:upper:]' | sed 's!#\([0-9A-Fa-f][0-9A-Fa-f]\).*!ibase=16; val=\1*FFFF/FF; val!'|bc)
+    RED=$(echo "obase=16; $RED"|bc)
+    
+    GREEN=$(echo $@ | tr '[:lower:]' '[:upper:]' | sed 's!#[0-9A-Fa-f][0-9A-Fa-f]\([0-9A-Fa-f][0-9A-Fa-f]\).*!ibase=16; val=\1*FFFF/FF; val!'|bc)
+    GREEN=$(echo "obase=16; $GREEN"|bc)
+    
+    BLUE=$(echo $@ | tr '[:lower:]' '[:upper:]' | sed 's!#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\([0-9A-Fa-f][0-9A-Fa-f]\).*!ibase=16; val=\1*FFFF/FF; val!'|bc)
+    BLUE=$(echo "obase=16; $BLUE"|bc)
+    
+    EXPAND_COLOR_VAL="#$RED$GREEN$BLUE"
+}
+
+function contract_color () {
+    local RED
+    local GREEN
+    local BLUE
+    
+    RED=$(echo $@ | tr '[:lower:]' '[:upper:]' | sed 's!#\([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\).*!ibase=16; val=\1*FF/FFFF; val!'|bc)
+    RED=$(echo "obase=16; $RED"|bc)
+    
+    GREEN=$(echo $@ | tr '[:lower:]' '[:upper:]' | sed 's!#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\).*!ibase=16; val=\1*FF/FFFF; val!'|bc)
+    GREEN=$(echo "obase=16; $GREEN"|bc)
+    
+    BLUE=$(echo $@ | tr '[:lower:]' '[:upper:]' | sed 's!#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\).*!ibase=16; val=\1*FF/FFFF; val!'|bc)
+    BLUE=$(echo "obase=16; $BLUE"|bc)
+    CONTRACT_COLOR_VAL="#$RED$GREEN$BLUE"
+}
 
 function startup_options {
     if [ "$YAD" != "" ]; then
@@ -133,9 +165,15 @@ function startup_options {
         else
             ISDAEMON="FALSE"
         fi
+        
         EPFG=$(sed -n 's/.*[Ff]oreground *= *\([^ ]*.*\)/\1/p' < $DIR/Data/ini/EmacsPortableApp.ini)
         EPBG=$(sed -n 's/.*[Bb]ackground *= *\([^ ]*.*\)/\1/p' < $DIR/Data/ini/EmacsPortableApp.ini)
-        ## I'm not sure why, but colors are not being passed right.
+        
+        expand_color $EPFG
+        EPFG="$EXPAND_COLOR_VAL"
+        
+        expand_color $EPBG
+        EPBG="$EXPAND_COLOR_VAL"
         FRM=$(yad --form \
             --separator=' ' \
             --title "Startup Options" \
@@ -143,7 +181,9 @@ function startup_options {
             --field "Mac Version":CB "$MACVER" \
             --field "Windows Version":CB "$WINVER" \
             --field "Startup Script":CB "$STARTOPT" \
-            --field "Use Emacs Daemon":CHK $ISDAEMON )
+            --field "Use Emacs Daemon":CHK $ISDAEMON \
+            --field "Foreground Color":CLR $EPFG \
+            --field "Background Color":CLR $EPBG)
         if [ "$FRM" == "" ]; then
             echo "Canceled Form"
         else
@@ -153,12 +193,23 @@ function startup_options {
             else
                 ISDAEMON=0
             fi
+            
+            ## Contract Colors
+            contract_color ${ARRAY[5]}
+            EPFG=$CONTRACT_COLOR_VAL
+            
+            contract_color ${ARRAY[6]}
+            EPBG=$CONTRACT_COLOR_VAL
+            
+            cp $DIR/Data/ini/EmacsPortableApp.ini $DIR/Data/ini/EmacsPortableApp.ini.old
             cp $DIR/Data/ini/EmacsPortableApp.ini /tmp/epi.ini
             sed "s#^ *[Vv]ersion *=.*#Version=${ARRAY[2]}#" /tmp/epi.ini | \
                 sed "s#^ *[Mm]ac[Vv]ersion *=.*#MacVersion=${ARRAY[1]}#" | \
                 sed "s#^ *[Ll]inux[Vv]ersion *=.*#LinuxVersion=${ARRAY[0]}#" | \
                 sed "s#^ *[Dd]aemon *=.*#Daemon=$ISDAEMON#" | \
-                sed "s#^ *[Ss]tartup *=.*#Startup=${ARRAY[3]}#" > $DIR/Data/ini/EmacsPortableApp.ini
+                sed "s#^ *[Ss]tartup *=.*#Startup=${ARRAY[3]}#" | \
+                sed "s/^ *[Ff]oreground *=.*/Foreground=$EPFG/" | \
+                sed "s/^ *[Bb]ackground *=.*/Background=$EPBG/" > $DIR/Data/ini/EmacsPortableApp.ini
             unix2dos $DIR/Data/ini/EmacsPortableApp.ini
             rm /tmp/epi.ini
         fi
