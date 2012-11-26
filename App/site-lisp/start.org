@@ -153,7 +153,6 @@ EmacsPortableApp.exe launcher.
     (save-match-data
       (let ((ret name)
             (case-fold-search t))
-        
         (when (string-match "^\\(usb:\\|~usb\\)[/\\\\]" ret)
           (setq ret (replace-match usb-drive-letter t t ret)))
         
@@ -327,11 +326,15 @@ EmacsPortableApp.exe launcher.
                       (expand-file-name (getenv "HOME"))) . "~")
             (,(concat "\\`" usb-drive-letter) . "~usb/")
             ,@(mapcar (lambda(x) `(,(concat "\\`" (regexp-quote (replace-regexp-in-string "[/]*$" "/" (cdr x)))) . ,(concat "~" (car x) "/"))) ep-start-dirs)
-            (,(if (and (eq system-type 'windows-nt)
+            ,@(if (and (eq system-type 'windows-nt)
                        (getenv "TEMP")
                        (file-readable-p (getenv "TEMP")))
-                  (replace-regexp-in-string "[/]*$" "/" (expand-file-name (getenv "TEMP")))
-                "/tmp/") . "/tmp/")
+                  `(,(if (and (eq system-type 'windows-nt)
+                              (getenv "TEMP")
+                              (file-readable-p (getenv "TEMP")))
+                         (replace-regexp-in-string "[/]*$" "/" (expand-file-name (getenv "TEMP")))
+                       "/tmp/") . "/tmp/")
+                nil)
             (,(if (and (eq system-type 'windows-nt)
                        (getenv "MYDOC")
                        (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
@@ -346,7 +349,11 @@ EmacsPortableApp.exe launcher.
                   "usb:/"
                   "~/Dropbox"
                   "~/dropbox"
-                  "/tmp/"
+                  ,@(if (and (eq system-type 'windows-nt)
+                             (getenv "TEMP")
+                             (file-readable-p (getenv "TEMP")))
+                        ("/tmp/")
+                      nil)
                   ,@(mapcar (lambda(x)
                               (format "~%s/" (nth 0 x)))
                             ep-start-dirs)
