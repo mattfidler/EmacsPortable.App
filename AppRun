@@ -275,7 +275,7 @@ function setup_emacs {
 ##    OPT="$OPT -fh"
 ## fi
     
-    m## Set Emacs Specific Directories
+    ## Set Emacs Specific Directories
     
     
     EMACSDATA="${EMACSAPP}/emacs-${EMACSVER}/etc"
