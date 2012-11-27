@@ -326,20 +326,17 @@ EmacsPortableApp.exe launcher.
                       (expand-file-name (getenv "HOME"))) . "~")
             (,(concat "\\`" usb-drive-letter) . "~usb/")
             ,@(mapcar (lambda(x) `(,(concat "\\`" (regexp-quote (replace-regexp-in-string "[/]*$" "/" (cdr x)))) . ,(concat "~" (car x) "/"))) ep-start-dirs)
-            ,@(if (and (eq system-type 'windows-nt)
-                       (getenv "TEMP")
-                       (file-readable-p (getenv "TEMP")))
-                  `(,(if (and (eq system-type 'windows-nt)
-                              (getenv "TEMP")
-                              (file-readable-p (getenv "TEMP")))
-                         (replace-regexp-in-string "[/]*$" "/" (expand-file-name (getenv "TEMP")))
-                       "/tmp/") . "/tmp/")
-                nil)
             (,(if (and (eq system-type 'windows-nt)
                        (getenv "MYDOC")
                        (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
                   (concat "\\`" (expand-file-name (concat (getenv "MYDOC") "\\My Dropbox")))
                 "\\`~/Dropbox/") . "~/Dropbox/")))
+  
+    (when (eq system-type 'windows-nt)
+      (when (and (getenv "TEMP")
+                       (file-readable-p (getenv "TEMP")))
+        (add-to-list 'directory-abbrev-alist
+                     `(,(replace-regexp-in-string "[/]*$" "/" (expand-file-name (getenv "TEMP"))) . "/tmp/"))))
     
     (setq directory-abbrev-alist 
           (sort directory-abbrev-alist 
@@ -352,7 +349,7 @@ EmacsPortableApp.exe launcher.
                   ,@(if (and (eq system-type 'windows-nt)
                              (getenv "TEMP")
                              (file-readable-p (getenv "TEMP")))
-                        ("/tmp/")
+                        '("/tmp/")
                       nil)
                   ,@(mapcar (lambda(x)
                               (format "~%s/" (nth 0 x)))
