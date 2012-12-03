@@ -1653,11 +1653,17 @@ This removes registry settings, fonts and other settings.
     SetAutoClose true
     ;; Wait for EmacsPortableApp.exe to stop
     wait_for_emacsportable_launcher_stop:
-      FindProcDLL::FindProc "EmacsPortableApp.exe"
-      StrCmp "$R0" "1" 0 start_notify_plugin
+      FindProcDLL::FindProc "ep.exe"
+      StrCmp "$R0" "1" 0 wait_for_emacsportable_debug_launcher_stop
       Sleep 1000
       Goto wait_for_emacsportable_launcher_stop
+    wait_for_emacsportable_debug_launcher_stop:
+      FindProcDLL::FindProc "epl.exe"
+      StrCmp "$R0" "1" 0 start_notify_plugin
+      Sleep 1000
+      Goto  wait_for_emacsportable_debug_launcher_stop
     start_notify_plugin:
+      
     look_for_running_emacs:
       StrCpy $nver 0
       EnumINI::Section "$TEMP\ep\ep-reg.ini" "run"

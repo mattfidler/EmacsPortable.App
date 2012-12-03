@@ -465,6 +465,10 @@ Running in subversion from within EmacsPortable.App /is/ portable,
 though.  Emacs will set the =%AppData%= Environment variable to
 =Data/AppData= and set =%ALLUSERSPROFILE%= to =Data/AppData=
 
+*** Git
+EmacsPortable.App picks up both Git portable and locally installed
+installations.  Because of emacs version control, if Git is not
+installed locally, Emacs is slowed down substantially.
 ** SumatraPDF Portable
 Using AUCTeX inverse-search and forward search is supported with
 [[http://portableapps.com/apps/office/sumatra_pdf_portable][SumatraPDFPortable]].  There should be no set-up, EmacsPortable.App with

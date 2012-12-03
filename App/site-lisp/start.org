@@ -402,7 +402,7 @@ This also attempts to speed up the recent files cleanup list by
   (when EmacsPortable-start-recentf
     (condition-case err
         (progn
-          (setq recentf-exclude '(file-remote-p))
+          (setq recentf-keep '(file-remote-p file-readable-p))
           (setq recentf-auto-cleanup 'mode)
           (setq recentf-max-menu-items 20)
           (setq recentf-max-saved-items 1000)
@@ -1024,12 +1024,25 @@ be fixed by advices on some primitive functions
 Using putty, you may add tramp support.  This is the emacs piece of
 the implementation 
 #+BEGIN_SRC emacs-lisp
+  (require 'tramp)
   (when (and
          (executable-find "plink"))
-    (require 'tramp)
     (ep-m "Tramp (for Putty)")
     (setq tramp-default-method "plink"))
 #+END_SRC
+
+When using ido, ido puts tramp in the file history unless they are
+ignored.  This causes ido-mode to freeze emacs startup waiting on
+remote sites.  This can be fixed by the following code:
+
+#+BEGIN_SRC emacs-lisp
+  (require 'ido)
+  (add-to-list 'ido-work-directory-list-ignore-regexps tramp-file-name-regexp)
+#+END_SRC
+
+This is discussed http://stackoverflow.com/questions/10397687/stop-tramp-from-opening-remote-directories-when-using-ido-mode
+
+
 * Fix mac/windows communication issues on mac.
 #+BEGIN_SRC emacs-lisp
     (when (eq system-type 'darwin)

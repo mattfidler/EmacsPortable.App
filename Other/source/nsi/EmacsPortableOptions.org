@@ -955,9 +955,9 @@ From http://nsis.sourceforge.net/Explode
   
   
   Function fnc_behavior_SetVersions
-    ReadIniStr $4 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
     ClearErrors
     StrCpy $4 ""
+    StrCpy $5 ""
     
     FindFirst $0 $1 $EXEDIR\App\emacs-*.*
     loop_emacs:
@@ -971,6 +971,7 @@ From http://nsis.sourceforge.net/Explode
       ${EndIf}
       ${If} ${FileExists} "$EXEDIR\App\emacs-$1\MacOS"
         ${NSD_CB_AddString} $hCtl_behavior_MacVersion $1
+        StrCpy $5 $2
       ${EndIf}
       FindNext $0 $1
       Goto loop_emacs
@@ -978,12 +979,22 @@ From http://nsis.sourceforge.net/Explode
       FindClose $0
       StrCmp $4 "" 0 +2
       StrCpy $4 $2
-      ${If} ${FileExists} "$EXEDIR\App\emacs-$4\etc"
+      
+  
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$R0\etc\DOC-X"
+        ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $R0
+      ${ElseIf} ${FileExists} "$EXEDIR\App\emacs-$4\etc\DOC-X"
         ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $4
       ${EndIf}
-      ${If} ${FileExists} "$EXEDIR\App\emacs-$4\MacOS"
-        ${NSD_CB_SelectString} $hCtl_behavior_MacVersion $4
+      ClearErrors
+      
+      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "MacVersion"
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$R0\MacOS\Emacs"
+        ${NSD_CB_SelectString} $hCtl_behavior_MacVersion $R0
+      ${ElseIf} ${FileExists} "$EXEDIR\App\emacs-$5\MacOS\Emacs"
+        ${NSD_CB_SelectString} $hCtl_behavior_MacVersion $5
       ${EndIf}
+      ClearErrors
   FunctionEnd
   
   
@@ -1087,6 +1098,7 @@ From http://nsis.sourceforge.net/Explode
     ; === SendTo (type: Checkbox) ===
     ${NSD_CreateCheckbox} 105u 106u 47u 14u "Send To"
     Pop $hCtl_behavior_SendTo
+    
     
     ${SetUnCheck} $hCtl_behavior_newFrame "NewFrame"
     ${SetCheck} $hCtl_behavior_Daemon "Daemon"
