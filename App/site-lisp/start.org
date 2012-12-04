@@ -1112,6 +1112,9 @@ save files.
 #+BEGIN_SRC emacs-lisp
   (setq desktop-dirname (concat usb-site-lisp-dir "../Data/saves/desktop-"
                                 system-name)
+        user-emacs-directory (concat (expand-file-name ".emacs.d"
+                                               (getenv "HOME")) "/")
+        savehist-file  (concat usb-site-lisp-dir "../Data/saves/history")
         save-place-file (concat usb-site-lisp-dir "../Data/saves/places-"
                                 system-name)
         ido-save-directory-list-file (concat usb-site-lisp-dir
@@ -1120,6 +1123,7 @@ save files.
                                       system-name ".bmk"))
   (when (not (file-exists-p desktop-dirname))
     (make-directory desktop-dirname t))
+  
 #+END_SRC
 * Start a shared startup-script, if present.
 Start the appropriate startup script

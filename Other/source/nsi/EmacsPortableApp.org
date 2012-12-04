@@ -575,8 +575,9 @@ From http://nsis.sourceforge.net/Explode
     FindProcDLL::FindProc "emacs-$option_version-$epstart.exe"
     StrCmp $R0 "1" already_running
     FindFirst $0 $1 "$EXEDIR\..\emacs-*"
-    StrCpy $2  ""
+    StrCpy $2 ""
     StrCpy $3 ""
+    StrCpy $9 ""
     loop_find_running:
       StrCmp "$1" "" not_running 0
       StrCpy $1 $1 "" 6
@@ -605,6 +606,7 @@ From http://nsis.sourceforge.net/Explode
           ${AndIf} $4 != "user"
             FindProcDLL::FindProc "emacs-$1-$4.exe"
             ${If} $R0 == "1"
+              StrCpy $9 "1"
               StrCpy $option_version $1
               StrCpy $epstart $4
             ${EndIf}
@@ -612,14 +614,14 @@ From http://nsis.sourceforge.net/Explode
           FindNext $3 $4
         ${EndWhile}
       ${EndIf}
-      ## Now check for starter Kit
       StrCpy $2 $1
       FindNext $0 $1
       Goto loop_find_running
     not_running:
-      ; ${If} ${FileExists} "$TEMP\ep\ep-rm.exe"
-      ;   ExecWait "$TEMP\ep\ep-rm.exe"
-      ; ${EndIf}
+      ${If} "$9" == "1"
+      ${AndIf} ${FileExists} "$TEMP\ep\ep-rm.exe"
+        ExecWait "$TEMP\ep\ep-rm.exe /SKIP"
+      ${EndIf}
     already_running:
       
       ${ReadINIStrWithDefault} $option_geometry $epdata\ini\EmacsPortableApp.ini \
@@ -1651,6 +1653,12 @@ This removes registry settings, fonts and other settings.
     ; Uninstall
     HideWindow
     SetAutoClose true
+    ${GetParameters} $cmdLineParams
+    ${GetOptions} $cmdLineParams '/SKIP' $R0
+    ${IfNot} ${Errors}
+      Goto none_left
+    ${EndIf}
+    ClearErrors
     ;; Wait for EmacsPortableApp.exe to stop
     wait_for_emacsportable_launcher_stop:
       FindProcDLL::FindProc "ep.exe"
