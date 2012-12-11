@@ -457,7 +457,8 @@ python is available to Emacs.  This is useful for installing Bazaar,
 which Emacs uses as its version control.
 ** Version control Software
 *** Bazaar
-I have created a portable Bazaar.  
+I have created a portable Bazaar.  EmacsPortable.App will recognize
+bazaar version
 *** Subversion in Windows
 Not quite portable, but you can get the binaries [[http://www.visualsvn.com/downloads/][here]].
 
@@ -622,10 +623,22 @@ Goto the App directory, and under a command prompt that has bzr
 installed, type
 
 #+BEGIN_SRC ntcmd 
-bzr branch --stacked bzr://bzr.savannah.gnu.org/emacs/trunk emacs-bzr
+    bzr branch --stacked bzr://bzr.savannah.gnu.org/emacs/trunk emacs-bzr
 #+END_SRC
 
 
-* Wish list
-** TODO Add Mac Support of Daemon Mode
-[2011-12-14 Wed 21:48]
+If that has already been performed, to update just type:
+
+#+BEGIN_SRC ntcmd 
+  bzr pull
+#+END_SRC
+
+If you are behind a firewall you may wish to use git to get the latest
+sources.  Note that only the Bazaar repo is the official 
+
+
+#+BEGIN_SRC ntcmd 
+  git clone http://git.savannah.gnu.org/r/emacs.git emacs-git
+#+END_SRC
+
+
