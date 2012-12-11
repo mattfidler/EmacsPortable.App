@@ -8,6 +8,7 @@ Thumbs.db
 Other/source/nsi/EmacsInstall*.nsi
 EmacsInstall*.exe
 EmacsInstall*.zip
+/App/site-lisp/elpa/*
 /App/7z/*
 /App/ahk/*
 /App/NSIS/*

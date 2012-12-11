@@ -104,15 +104,6 @@ This sets the variables for EmacsPortable.App
                                (getenv "EPUSB")
                              (substring data-directory 0 3)))
   
-  
-  
-  (defvar usb-app-dir (if (getenv "EPOTHER")
-                          (expand-file-name (concat (getenv "EPOTHER") "/../App/"))
-                        (let ((ret data-directory))
-                          (when (string-match "EmacsPortable[.]App.*" ret)
-                            (setq ret (replace-match "EmacsPortable.App" nil nil ret)))
-                          (symbol-value 'ret))))
-  
   (defvar usb-site-lisp-dir (or (and (getenv "EPOTHER")
                                      (expand-file-name (getenv "EPOTHER")))
                                 (expand-file-name "Other" usb-app-dir)))
@@ -1056,49 +1047,8 @@ This is discussed http://stackoverflow.com/questions/10397687/stop-tramp-from-op
     
 #+END_SRC
 * Fix Proxy settings for various programs
-#+BEGIN_SRC emacs-lisp
-  (defun refresh-proxy (&optional process event sync)
-    "Refreshes proxy settings"
-    (interactive)
-    (when (eq system-type 'windows-nt)
-      (let ((el-proxy (expand-file-name (concat usb-app-dir "../App/eps/ep-proxy.exe")))
-            (delete-by-moving-to-trash nil)
-            (proxy (expand-file-name (concat (getenv "TEMP") "/proxy.el")))
-            (proc process))
-        (when process
-          (message "Proxy settings were retrieved (%s)." event))
-        (if (file-exists-p proxy)
-            (progn
-              (load-file proxy)
-              (delete-file proxy))
-          (when (and (eq system-type 'windows-nt) (file-exists-p el-proxy)
-                     (not proc))
-            (message "Starting to lookup proxy information (%s)" el-proxy)
-            (if (not sync)
-                (progn
-                  (setq proc (start-process "ep-refresh-proxy" " ep-refresh-proxy"
-                                            el-proxy))
-                  (set-process-sentinel proc 'refresh-proxy))
-              (shell-command-to-string el-proxy))
-            
-            (when (file-exists-p proxy)
-              (load-file proxy)
-              (delete-file proxy)
-              (message "Proxy settings were retrieved.")
-              (setq process t))))
-        ;; Setup Git
-        (if (and process
-                 (executable-find "git")
-                 (getenv "HTTP_PROXY"))
-            (progn
-              (shell-command-to-string (concat "git config --global http.proxy "
-                                               (getenv "HTTP_PROXY"))))
-          (if (and process
-                   (executable-find "git"))
-              (shell-command-to-string (concat "git config --global --unset http.proxy")))))))
-  (refresh-proxy nil nil t)
-  
-#+END_SRC
+Proxy settings moved to site-init.el so that automatic (re)compilation
+can be performed.
 * Fix saving settings for various computers
 When using EmacsPortable.App in Windows & MacOS, a single =~/.ido.last=
 caching mechanism does not work.  The windows file history causes the
@@ -1342,9 +1292,18 @@ compiled lisp file.  Delete intermediary files
             (load-cfg org2)
             (dir-cfgs dir2))))))
   
-  (ep-load-init-dir)
-  (ep-load-system system-name)
-  (ep-load-user user-login-name) 
+  (condition-case err
+      (ep-load-init-dir)
+    (error (ep-m "Error loading initialization scripts %s" err)))
+  
+  (condition-case err
+      (ep-load-system system-name)
+    (error (ep-m "Error loading system initialization scripts %s" err)))
+  
+  (condition-case err
+      (ep-load-user user-login-name)
+    (error (ep-m "Error Loading user initialization scripts %s" err)))
+  
   
 #+END_SRC
 * Attempt to sync background and foreground colors with startup options
