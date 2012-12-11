@@ -2673,6 +2673,16 @@ FunctionEnd
                   SetOutPath "$EXEDIR\App\fonts"
                   ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.zip" -o$EXEDIR\App\fonts'
                   Delete "$TEMP\ep\font.zip"
+                ${ElseIf} $R1 == "tgz"
+                  DetailPrint "tgz"
+                  SetOutPath "$TEMP\ep"
+                  inetc::get $R0 "$TEMP\ep\font.tgz"
+                  ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.tgz" -o$TEMP\ep'
+                  Delete "$TEMP\ep\font.tgz"
+                  ${If} ${FileExists} "$TEMP\ep\font.tar"
+                    ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\font.tar" -o$EXEDIR\App\fonts'
+                    Delete "$TEMP\ep\font.tar"
+                  ${EndIf}
                 ${Else}
                   DetailPrint "Raw"
                   Push $R0
