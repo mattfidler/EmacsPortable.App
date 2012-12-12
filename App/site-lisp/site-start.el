@@ -13,7 +13,7 @@
      (t
       (format "%s%s%s.%s" file "c-" emacs-major-version emacs-minor-version )))))
 
-(setq byte-compile-dest-file-function 'ep-byte-compile-dest-file-function)
+;;(setq byte-compile-dest-file-function 'ep-byte-compile-dest-file-function)
 
 (defun refresh-proxy (&optional process event sync)
   "Refreshes proxy settings"
@@ -56,26 +56,26 @@
             (shell-command-to-string (concat "git config --global --unset http.proxy")))))))
 (refresh-proxy nil nil t)
 
-(when (eq emacs-major-version 24)
-  ;; Add auto-compile functions.
-  (require 'package)
-  (package-initialize)
-  (let ((package-user-dir
-         (expand-file-name "elpa"
-                           (file-name-directory
-                            (or load-file-name (buffer-file-name))))))
-    (unless (package-installed-p 'auto-compile)
-      (setq package-archives
-            '(("original"    . "http://tromey.com/elpa/")
-              ("gnu"         . "http://elpa.gnu.org/packages/")
-              ("marmalade"   . "http://marmalade-repo.org/packages/")
-              ("melpa"       . "http://melpa.milkbox.net/packages/")))
-      (setq ep-proxy-refresh t)
-      (package-initialize)
-      (package-refresh-contents)
-      (package-install 'auto-compile)))
-  (auto-compile-on-save-mode)
-  (auto-compile-on-load-mode))
+;; (when (eq emacs-major-version 24)
+;;   ;; Add auto-compile functions.
+;;   (require 'package)
+;;   (package-initialize)
+;;   (let ((package-user-dir
+;;          (expand-file-name "elpa"
+;;                            (file-name-directory
+;;                             (or load-file-name (buffer-file-name))))))
+;;     (unless (package-installed-p 'auto-compile)
+;;       (setq package-archives
+;;             '(("original"    . "http://tromey.com/elpa/")
+;;               ("gnu"         . "http://elpa.gnu.org/packages/")
+;;               ("marmalade"   . "http://marmalade-repo.org/packages/")
+;;               ("melpa"       . "http://melpa.milkbox.net/packages/")))
+;;       (setq ep-proxy-refresh t)
+;;       (package-initialize)
+;;       (package-refresh-contents)
+;;       (package-install 'auto-compile)))
+;;   (auto-compile-on-save-mode)
+;;   (auto-compile-on-load-mode))
 
 
 ;; Load Latest Org-mode

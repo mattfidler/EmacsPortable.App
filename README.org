@@ -415,8 +415,8 @@ The other type of section that is used is the =[local.git.set]=.  In
 the case of =git= this section is defined as:
 
 #+BEGIN_SRC conf
-[local.git.set]
-PLINK_PROTOCOL=ssh
+  [local.git.set]
+  PLINK_PROTOCOL=ssh
 #+END_SRC
 
 Therefore, if =git= is found then the environmental variable
@@ -638,7 +638,7 @@ sources.  Note that only the Bazaar repo is the official
 
 
 #+BEGIN_SRC ntcmd 
-  git clone http://git.savannah.gnu.org/r/emacs.git emacs-git
+    git clone http://git.savannah.gnu.org/r/emacs.git emacs-git
 #+END_SRC
 
 
