@@ -50,6 +50,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Var cmd_args
   Var cmd
   Var cnt
+  Var real_temp
   
   Var Rpath
   
@@ -619,8 +620,8 @@ From http://nsis.sourceforge.net/Explode
       Goto loop_find_running
     not_running:
       ${If} "$9" == "1"
-      ${AndIf} ${FileExists} "$TEMP\ep\ep-rm.exe"
-        ExecWait "$TEMP\ep\ep-rm.exe /SKIP"
+      ${AndIf} ${FileExists} "$real_temp\ep\ep-rm.exe"
+        ExecWait "$real_temp\ep\ep-rm.exe /SKIP"
       ${EndIf}
     already_running:
       
@@ -836,10 +837,10 @@ From http://nsis.sourceforge.net/Explode
       
       StrCmp "" $option_dos setupwin setupdos
     setupdos:
-      StrCpy $server_file "$TEMP\ep\epd-$option_version$epstart\server"
+      StrCpy $server_file "$real_temp\ep\epd-$option_version$epstart\server"
       Goto end
     setupwin:
-      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server"
+      StrCpy $server_file "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart\server"
     end:
       ## Change protocol spaces to %20
       StrCpy $0 $cmdLineParams 15
@@ -1048,7 +1049,7 @@ From http://nsis.sourceforge.net/Explode
       ${If} ${FileExists} "$EXEDIR\..\${FILENAME}"
         CopyFiles /SILENT "$EXEDIR\..\${FILENAME}" "$emacs_dir\${FILETO}"
         ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\ext-bin.7z"
-          SetOutPath "$TEMP\ep"
+          SetOutPath "$real_temp\ep"
           ${If} ${FileExists} "$EXEDIR\..\7z\7z.exe"
             nsExec::ExecToLog /OEM "$\"$EXEDIR\..\7z\7z.exe$\" a -mx9 -t7z $EXEDIR\..\emacs-$option_version\ext-bin.7z $R5emacs-$option_version\bin\${FILETO} -ms=off -mmt"
             Push $0
@@ -1064,7 +1065,7 @@ From http://nsis.sourceforge.net/Explode
   !macroend
   
   Function CpDll
-    StrCpy $R5 $TEMP 2
+    StrCpy $R5 $real_temp 2
     IfFileExists "$EXEDIR\..\ini\copy.ini" 0 end_copy
     EnumINI::Section "$EXEDIR\..\ini\copy.ini" "copy"
     Pop $R0
@@ -1171,16 +1172,16 @@ From http://nsis.sourceforge.net/Explode
     StrCmp "" $option_dos setupdos setupwin
     ## Now Setup server
     setupwin:
-      IfFileExists "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart"  0 +2
-      RmDir /r "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart"
-      CreateDirectory "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart"
-      StrCpy $server_file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server"
+      IfFileExists "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart"  0 +2
+      RmDir /r "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart"
+      CreateDirectory "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart"
+      StrCpy $server_file "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart\server"
       Goto end
     setupdos:
-      IfFileExists "$TEMP\ep\epd-$option_version$epstart"  0 +2
-      RmDir /r "$TEMP\ep\epd-$option_version$epstart"
-      CreateDirectory "$TEMP\ep\epd-$option_version$epstart"
-      StrCpy $server_file "$TEMP\ep\epd-$option_version$epstart\server"
+      IfFileExists "$real_temp\ep\epd-$option_version$epstart"  0 +2
+      RmDir /r "$real_temp\ep\epd-$option_version$epstart"
+      CreateDirectory "$real_temp\ep\epd-$option_version$epstart"
+      StrCpy $server_file "$real_temp\ep\epd-$option_version$epstart\server"
     end:
       ClearErrors
   FunctionEnd
@@ -1287,8 +1288,8 @@ From http://nsis.sourceforge.net/Explode
     DetailPrint "Extract Binaries"
     Call ExtractZip
     IfFileExists "$EXEDIR\..\emacs-$option_version\bin" +3  
-    IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
-    StrCpy "$emacs_dir" "$TEMP\ep\emacs-$option_version\bin"
+    IfFileExists "$real_temp\ep\emacs-$option_version\bin" 0 +2
+    StrCpy "$emacs_dir" "$real_temp\ep\emacs-$option_version\bin"
     DetailPrint "Remove Stale Emacs Server, if it exists"
     Call SetupServer
     DetailPrint "Setup Emacs EXE"
@@ -1301,13 +1302,13 @@ From http://nsis.sourceforge.net/Explode
     ${SetupDirs}
     DetailPrint "Setup Path and Environment"
     ${SetEnv}
-    GetFullPathName /SHORT $R0 "$TEMP\ep\emacs-$option_version\bin"
+    GetFullPathName /SHORT $R0 "$real_temp\ep\emacs-$option_version\bin"
     DetailPrint "Path Add: $R0"
     System::Call 'Kernel32::GetEnvironmentVariable(t , t, i) i("PATH", .r3, ${NSIS_MAX_STRLEN}).r2'
     System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("PATH", "$R0;$3").r2'
     DetailPrint "Setup emacs options"
     ${EmacsCmd}
-    WriteIniStr "$TEMP\ep\ep.ini" "EmacsPortableApp" "EXEDIR\..\.." "$EXEDIR\..\.."
+    WriteIniStr "$real_temp\ep\ep.ini" "EmacsPortableApp" "EXEDIR\..\.." "$EXEDIR\..\.."
     SetOutPath "$EXEDIR\..\eps"
     EnumINI::Section "$EXEDIR\..\ini\plugins.ini" "plugins"
     Pop $R0 
@@ -1345,9 +1346,9 @@ From http://nsis.sourceforge.net/Explode
     StrCmp "" $option_dos setupwin_client setupdos_client
     setupdos_client:
       ${If} $cmdLineParams == ""
-        StrCpy $cmd_args '-d 0 --server-file "$TEMP\ep\epd-$option_version$epstart\server" $cmdLineParams'
+        StrCpy $cmd_args '-d 0 --server-file "$real_temp\ep\epd-$option_version$epstart\server" $cmdLineParams'
       ${Else}
-        StrCpy $cmd_args '-t -d 0 --server-file "$TEMP\ep\epd-$option_version$epstart\server"'
+        StrCpy $cmd_args '-t -d 0 --server-file "$real_temp\ep\epd-$option_version$epstart\server"'
       ${EndIf}
       goto end_client
     setupwin_client:
@@ -1356,7 +1357,7 @@ From http://nsis.sourceforge.net/Explode
       ${If} $cmdLineParams == ""
         ReadIniStr $R0 "$epdata\ini\EmacsPortableApp.ini" "EmacsPortableApp" "NewFrame"
         ${If} $R0 == "1"
-          ${If} ${FileExists} "$TEMP\ep\hidden-$option_version"
+          ${If} ${FileExists} "$real_temp\ep\hidden-$option_version"
             StrCpy $R9 " -c"
           ${Else}
             StrCpy $R9 ""
@@ -1384,11 +1385,11 @@ From http://nsis.sourceforge.net/Explode
           StrCpy $R9 ""
         ${EndIf}
       ${EndIf}
-      StrCpy $cmd_args `$R9 -n --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" $cmdLineParams`
+      StrCpy $cmd_args `$R9 -n --server-file "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart\server" $cmdLineParams`
       StrCmp "$cmdLineParams" "" +5
       Goto end_client
     colorsync:
-      StrCpy $cmd_args `--server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
+      StrCpy $cmd_args `--server-file "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp 'emacs-portable-sync-display) (emacs-portable-sync-display))"`
     end_client:
       StrCpy $emacs "$cmd $cmd_args"
       ClearErrors
@@ -1401,8 +1402,8 @@ From http://nsis.sourceforge.net/Explode
 ** Initialization
 #+BEGIN_SRC nsis
   Function .onInit 
-    ${GetParameters} $cmdLineParams
-    
+    ${GetParameters} $cmdLineParams    
+
     # Get local installation.
     ReadRegStr $0 HKCU "Software\EmacsPortable.App" ""
     ClearErrors
@@ -1434,6 +1435,34 @@ From http://nsis.sourceforge.net/Explode
 #+BEGIN_SRC nsis
   Section "Main" sec_mainN
     StrCpy "$INSTDIR" "$EXEDIR\..\.."
+    DetailPrint "Checking Temporary directory..."
+    StrCpy $R0 ""
+    StrCpy $R2 ""
+    StrCpy $R3 $TEMP
+    ${Do}
+      DetailPrint "Testing Temp $TEMP"
+      ${If} ${FileExists} $R3\ep
+        StrCpy $R0 "1"
+      ${Else}
+        GetFullPathName /SHORT $R3 $R3\..
+        StrLen $R1 $R3
+        StrCpy $R2 "1"
+        ${If} $R1 < 4
+          StrCpy $R0 "1"
+          StrCpy $R2 ""
+        ${EndIf}
+      ${EndIf}
+    ${LoopUntil} $R0 == "1"
+    
+    ${If} $R2 == "1"
+      StrCpy $real_temp "$R3"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$real_temp").r0'
+      DetailPrint "Reset Temporary Directory to $real_temp"
+    ${Else}
+      StrCpy $real_temp "$TEMP"
+      DetailPrint "Kept Directory $real_temp"
+    ${EndIf}
+    
     StrLen $R2 $EXEFILE
     ${IfNot} ${FileExists} "$EXEDIR\..\7z\7zG.exe"
       ExecWait '"$EXEDIR\..\..\EmacsOptions.exe" /7z'
@@ -1452,12 +1481,12 @@ From http://nsis.sourceforge.net/Explode
       ${GetCmdOptions}
       DetailPrint "Setup Data"
       ${setupData}
-      SetOutPath "$TEMP\ep"
+      SetOutPath "$real_temp\ep"
       StrCpy $EPEXE $EXEDIR\..\..
       StrCmp $option_updateproxy "" 0 sync_proxy
       StrCpy "$emacs_dir" "$EXEDIR\..\emacs-$option_version\bin"
-      IfFileExists "$TEMP\ep\emacs-$option_version\bin" 0 +2
-      StrCpy "$emacs_dir" "$TEMP\ep\emacs-$option_version\bin"
+      IfFileExists "$real_temp\ep\emacs-$option_version\bin" 0 +2
+      StrCpy "$emacs_dir" "$real_temp\ep\emacs-$option_version\bin"
       FindProcDLL::FindProc "$emacs_exe"
       StrCmp $R0 "1" start_emacsclient start_emacs
       sync_proxy:
@@ -1474,10 +1503,10 @@ From http://nsis.sourceforge.net/Explode
           IfFileExists "$EXEDIR\..\emacs-$2\bin\emacsclient.exe" 0 +3
           StrCpy $3 "$EXEDIR\..\emacs-$2\bin\emacsclient.exe"
           Goto +3
-          IfFileExists "$TEMP\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
-          StrCpy $3 "$TEMP\ep\emacs-$2\bin\emacsclient.exe"
+          IfFileExists "$real_temp\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next
+          StrCpy $3 "$real_temp\ep\emacs-$2\bin\emacsclient.exe"
           SetOutPath $home
-          Exec '"$3" --server-file "$TEMP\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
+          Exec '"$3" --server-file "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
         ${EndIf}
       loop_next:
         FindNext $0 $1
@@ -1485,31 +1514,34 @@ From http://nsis.sourceforge.net/Explode
       done_proxy:
         Goto end
       start_emacs:
+        DetailPrint "Start Emacs"
         StrCmp $option_colorsync "" 0 cant_sync
         ${emacs_setup}
-        WriteIniStr "$TEMP\ep\ep-reg.ini" "run" "$option_version$epstart" "1"
+        WriteIniStr "$real_temp\ep\ep-reg.ini" "run" "$option_version$epstart" "1"
         StrCmp "" $option_batch +2 0
         StrCmp "" $option_silent start_emacs_dos start_emacs_regular
         StrCmp "" $option_dos 0 start_emacs_dos
         StrCmp "" $found_gdb start_emacs_regular start_emacs_gdb
         
       start_emacs_gdb:
-        Push $TEMP
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+        DetailPrint "Start Emacs with Gdb"
+        Push $real_temp
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$real_temp\ep").r0'
         ${Execute} '"$cmd" $cmd_args' "$home" $R1
         Pop $R0
         Goto loop
         
       start_emacs_regular:
+        DetailPrint "Regular emacs startup"
         ${If} $option_help == "1"
-          SetOutPath "$TEMP\ep"
-          ${ExecHide} '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"' '$home' $R1
+          SetOutPath "$real_temp\ep"
+          ${ExecHide} '"$cmd" $cmd_args > "$real_temp\ep\emacs-help.txt"' '$home' $R1
           ${If} $R1 == "0"
             SetOutPath $home
-            ${Execute} '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"' '$home' $R1
+            ${Execute} '"$cmd" $cmd_args > "$real_temp\ep\emacs-help.txt"' '$home' $R1
           ${EndIf}
           ClearErrors
-          FileOpen $0 "$TEMP\ep\emacs-help.txt" r
+          FileOpen $0 "$real_temp\ep\emacs-help.txt" r
           ${DoUntil} ${Errors}
             FileRead $0 $1
             ${If} $R2 == ""
@@ -1519,16 +1551,16 @@ From http://nsis.sourceforge.net/Explode
             ${EndIf}
           ${Loop}
           FileClose $0
-          Delete "$TEMP\ep\emacs-help.txt"
+          Delete "$real_temp\ep\emacs-help.txt"
           ClearErrors
           MessageBox MB_OK|MB_ICONQUESTION "$R2"
         ${ElseIf} $option_cmd == "1"
-          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$real_temp\ep").r0'
           Exec "cmd"
           Goto loop
         ${Else}
-          Push $TEMP
-          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+          Push $real_temp
+          System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$real_temp\ep").r0'
           ##${StrRep} "$emacs" "$emacs" '"' '""'
           ${ExecHide} '"$cmd" $cmd_args' "$home" $R1
           ${If} $R1 == "0"
@@ -1539,7 +1571,8 @@ From http://nsis.sourceforge.net/Explode
           Goto loop
         ${EndIf}
       start_emacs_dos:
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$TEMP\ep").r0'
+        DetailPrint "Start Emacs on DOS"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$real_temp\ep").r0'
         ${Execute} '"$cmd" $cmd_args' "$home" $R1
         Goto end
       loop:
@@ -1548,6 +1581,7 @@ From http://nsis.sourceforge.net/Explode
         StrCpy $cnt 300
         Exec "$EXEDIR\EmacsPortableServer.exe"
       look_for_running_emacs:
+        DetailPrint "Look For Runnind Emacs"
         FindProcDLL::FindProc "emacs-$option_version$epstart.exe"
         StrCmp "$R0" "1" found_running_emacs
         FindProcDLL::FindProc "emacs-$option_version$epstart-dos.exe"
@@ -1558,21 +1592,23 @@ From http://nsis.sourceforge.net/Explode
         Goto look_for_running_emacs
       found_running_emacs:
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0").r0'
-        IfFileExists "$TEMP\ep\ep-rm.exe" end 0
-        writeUninstaller "$TEMP\ep\ep-rm.exe"
-        Exec "$TEMP\ep\ep-rm.exe"
+        IfFileExists "$real_temp\ep\ep-rm.exe" end 0
+        writeUninstaller "$real_temp\ep\ep-rm.exe"
+        Exec "$real_temp\ep\ep-rm.exe"
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("TEMP", "$R0\ep").r0'
         Goto end
       start_emacsclient:
+        DetailPrint "Run EmacsClient"
         StrCmp $option_debug "" +2 
         StrCmp $option_debug_from_ini "" no_debug
         StrCmp $option_q "" 0 start_emacs
         ${emacsclient_setup}
         ${If} $option_help == "1"
+          DetailPrint "Help."
           SetOutPath $home
-          ${ExecHide} '"$cmd" $cmd_args > "$TEMP\ep\emacs-help.txt"' "$home" $R1
+          ${ExecHide} '"$cmd" $cmd_args > "$real_temp\ep\emacs-help.txt"' "$home" $R1
           ClearErrors
-          FileOpen $0 "$TEMP\ep\emacs-help.txt" r
+          FileOpen $0 "$real_temp\ep\emacs-help.txt" r
           ${DoUntil} ${Errors}
             FileRead $0 $1
             ${If} $R2 == ""
@@ -1582,16 +1618,20 @@ From http://nsis.sourceforge.net/Explode
             ${EndIf}
           ${Loop}
           FileClose $0
-          Delete "$TEMP\ep\emacs-help.txt"
+          Delete "$real_temp\ep\emacs-help.txt"
           ClearErrors
           MessageBox MB_OK|MB_ICONQUESTION "$R2"
         ${ElseIf} $option_colorsync == ""
+          DetailPrint "Colorsync"
           ##${StrRep} $emacs $emacs '"' '""'
           HideWindow
           SetOutPath $home
+          DetailPrint '"$cmd" $cmd_args'
           ${ExecHide} '"$cmd" $cmd_args' "$home" $R1
         ${Else}
+          DetailPrint "EmacsClient"
           HideWindow
+          DetailPrint "$emacs"
           Exec "$emacs"
         ${EndIf}
         Goto end
@@ -1622,8 +1662,8 @@ From http://nsis.sourceforge.net/Explode
           MessageBox MB_OK "Cannot find gdb."
           Goto end
         ${EndIf}
-        ReadIniStr $0 "$TEMP\ep\ep-pid.ini" "pid" "$emacs_exe"
-        ReadIniStr $1 "$TEMP\ep\ep-pid.ini" "exec" "$emacs_exe"
+        ReadIniStr $0 "$real_temp\ep\ep-pid.ini" "pid" "$emacs_exe"
+        ReadIniStr $1 "$real_temp\ep\ep-pid.ini" "exec" "$emacs_exe"
         StrCpy $cmd_args "--pid=$0"
         ${If} ${FileExists} "$EXEDIR\..\gdbinit"
         ${AndIf} $cmd  != "$cygwin\bin\gdb.exe"
@@ -1674,7 +1714,7 @@ This removes registry settings, fonts and other settings.
       
     look_for_running_emacs:
       StrCpy $nver 0
-      EnumINI::Section "$TEMP\ep\ep-reg.ini" "run"
+      EnumINI::Section "$real_temp\ep\ep-reg.ini" "run"
       Pop $R2
       StrCmp "$R2" "error" done
     loop_run:
@@ -1694,15 +1734,15 @@ This removes registry settings, fonts and other settings.
       StrCmp 0 $nver none_left look_for_running_emacs
     none_left:
       ClearErrors
-      Delete "$TEMP\ep\ep-rm.exe"
-      IfFileExists "$TEMP\ep\ep-reg.ini" 0 done
-      Delete "$TEMP\ep\ep-reg.ini"
-      Delete "$TEMP\ep\ep-RemoveReg.exe"
+      Delete "$real_temp\ep\ep-rm.exe"
+      IfFileExists "$real_temp\ep\ep-reg.ini" 0 done
+      Delete "$real_temp\ep\ep-reg.ini"
+      Delete "$real_temp\ep\ep-RemoveReg.exe"
     done:
-      SetOutPath "$TEMP\ep"
-      ReadINIStr $EPEXE "$TEMP\ep\ep.ini" "EmacsPortableApp" "$EXEDIR\..\.."
-      IfFileExists "$TEMP\ep\rm-ep-proxy.exe" 0 +2
-      ExecWait "$TEMP\ep\rm-ep-proxy.exe"
+      SetOutPath "$real_temp\ep"
+      ReadINIStr $EPEXE "$real_temp\ep\ep.ini" "EmacsPortableApp" "$EXEDIR\..\.."
+      IfFileExists "$real_temp\ep\rm-ep-proxy.exe" 0 +2
+      ExecWait "$real_temp\ep\rm-ep-proxy.exe"
       EnumINI::Section "$EPEXE\App\ini\plugins.ini" "plugins"
       Pop $R0
       StrCmp $R0 "error" done_plugins
@@ -1710,33 +1750,33 @@ This removes registry settings, fonts and other settings.
       IntCmp $R0 "0" done_plugins done_plugins 0
       Pop $R1
       ReadINIStr $R2 "$EPEXE\App\ini\plugins.ini" "plugins" "$R1"
-      IfFileExists "$TEMP\ep\rm-$R1" 0 +3
+      IfFileExists "$real_temp\ep\rm-$R1" 0 +3
       DetailPrint "Remove $R2"
-      ExecWait "$TEMP\ep\rm-$R1"
+      ExecWait "$real_temp\ep\rm-$R1"
       IntOp $R0 $R0 - 1
       Goto loop_plugins
     done_plugins:
       ClearErrors
-      Delete "$TEMP\ep\ep-env.ini"
-      Delete "$TEMP\ep\ep-ip2.ini"
-      Delete "$TEMP\ep\ep.ini"
-      Delete "$TEMP\ep\hidden-*"
-      Delete "$TEMP\ep\ep-ip*.txt"
+      Delete "$real_temp\ep\ep-env.ini"
+      Delete "$real_temp\ep\ep-ip2.ini"
+      Delete "$real_temp\ep\ep.ini"
+      Delete "$real_temp\ep\hidden-*"
+      Delete "$real_temp\ep\ep-ip*.txt"
       ReadIniStr $R2 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Clean"
       ClearErrors
       ${If} $R2 == "1"
-        RmDir /R "$TEMP\ep"
+        RmDir /R "$real_temp\ep"
       ${Else}
-        FindFirst $0 $1 "$TEMP\ep\*.*"
+        FindFirst $0 $1 "$real_temp\ep\*.*"
         ${While} $1 != ""
           StrCpy $2 $1 6
           ${IfNot} $2 == "emacs-"
           ${AndIfNot} $2 == "."
           ${AndIfNot} $2 == ".."
-            ${If} ${DirExists} "$TEMP\ep\$1"
-              RmDir /R "$TEMP\ep\$1"
+            ${If} ${DirExists} "$real_temp\ep\$1"
+              RmDir /R "$real_temp\ep\$1"
             ${Else}
-              Delete "$TEMP\ep\$1"
+              Delete "$real_temp\ep\$1"
             ${EndIf}
           ${EndIf}
           FindNext $0 $1
