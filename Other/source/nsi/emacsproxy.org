@@ -124,7 +124,6 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     ${ElseIf} ${FileExists} "$7\App\ezwin\bin\sort.exe"
       StrCpy $R2 "$7\App\ezwin\bin\sort.exe"
     ${EndIf}
-    MessageBox MB_OK "$R0$\n$R2$\n$R3"
     ${If} $R0 != ""
     ${AndIf} $R2 != ""
     ${AndIf} $R3 != ""  
