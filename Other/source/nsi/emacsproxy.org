@@ -90,53 +90,75 @@ http://nsis.sourceforge.net/Get_Disk_Volume_Serial_Number
     ClearErrors
     StrCpy $PROXY_IDE ""
     StrCpy $PROXY_ID ""
-    StrCpy $R0 "grep"
-    IfFileExists "$7\App\gw32\bin\grep.exe" 0 +3
-    StrCpy $R3 "$7\App\gw32\bin\grep.exe" 
-    Goto +3
-    IfFileExists "$7\App\ezwin\bin\grep.exe" 0 +2
-    StrCpy $R3 "$7\App\ezwin\bin\grep.exe"
     
-    IfFileExists "$7\App\gw32\bin\sed.exe" 0 +3
-    StrCpy $R0 "$7\App\gw32\bin\sed.exe" 
-    Goto +3
-    IfFileExists "$7\App\ezwin\bin\sed.exe" 0 +2
-    StrCpy $R0 "$7\App\ezwin\bin\sed.exe"
+    StrCpy $R0 ""
+    StrCpy $R2 ""
+    StrCpy $R3 ""
     
-    IfFileExists "$7\App\gw32\bin\sort.exe" 0 +3
-    StrCpy $R2 "$7\App\gw32\bin\sort.exe" 
-    Goto +3
-    IfFileExists "$7\App\ezwin\bin\sort.exe" 0 +2
-    StrCpy $R2 "$7\App\ezwin\bin\sort.exe"
+    ${If} ${FileExists} "$INSTDIR\App\gw32\bin\grep.exe"
+      StrCpy $R3 "$INSTDIR\App\gw32\bin\grep.exe"
+    ${ElseIf} ${FileExists} "$7\App\gw32\bin\grep.exe"
+      StrCpy $R3 "$7\App\gw32\bin\grep.exe"  
+    ${ElseIf} ${FileExists} "$INSTDIR\App\ezwin\bin\grep.exe"
+      StrCpy $R3 "$INSTDIR\App\ezwin\bin\grep.exe"
+    ${ElseIf} ${FileExists} "$7\App\ezwin\bin\grep.exe"
+        StrCpy $R3 "$7\App\ezwin\bin\grep.exe"    
+    ${EndIf}
     
-    FileOpen $4 "$TEMP\ep\ep-sed-ip.bat" w
-    IfErrors 0 +3
-    DetailPrint "Error opening $TEMP\ep\ep-sed-ip.bat"
-    Abort
-    FileWrite $4 "@IF EXIST $TEMP\ep\ep-dns.bat DEL $TEMP\ep\ep-dns.bat$\r$\n"
-    FileWrite $4 "@IF EXIST $TEMP\ep\ep-dns2.txt DEL $TEMP\ep\ep-dns2.txt$\r$\n"
-    ${StrRep} "$R1" "$TEMP" "\" "\\"
-    FileWrite $4 "@ipconfig | $R3 $\"IP A$\" | $R0 -r $\"s/[^0-9]*([0-9]*[0-9.]+).*/nslookup \1 >> $R1\\ep\\ep-dns2.txt/$\"  > $TEMP\ep\ep-dns.bat$\r$\n"
-    FileWrite $4 "@CALL $TEMP\ep\ep-dns.bat$\r$\n"
-    FileWrite $4 "@DEL $TEMP\ep\ep-dns.bat$\r$\n"
-    FileWrite $4 "@$R2 $TEMP\ep\ep-dns2.txt$\r$\n"
-    FileWrite $4 "@$R0 $\"/Address:.*/d$\" $TEMP\ep\ep-dns2.txt | $R0 $\"s/Server: *//$\" | $R0 $\"s/Name: *.*//$\" | $R0 $\"/^ *$$/d$\" | $R0 $\"$$!N; /^\(.*\)\n\1$$/!P; D$\" | $R0 $\":a;/$$/{N;s/\n/_/;ba}$\" > $TEMP\ep\ep-dns.txt$\r$\n"
-    FileWrite $4 "@DEL $TEMP\ep\ep-dns2.txt$\r$\n"
-    FileClose $4
-    ExecDos::exec "cmd /c $\"$TEMP\ep\ep-sed-ip.bat$\""
-    Delete "$TEMP\ep\ep-sed-ip.bat"
+    ${If} ${FileExists} "$INSTDIR\App\gw32\bin\sed.exe"
+      StrCpy $R0 "$INSTDIR\App\gw32\bin\sed.exe"
+    ${ElseIf} ${FileExists} "$INSTDIR\App\ezwin\bin\sed.exe"
+      StrCpy $R0 "$INSTDIR\App\ezwin\bin\sed.exe"
+    ${ElseIf} ${FileExists} "$7\App\gw32\bin\sed.exe"
+      StrCpy $R0 "$7\App\gw32\bin\sed.exe"
+    ${ElseIf} ${FileExists} "$7\App\ezwin\bin\sed.exe"
+      StrCpy $R0 "$7\App\ezwin\bin\sed.exe"
+    ${EndIf}
     
-    read_ips:
-      FileOpen $5 "$TEMP\ep\ep-dns.txt" r
-      FileRead $5 $R0
+    ${If} ${FileExists} "$INSTDIR\App\gw32\bin\sort.exe"
+      StrCpy $R2 "$INSTDIR\App\gw32\bin\sort.exe"
+    ${ElseIf} ${FileExists} "$INSTDIR\App\ezwin\bin\sort.exe"
+      StrCpy $R2 "$INSTDIR\App\ezwin\bin\sort.exe"
+    ${ElseIf} ${FileExists} "$7\App\gw32\bin\sort.exe"
+      StrCpy $R2 "$7\App\gw32\bin\sort.exe"
+    ${ElseIf} ${FileExists} "$7\App\ezwin\bin\sort.exe"
+      StrCpy $R2 "$7\App\ezwin\bin\sort.exe"
+    ${EndIf}
+    MessageBox MB_OK "$R0$\n$R2$\n$R3"
+    ${If} $R0 != ""
+    ${AndIf} $R2 != ""
+    ${AndIf} $R3 != ""  
+      FileOpen $4 "$TEMP\ep\ep-sed-ip.bat" w
       IfErrors 0 +3
-      DetailPrint "Error Opening $TEMP\ep\ep-dns.txt"
-      ClearErrors
-      FileClose $5
-      StrCpy $PROXY_IDE "$R0" -2
-      StrCpy $PROXY_ID "$R0" -2
-      Delete "$TEMP\ep\ep-dns.txt"
+      DetailPrint "Error opening $TEMP\ep\ep-sed-ip.bat"
+      Abort
+      FileWrite $4 "@IF EXIST $TEMP\ep\ep-dns.bat DEL $TEMP\ep\ep-dns.bat$\r$\n"
+      FileWrite $4 "@IF EXIST $TEMP\ep\ep-dns2.txt DEL $TEMP\ep\ep-dns2.txt$\r$\n"
+      ${StrRep} "$R1" "$TEMP" "\" "\\"
+      FileWrite $4 "@ipconfig | $R3 $\"IP A$\" | $R0 -r $\"s/[^0-9]*([0-9]*[0-9.]+).*/nslookup \1 >> $R1\\ep\\ep-dns2.txt/$\"  > $TEMP\ep\ep-dns.bat$\r$\n"
+      FileWrite $4 "@CALL $TEMP\ep\ep-dns.bat$\r$\n"
+      FileWrite $4 "@DEL $TEMP\ep\ep-dns.bat$\r$\n"
+      FileWrite $4 "@$R2 $TEMP\ep\ep-dns2.txt$\r$\n"
+      FileWrite $4 "@$R0 $\"/Address:.*/d$\" $TEMP\ep\ep-dns2.txt | $R0 $\"s/Server: *//$\" | $R0 $\"s/Name: *.*//$\" | $R0 $\"/^ *$$/d$\" | $R0 $\"$$!N; /^\(.*\)\n\1$$/!P; D$\" | $R0 $\":a;/$$/{N;s/\n/_/;ba}$\" > $TEMP\ep\ep-dns.txt$\r$\n"
+      FileWrite $4 "@DEL $TEMP\ep\ep-dns2.txt$\r$\n"
+      FileClose $4
+      ExecDos::exec "cmd /c $\"$TEMP\ep\ep-sed-ip.bat$\""
+      Delete "$TEMP\ep\ep-sed-ip.bat"
       
+      read_ips:
+        FileOpen $5 "$TEMP\ep\ep-dns.txt" r
+        FileRead $5 $R0
+        IfErrors 0 +3
+        DetailPrint "Error Opening $TEMP\ep\ep-dns.txt"
+        ClearErrors
+        FileClose $5
+        StrCpy $PROXY_IDE "$R0" -2
+        StrCpy $PROXY_ID "$R0" -2
+        Delete "$TEMP\ep\ep-dns.txt"
+    ${Else}
+      StrCpy $PROXY_IDE "NotFound"
+      StrCpy $PROXY_ID "NotFound"
+    ${EndIf}
     proxy_setup:
       ClearErrors
       StrCmp "$PROXY_ID" "" 0 +2
