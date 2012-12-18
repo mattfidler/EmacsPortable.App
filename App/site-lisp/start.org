@@ -356,7 +356,7 @@ EmacsPortableApp.exe launcher.
       (setq file-name-handler-alist
             (cons `(,reg . ep-usb-file-name-handler)
                   file-name-handler-alist))
-      (when t
+      (when nil
         (mapc (lambda(test)
                 (message "%s\t%s\t%s\t%s\t%s" test
                          (expand-file-name test) (abbreviate-file-name (expand-file-name test))
@@ -366,8 +366,8 @@ EmacsPortableApp.exe launcher.
   (ep-rebuild-aliases)
   (eval-after-load 'yasnippet (ep-rebuild-aliases))
   (eval-after-load 'el-get (ep-rebuild-aliases))
-  (eval-after-load 'package (ep-rebuild-aliases))  
-  
+  (eval-after-load 'package (ep-rebuild-aliases))
+  (add-hook 'after-init-hook 'ep-rebuild-aliases)
 #+end_src
 *** Recent Files
 Recent files are saved to the =Other/saves/= directory.  Additionally,
