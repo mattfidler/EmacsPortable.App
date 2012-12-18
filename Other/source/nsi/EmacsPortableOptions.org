@@ -980,7 +980,7 @@ From http://nsis.sourceforge.net/Explode
       StrCmp $4 "" 0 +2
       StrCpy $4 $2
       
-  
+      ReadIniStr $R0 "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
       ${If} ${FileExists} "$EXEDIR\App\emacs-$R0\etc\DOC-X"
         ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $R0
       ${ElseIf} ${FileExists} "$EXEDIR\App\emacs-$4\etc\DOC-X"
