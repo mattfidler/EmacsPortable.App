@@ -1,5 +1,6 @@
 #+title: EmacsPortable.App Startup
 #+AUTHOR: Matthew L. Fidler
+#+PROPERTY: tangle start.el
 * Start EmacsPortable.App Startup timers
 This creates a timer to figure out how much time it takes to load EmacsPortable.App
 #+BEGIN_SRC emacs-lisp
@@ -43,7 +44,8 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
                (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$")
                  (setq font-size (match-string 1)))
                (message "%s,%s" font-name font-size))
-             (if (not (find-font (font-spec :name font-name))) nil
+             (if (not (and (fboundp 'find-font)
+                           (find-font (font-spec :name font-name)))) nil
                (condition-case err
                    (progn
                      (set-face-attribute 'default nil :font (format "%s-%s" font-name
@@ -52,25 +54,25 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
                  (error
                   (message "Error setting font %s" (error-message-string err))
                   nil))))))
-     ((find-font (font-spec :name "Anonymous Pro"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Anonymous Pro")))
       (set-face-attribute 'default nil :font (format "Anonymous Pro-%s" (or font-size "12"))))
-     ((find-font (font-spec :name "Inconsolata"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Inconsolata")))
       (set-face-attribute 'default nil :font (format "Inconsolata-%s" (or font-size "12"))))
-     ((find-font (font-spec :name "Consolas"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Consolas")))
       (set-face-attribute 'default nil :font (format "Consolas-%s" (or font-size "12"))))
-     ((find-font (font-spec :name "Monaco"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Monaco")))
       (set-face-attribute 'default nil :font (format "Monaco-%s" (or font-size "15"))))
-     ((find-font (font-spec :name "DejaVu Sans Mono"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "DejaVu Sans Mono")))
       (set-face-attribute 'default nil :font (format "DejaVu Sans Mono-%s" (or font-size "12"))))
-     ((find-font (font-spec :name "Droid Sans Mono"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Droid Sans Mono")))
       (set-face-attribute 'default nil :font (format "Droid Sans Mono-%s" (or font-size "12"))))
-     ((find-font (font-spec :name "Andale Mono"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Andale Mono")))
       (set-face-attribute 'default nil :font (format "Andale Mono-%s" (or font-size "15"))))
-     ((find-font (font-spec :name "Monofur"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Monofur")))
       (set-face-attribute 'default nil :font (format "Monofur-%s" (or font-size "15"))))
-     ((find-font (font-spec :name "Proggy Clean"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Proggy Clean")))
       (set-face-attribute 'default nil :font (format "Proggy Clean-%s" (or font-size "15"))))
-     ((find-font (font-spec :name "Courier"))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Courier")))
       (set-face-attribute 'default nil :font (format "Courier-%s" (or font-size "15"))))))
   
 #+END_SRC
@@ -261,7 +263,9 @@ EmacsPortableApp.exe launcher.
         (add-to-list 'ep-start-dirs `("doc" . ,(expand-file-name (concat usb-drive-letter "LiberKey/MyDocuments"))))))
     
     (when (and (boundp 'custom-theme-directory)
-               (not (string= (expand-file-name user-emacs-directory) (expand-file-name custom-theme-directory)))
+               (boundp 'user-emacs-directory)
+               (not (string= (expand-file-name user-emacs-directory)
+                             (expand-file-name custom-theme-directory)))
                (file-exists-p custom-theme-directory))
       
       (add-to-list 'ep-start-dirs `("themes" . ,custom-theme-directory))
@@ -582,7 +586,8 @@ work correctly.
     ;; Since this is in the temporary directory it should always be safe.
     (defun server-ensure-safe-dir (&rest args)
       t)
-    (server-force-delete)
+    (when (fboundp 'server-force-delete)
+      (server-force-delete))
     (server-start)))
   
   ;; From http://www.emacswiki.org/emacs/EmacsAsDaemon
@@ -1033,6 +1038,20 @@ remote sites.  This can be fixed by the following code:
 
 This is discussed http://stackoverflow.com/questions/10397687/stop-tramp-from-opening-remote-directories-when-using-ido-mode
 
+
+* Taking off ido caching on windows
+Taken from http://wikemacs.org/wiki/Ido.
+
+On Windows operating systems it can be unreliable to cache directory
+listings: the directory may not appear to be modified even though
+files have been added or removed. Ido caches directory listings by
+default, which may cause confusion on Windows. You can disable
+caching:
+
+#+BEGIN_SRC emacs-lisp
+  (when (equal system-type 'windows-nt)
+    (setq ido-max-dir-file-cache 0)) ; caching unreliable
+#+END_SRC
 
 * Fix mac/windows communication issues on mac.
 #+BEGIN_SRC emacs-lisp
