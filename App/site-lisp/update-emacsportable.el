@@ -49,7 +49,7 @@
                                                                   load-file-name
                                                                   buffer-file-name)) "../")))
 ;;;###autoload
-(defun offical-emacs ()
+(defun emacs-portable-update-offical-emacs-releases ()
   "Update Official releases"
   (interactive)
   (let ((buf (url-retrieve-synchronously "http://ftpmirror.gnu.org/emacs/windows/"))
