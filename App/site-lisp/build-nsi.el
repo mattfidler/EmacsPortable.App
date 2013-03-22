@@ -259,7 +259,7 @@ FunctionEnd
       (when (search-forward "!insertmacro MUI_PAGE_COMPONENTS")
         (replace-match ""))
       (goto-char (point-max))
-      (insert "\nSection \"-hidden\"\nExec '\"$INSTDIR\EmacsOptions.exe\" /all'\nSectionEnd\n"))
+      (insert "\nSection \"-hidden\"\nExec '\"$INSTDIR\\EmacsOptions.exe\" /all'\nSectionEnd\n"))
     (setq tmp
           (remove-if (lambda(x) (string-match "/\\([.][.]?\\|user\\|system\\|shared\\|[.]git\\)$" x))
                      (directory-files "~start/" t)))
@@ -313,7 +313,9 @@ FunctionEnd
                                     emacs-ver ep-ver (file-name-nondirectory x))
                             t t))
            (goto-char (point-max))
-           (insert "\nSection \"-hidden\"\nExec '\"$INSTDIR\EmacsOptions.exe\" /all'\nSectionEnd\n")))
+           (insert "\nSection \"-hidden\"\nWriteIniStr \"$INSTDIR\\Data\\ini\\EmacsPortableApp.ini\" \"EmacsPortableApp\" \"Startup\" \"")
+           (insert (file-name-nondirectory x))
+           (insert "\" z\nExec '\"$INSTDIR\\EmacsOptions.exe\" /all'\nSectionEnd\n")))
        tmp))
     (with-temp-file tmp-file
       (insert bat))
