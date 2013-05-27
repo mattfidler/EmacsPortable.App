@@ -43,7 +43,7 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
                (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$")
                  (setq font-size (match-string 1)))
                (message "%s,%s" font-name font-size))
-             (if (not (find-font (font-spec :name font-name))) nil
+             (if (or (not font-name) (not (find-font (font-spec :name font-name)))) nil
                (condition-case err
                    (progn
                      (set-face-attribute 'default nil :font (format "%s-%s" font-name
