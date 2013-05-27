@@ -87,11 +87,11 @@ Var StartMenuFolder
     ${If} ${FileExists} "$EXEDIR\..\..\.git"
       SetOutPath "$INSTDIR\.git"
       CopyFiles "$EXEDIR\..\..\.git\*.*" "$INSTDIR\.git"
-      ${If} ${FileExists} "$EXIDIR\..\..\.gitignore"
+      ${If} ${FileExists} "$EXEDIR\..\..\.gitignore"
         CopyFiles "$EXEDIR\..\..\.gitignore" "$INSTDIR\.gitignore"
       ${EndIf}
     ${EndIf}
-    CopyFiles  "$EXEDIR\..\..\.git"
+    CopyFiles  "$EXEDIR\..\..\.git" "$INSTDIR\.git"
     GetFullPathName $2 "$EXEDIR\..\..\Data\start"
     SetOutPath "$INSTDIR\Data\start"
     FindFirst $0 $1 $2\*.*

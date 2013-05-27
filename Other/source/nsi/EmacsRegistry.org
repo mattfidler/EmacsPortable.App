@@ -43,6 +43,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
   Function RegOrgProtocol
     ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "OrgProtocol"
     StrCmp $R0 "1" 0 end
+    
       ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
       IfErrors look_for_acrobat 0
       IfFileExists "$R0\Javascripts" 0 look_for_acrobat
@@ -63,8 +64,13 @@ EmacsPortable.App uses the loading bar to startup emacs.
       IfFileExists "$EPEXE\App\js\org-store-link.js" 0 +2
       CopyFiles /SILENT "$EPEXE\App\js\org-store-link.js" "$R0\org-store-link.js"
     register_protocol:
+      # Get local installation.
+      ReadRegStr $0 HKCU "Software\EmacsPortable.App" ""
+      ClearErrors
+      
       ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
       ClearErrors
+      StrCmp $0  "" 0 +2  ## Add org-protocol if locally installed.
       StrCmp $R0 "1" right_click
       WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "" "URL:Org Protocol"
       WriteRegStr HKEY_CLASSES_ROOT "org-protocol" "URL Protocol" ""
@@ -79,6 +85,7 @@ EmacsPortable.App uses the loading bar to startup emacs.
       # End
   FunctionEnd
   !define RegOrgProtocol "Call RegOrgProtocol"
+  
 #+END_SRC
 
 ** Register Edit With
@@ -114,6 +121,7 @@ FunctionEnd
 * Uninstaller
 #+BEGIN_SRC nsis
   Section "Uninstall" sec_uninstall
+    StrCpy $1 ""
     SetAutoClose true
     IfFileExists "$INSTDIR\..\..\EmacsPortableApp.exe" 0 +3
     GetFullPathName /SHORT $EPEXE "$INSTDIR\..\.."
@@ -127,8 +135,9 @@ FunctionEnd
     Delete "$TEMP\ep\rm-ep-reg.exe"
     IfFileExists "$TEMP\rm-ep-reg.exe" 0 +2
     Delete "$TEMP\rm-ep-reg.exe"
-    IfFileExists "$INSTDIR\rm-ep-reg.exe" 0 +2
+    IfFileExists "$INSTDIR\rm-ep-reg.exe" 0 +3
     Delete "$INSTDIR\rm-ep-reg.exe"
+    StrCpy $1 "1"
     
     ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe" "Path"
     IfErrors look_for_acrobat 0
@@ -151,6 +160,7 @@ FunctionEnd
     delete_open_with:
       ReadIniStr $R0 "$EPEXE\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" "LiberKey"
       ClearErrors
+      StrCmp $1 "" 0 +2 # remove if locally uninstalling.
       StrCmp $R0 "1" viewsource_ie
       ;WriteRegStr "HKLM" "SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" "EmacsPortableRemoveReg" "$TEMP\ep\EP-RemoveReg.exe"
       DeleteRegKey HKEY_CLASSES_ROOT "*\shell\openwemacs"

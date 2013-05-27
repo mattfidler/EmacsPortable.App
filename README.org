@@ -29,7 +29,7 @@ to be run, with different startup options.
 * Download
 ** Download for Emacs 24
 The following downloads are available:
-- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.2-ep0.02.exe][Emacs 24.2]]
+- [[http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.3-ep13.03.22.exe][Emacs 24.3]]
 ** Using Pre-releases
 Under windows, you can do a net-install by using EmacsOptions.  This
 net install can be performed in two ways:
@@ -336,6 +336,9 @@ Custom aliases may be added by customizing =EmacsPortable-aliases=.
 
 ** Font installation
 Will install specific fonts, if needed.
+** Updating mirrors to the latest version of emacs
+You can update the current list of supported emacs versions by
+running =emacs-portable-update-offical-emacs-releases=.
 * How It Works
 ** Fonts
 *** Windows
@@ -642,3 +645,5 @@ sources.  Note that only the Bazaar repo is the official
 #+END_SRC
 
 
+* Building an installer
+You can build an installer with the command =build-nsi= inside emacs.
