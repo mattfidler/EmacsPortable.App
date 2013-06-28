@@ -285,14 +285,14 @@ function setup_emacs {
     
 ## Compile if not present
     if [ ! -e "$EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER/bin/emacs-$EMACSVER" ]; then
-        if [ ! -e $EMACSAPP/emacs-$EMACSVER.tar.bz2 ]; then
+        if [ ! -e $EMACSAPP/emacs-$EMACSVER.tar.gz ]; then
             cd $EMACSAPP
-            download_file  http://ftpmirror.gnu.org/emacs/emacs-$EMACSVER.tar.bz2 "Emacs $EMACSVER Source" 
+            download_file  http://ftpmirror.gnu.org/emacs/emacs-$EMACSVER.tar.gz "Emacs $EMACSVER Source" 
             cd -
         fi
-        cp $EMACSAPP/emacs-$EMACSVER.tar.bz2 /tmp
+        cp $EMACSAPP/emacs-$EMACSVER.tar.gz /tmp
         cd /tmp
-        xterm -e tar -xvjf emacs-$EMACSVER.tar.bz2
+        xterm -e tar -xvzf emacs-$EMACSVER.tar.gz
         cd /tmp/emacs-$EMACSVER
     ## export CFLAGS="-m32 -march=i486"
     ## export CXXFLAGS="-m32 -march=i486"
@@ -324,7 +324,7 @@ function setup_emacs {
         done
         mkdir $EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER
         cp -rv /tmp/emacs-$EMACSVER-bin/App/emacs-$EMACSVER/linux-$GLIBVER/* $EMACSAPP/emacs-$EMACSVER/linux-$GLIBVER
-        xterm -e rm -rfv /tmp/emacs-$EMACSVER-bin /tmp/emacs-$EMACSVER.tar.bz2
+        xterm -e rm -rfv /tmp/emacs-$EMACSVER-bin /tmp/emacs-$EMACSVER.tar.gz
         cd $OPWD
     fi
     
