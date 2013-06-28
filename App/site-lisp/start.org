@@ -44,8 +44,8 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
                (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$")
                  (setq font-size (match-string 1)))
                (message "%s,%s" font-name font-size))
-             (if (not (and (fboundp 'find-font)
-                           (find-font (font-spec :name font-name)))) nil
+             (if (or (not font-name) (not (and (fboundp 'find-font)
+                                               (find-font (font-spec :name font-name))))) nil
                (condition-case err
                    (progn
                      (set-face-attribute 'default nil :font (format "%s-%s" font-name
@@ -571,7 +571,7 @@ work correctly.
 #+BEGIN_SRC emacs-lisp
     ;; Start server and load-bar.
   (cond 
-   ((and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
+   ( (eq system-type 'windows-nt) ;; Start daemon even if daemon is not running
     (setq server-auth-dir (concat (getenv "TEMP")
                                   (if window-system 
                                       "\\EmacsPortable.App-Server-"
