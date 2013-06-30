@@ -121,12 +121,20 @@ While (Pexist == 1)
               ;;TrayTip, %cDesc%, Detected Running %cDesc%, 10, 1
            }
            Pexist = 1
-           
+
+           SetTitleMatchMode 3
            If (ChangeMenu == 1){
              tmp := GetModuleExeName(pid%I%)
-             IniWrite %tmp%, %TEMP%\ep-pid.ini ,exec, %A_LoopField%
+             IniWrite %tmp%, %TEMP%\ep-pid.ini ,exec, %A_LoopField%  
              Menu, Menu%I%, add, New Frame, MenuHandler
-             Menu, Menu%I%, add, Hidden Daemon, MenuHandler
+             IfWinExist, %tit%
+             {
+                Menu, Menu%I%, add, Hidden Daemon, MenuHandler
+             }
+             Else 
+             {
+                Menu, Menu%I%, add, Start Psuedo-Daemon, MenuHandler
+             } 
              Loop, parse, CmdLst, `n 
              {
                     If (A_LoopField != ""){
@@ -135,19 +143,20 @@ While (Pexist == 1)
              }
              ;A_LoopField = %tmp%
            }
-           If (DoHide == 1)
+           IfWinExist, %tit%
            {
-              SetTitleMatchMode 3
-              If (ChangeMenu == 1){
-                Menu, Menu%I%, Check, Hidden Daemon
-              }                
-              WinHide %tit%   
-           } else {
-              SetTitleMatchMode 3
-              If (ChangeMenu == 1){
-                Menu, Menu%I%, UnCheck, Hidden Daemon                  
+              If (DoHide == 1)
+              {
+                 If (ChangeMenu == 1){
+                   Menu, Menu%I%, Check, Hidden Daemon
+                 }                
+                 WinHide %tit%   
+              } else {
+                 If (ChangeMenu == 1){
+                   Menu, Menu%I%, UnCheck, Hidden Daemon                  
+                 }
+                 WinShow %tit%
               }
-              WinShow %tit%
            }
            If (ChangeMenu == 1){
               Menu, tray, add, %cDesc% , :Menu%I%
@@ -209,6 +218,9 @@ If (A_ThisMenuItem == "Hidden Daemon"){
    hideshow%J% := DoHide
    Sleep 50
    ReqChangeMenu = 1
+} Else If (A_ThisMenuItem == "Start Psuedo-Daemon"){
+  StringReplace J, A_ThisMenu, Menu
+  Run %EPOTHER%..\EmacsPortableApp.exe %cArgs% --eval "()", %EPOTHER%..\
 } Else If (A_ThisMenuItem == "Refresh" && A_ThisMenu == "Tray"){
   IniWrite one, %TEMP%\ep-refresh-server.ini ,two, three
 } Else If (A_ThisMenuItem == "Options" && A_ThisMenu == "Tray"){
