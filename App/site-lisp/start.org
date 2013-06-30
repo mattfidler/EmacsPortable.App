@@ -571,7 +571,7 @@ work correctly.
 #+BEGIN_SRC emacs-lisp
     ;; Start server and load-bar.
   (cond 
-   ((and (getenv "EMACS_DAEMON") (eq system-type 'windows-nt))
+   ( (eq system-type 'windows-nt) ;; Start daemon even if daemon is not running
     (setq server-auth-dir (concat (getenv "TEMP")
                                   (if window-system 
                                       "\\EmacsPortable.App-Server-"
