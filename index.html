@@ -1,0 +1,1578 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>EmacsPortable.App</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<meta name="title" content="EmacsPortable.App"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2013-07-01T10:46-0500"/>
+<meta name="author" content="Matthew L. Fidler"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<link href="http://fonts.googleapis.com/css?family=Oswald" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="Other/style.css" type="text/css" />
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="header-wrapper"><div id="header"><div id="logo">
+<h1 class="title">EmacsPortable.App</h1><p>Run Emacs Portably on Windows, Linux and Mac OSX</p></div></div></div><div id="menu-wrapper"><div id="menu"><ul><li><a href="#sec-1">Introduction</a></li><li><a href="#sec-2">Download</a></li><li><a href="#sec-3">Options</a></li><li><a href="#sec-4">Customizing</a></li><li><a href="#sec-5">Configuration</a></li><li><a href="#sec-6">How It Works</a></li></ul></div></div><div id="page"><div id="page-bgtop"><div id="page-bgbtm"><div id="page-content">
+
+
+<div id="sidebar">
+
+<div id="text-table-of-contents">
+<ul>
+<li><h2><a href="#sec-1">1 Introduction</a></h2></li>
+<li><h2><a href="#sec-2">2 Download</a></h2>
+<ul>
+<li><a href="#sec-2-1">2.1 Download for Emacs 24</a></li>
+<li><a href="#sec-2-2">2.2 Using Pre-releases</a></li>
+</ul>
+</li>
+<li><h2><a href="#sec-3">3 Options</a></h2>
+<ul>
+<li><a href="#sec-3-1">3.1 Associations</a></li>
+<li><a href="#sec-3-2">3.2 Proxy</a></li>
+<li><a href="#sec-3-3">3.3 Behavior</a>
+<ul>
+<li><a href="#sec-3-3-1">3.3.1 Launching Options</a></li>
+<li><a href="#sec-3-3-2">3.3.2 Integration Options</a></li>
+</ul>
+</li>
+<li><a href="#sec-3-4">3.4 Visual</a></li>
+<li><a href="#sec-3-5">3.5 Download</a></li>
+<li><a href="#sec-3-6">3.6 Network Install</a></li>
+<li><a href="#sec-3-7">3.7 Build Launcher</a></li>
+<li><a href="#sec-3-8">3.8 Unix Components</a></li>
+</ul>
+</li>
+<li><h2><a href="#sec-4">4 Customizing</a></h2>
+<ul>
+<li><a href="#sec-4-1">4.1 Startup Customization</a></li>
+<li><a href="#sec-4-2">4.2 Setting Startup Environment variables</a></li>
+<li><a href="#sec-4-3">4.3 Load Path</a></li>
+<li><a href="#sec-4-4">4.4 Literate Initialization</a></li>
+</ul>
+</li>
+<li><h2><a href="#sec-5">5 Configuration</a></h2>
+<ul>
+<li><a href="#sec-5-1">5.1 Emacs aliases</a></li>
+<li><a href="#sec-5-2">5.2 Font installation</a></li>
+<li><a href="#sec-5-3">5.3 Updating mirrors to the latest version of emacs</a></li>
+</ul>
+</li>
+<li><h2><a href="#sec-6">6 How It Works</a></h2>
+<ul>
+<li><a href="#sec-6-1">6.1 Fonts</a>
+<ul>
+<li><a href="#sec-6-1-1">6.1.1 Windows</a></li>
+<li><a href="#sec-6-1-2">6.1.2 Mac OS X</a></li>
+</ul>
+</li>
+<li><a href="#sec-6-2">6.2 DOS Version</a></li>
+<li><a href="#sec-6-3">6.3 Icons</a></li>
+<li><a href="#sec-6-4">6.4 NSIS Configuration</a></li>
+</ul>
+</li>
+<li><h2><a href="#sec-7">7 Applications Support</a></h2>
+<ul>
+<li><a href="#sec-7-1">7.1 Adding Paths (Windows Only)</a>
+<ul>
+<li><a href="#sec-7-1-1">7.1.1 General Paths</a></li>
+<li><a href="#sec-7-1-2">7.1.2 Info Paths</a></li>
+<li><a href="#sec-7-1-3">7.1.3 Unix Manual Paths</a></li>
+</ul>
+</li>
+<li><a href="#sec-7-2">7.2 Java-based Apps</a></li>
+<li><a href="#sec-7-3">7.3 Imagemagick</a></li>
+<li><a href="#sec-7-4">7.4 Python based Apps</a></li>
+<li><a href="#sec-7-5">7.5 Version control Software</a>
+<ul>
+<li><a href="#sec-7-5-1">7.5.1 Bazaar</a></li>
+<li><a href="#sec-7-5-2">7.5.2 Subversion in Windows</a></li>
+<li><a href="#sec-7-5-3">7.5.3 Git</a></li>
+</ul>
+</li>
+<li><a href="#sec-7-6">7.6 SumatraPDF Portable</a></li>
+<li><a href="#sec-7-7">7.7 GPG for encryption</a></li>
+<li><a href="#sec-7-8">7.8 MikTeX Portable</a></li>
+<li><a href="#sec-7-9">7.9 Unix Ports</a>
+<ul>
+<li><a href="#sec-7-9-1">7.9.1 Cygwin</a></li>
+<li><a href="#sec-7-9-2">7.9.2 MSYS</a></li>
+<li><a href="#sec-7-9-3">7.9.3 GnuWin32</a></li>
+<li><a href="#sec-7-9-4">7.9.4 EzWin</a></li>
+</ul>
+</li>
+<li><a href="#sec-7-10">7.10 PuTTY</a>
+<ul>
+<li><a href="#sec-7-10-1">7.10.1 PuTTY and magit</a></li>
+<li><a href="#sec-7-10-2">7.10.2 PuTTY and Tramp</a></li>
+<li><a href="#sec-7-10-3">7.10.3 PuTTYPortable</a></li>
+<li><a href="#sec-7-10-4">7.10.4 PuTTY and Proxy settings</a></li>
+<li><a href="#sec-7-10-5">7.10.5 PuTTY and R</a></li>
+</ul>
+</li>
+<li><a href="#sec-7-11">7.11 Bleeding edge emacs (Not supported yet)</a></li>
+</ul>
+</li>
+<li><h2><a href="#sec-8">8 Building an installer</a></h2></li>
+</ul>
+</div>
+</div>
+
+<div id="content"><div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+
+<p>EmacsPortable.App attempts to make a portable version of Emacs that
+runs off a USB drive under either Windows, Linux, or Mac OSX.
+</p>
+<p>
+The features of this distribution:
+</p><ul>
+<li>Automatic Registering of extensions (and org-protocol)
+<ul>
+<li>Will use LiberKey when requested (Windows)
+</li>
+<li>Will generate an appropriate Info.plist for Mac OS X
+</li>
+<li>No support under Linux
+</li>
+</ul>
+
+</li>
+<li>Temporarily Install of fonts
+<ul>
+<li>Temporarily install fonts on windows so you can always carry your
+    favorite mono-spaced font
+</li>
+<li>Copy the fonts to ~/Library/Fonts under Mac OSX
+<ul>
+<li>The fonts you use should be free, so you are not copying fonts
+      that should not be copied
+</li>
+</ul>
+
+</li>
+<li>Currently no support under Linux
+</li>
+</ul>
+
+</li>
+</ul>
+
+<p><b>Window Only Features:</b>
+</p><ul>
+<li>Psuedo-Daemon
+</li>
+<li>Finding support applications and dictionaries
+</li>
+<li>Starting gdb or attaching debugger
+</li>
+<li>Updating and downloading the latest emacs, even if EmacsPortable.App
+  hasn't released a new launcher.
+</li>
+</ul>
+
+
+<p>
+In windows, this distribution also allows concurrent versions of emacs
+to be run, with different startup options. 
+</p></div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Download</h2>
+<div class="outline-text-2" id="text-2">
+
+
+</div>
+
+<div id="outline-container-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Download for Emacs 24</h3>
+<div class="outline-text-3" id="text-2-1">
+
+<p>The following downloads are available:
+</p><ul>
+<li><a href="http://code.google.com/p/emacs-portable-app/downloads/detail?name=EmacsInstall-24.3-ep13.03.22.exe">Emacs 24.3</a>
+</li>
+</ul>
+
+</div>
+
+</div>
+
+<div id="outline-container-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> Using Pre-releases</h3>
+<div class="outline-text-3" id="text-2-2">
+
+<p>Under windows, you can do a net-install by using EmacsOptions.  This
+net install can be performed in two ways:
+</p><ol>
+<li>Select the option for a network-based install
+</li>
+<li>Move the <code>EmacsOptions.exe</code> outside of the EmacsPortableApp
+   directory and run it.  This allows you to distribute the network
+   install file anywhere and allow other people to download/build
+   their own EmacsPortable.App.
+</li>
+</ol>
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Options</h2>
+<div class="outline-text-2" id="text-3">
+
+
+</div>
+
+<div id="outline-container-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> Associations</h3>
+<div class="outline-text-3" id="text-3-1">
+
+<p>EmacsPortable.App handles file associations in the following ways:
+</p>
+<ul>
+<li>Associations through LiberKey
+</li>
+<li>PortableApps.com specifictaion (when PortableApps supports association)
+</li>
+<li>Registering Associations when running.
+</li>
+</ul>
+
+
+<p>
+When changing associations under windows, the Mac <code>Info.plist</code> xml
+file is also updated.
+</p>
+<p>
+In addition to regular extensions, EmacsPortable.App can be registered
+to extensionless files.  Currently this is unsupported through
+liberkey.  Therefore, this is only in effect when EmacsPortableApp is
+running or installed locally.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Proxy</h3>
+<div class="outline-text-3" id="text-3-2">
+
+<p>This allows proxy settings to be dynamically determined based on your
+location.  Your password is encrypted based on the location as well.
+This works on windows only.
+</p>
+<p>
+EmacsPortable.App will setup the <code>HTTPS_PROXY</code>, <code>HTTP_PROXY</code> and
+<code>FTP_PROXY</code> based on the connection specific setup.
+To use a proxy, set it up with <code>EmacsOptions.exe</code>.
+</p>
+<p>
+This is sufficient for some packages, but not for <code>gnus</code>.
+</p>
+<p>
+The information is stored by the blowfish encryption algorithm.
+However the <code>HTTP_PROXY</code> environment variable will contain the
+password in clear text.
+</p>
+<p>
+When Putty Key is specified in this dialog, the putty key is loaded
+and Putty local or portable is started (depending on the options selected).
+</p></div>
+
+</div>
+
+<div id="outline-container-3-3" class="outline-3">
+<h3 id="sec-3-3"><span class="section-number-3">3.3</span> Behavior</h3>
+<div class="outline-text-3" id="text-3-3">
+
+<p>Under windows, launching options may be changed by running
+<code>EmacsOptions.exe</code>. Otherwise, ini files can be edited on Mac OSX.
+</p>
+</div>
+
+<div id="outline-container-3-3-1" class="outline-4">
+<h4 id="sec-3-3-1"><span class="section-number-4">3.3.1</span> Launching Options</h4>
+<div class="outline-text-4" id="text-3-3-1">
+
+<ul>
+<li id="sec-3-3-1-1">Emacs Version<br/>
+This selects the version of Emacs that EmacsPortable.App will be
+running.  This is useful if you run different versions of Emacs to
+test lisp code on multiple emacs versions.
+</li>
+</ul>
+<ul>
+<li id="sec-3-3-1-2">Startup Script<br/>
+Emacs allows you to select popular startup scripts for emacs startup.
+Once downloaded, you can use:
+<ul>
+<li>Prelude
+</li>
+<li>Emacs 24 Starter Kit
+</li>
+<li>Ergoemacs
+</li>
+<li>Kicker
+</li>
+</ul>
+
+
+<p>
+You can also create  you own.  Just place an <code>init.el</code> or <code>.emacs</code> in
+a directory under <code>Data/startup/</code>
+</p>
+</li>
+</ul>
+<ul>
+<li id="sec-3-3-1-3">Pseudo Daemon<br/>
+The Pseudo-Daemon Start-up script among other things:
+<ul>
+<li>Opens Emacs
+</li>
+<li>Renames the current Frame
+</li>
+<li>Creates a New frame
+</li>
+<li>Calls an external program (ahk) that hides the frame &amp; puts an
+   Emacs icon in the task bar to allow this frame to be shown or
+   closed
+</li>
+<li>Once Emacs has started up, subsequent calls to the Emacs start-up
+   script open a new frame.
+</li>
+</ul>
+
+
+<p>
+This allows you to "close" out of Emacs while maintaining a running Emacs.
+</p>
+<p>
+The startup script also sets the environment variable
+EMACS<sub>SERVER</sub><sub>FILE</sub> to the temporary directory
+</p>
+<p>
+<code>$TEMP\ep\EmacsPortable.App-Server-$EMACS_VERSION\server</code>
+</p>
+<p>
+Subsequent calls to emacsclient.exe specify this server location.
+Therefore an emacs server can be run for each distinct emacs version
+</p>
+<p>
+More information about the startup is found in <a href="./App/site-lisp/site-start.html">site-start.org</a>
+</p></li>
+</ul>
+<ul>
+<li id="sec-3-3-1-4">New frame on file open<br/>
+Create a new emacs "frame" on opening a new file.
+</li>
+</ul>
+<ul>
+<li id="sec-3-3-1-5">Debug startup<br/>
+Under windows, debug mode starts <code>gdb</code> if found.  Additionally, if
+<code>App/gdbinit</code> is found, gdb sources this before running emacs.  You
+can download an appropriate gdbinit for emacs <a href="http://bzr.savannah.gnu.org/lh/emacs/trunk/annotate/head:/src/.gdbinit">here</a>.
+
+<p>
+This is equivalent to using <code>EmacsDebug.exe</code>
+</p></li>
+</ul>
+<ul>
+<li id="sec-3-3-1-6">Unzip binaries and run from temporary directory<br/>
+Emacs binaries can be zipped to save space.  This requires that the
+emacs binaries are extracted to the temporary directory before
+running.  I have found that running emacs in this manner is faster
+than running it on the USB stick alone.  If not selected the binaries
+will run from the usb drive.  If you are running EmacsPortable.App locally
+</li>
+</ul>
+<ul>
+<li id="sec-3-3-1-7">Clean residual files<br/>
+When running portably, the unzipped binaries are stored in the
+temporary directory.  To save time on startup, if the bare binaries
+needed to run emacs are still present, the launcher uses these files
+in the temporary directory.
+
+<p>
+When the clean residual files option is selected, these binaries are
+removed after emacs stops, otherwise they are retained to improve
+startup time. 
+</p></li>
+</ul>
+<ul>
+<li id="sec-3-3-1-8">Home directory<br/>
+The <code>HOME</code> Directory is where Emacs stores the <code>.emacs</code> file;  Other
+emacs programs also store information here. EmacsPortable.App has a
+few options for home directories
+
+<p>
+<b>EXEDIR Alias</b>
+</p>
+<p>
+If the <code>Data/ini/EmacsPortableApp.ini</code> file contains an ini Home Entry 
+</p>
+
+
+<pre class="src src-conf">[<span class="org-type">EmacsPortableApp</span>]
+<span class="org-variable-name">Home</span>=EXEDIR:/Data/Home
+</pre>
+
+<p>
+The EXEDIR directory is changed for the base directory that
+EmacsPortable.App is run from.
+</p>
+<p>
+The advantage to this methodology is that you can drag and drop Emacs
+and all your customizations will be dragged with it.
+</p>
+<p>
+<b>USB Alias</b>
+</p>
+<p>
+If the <code>Data/ini/EmacsPortableApp.ini</code> file contains an ini Home Entry 
+</p>
+
+
+<pre class="src src-conf">[<span class="org-type">EmacsPortableApp</span>]
+<span class="org-variable-name">Home</span>=USB:/Documents/
+</pre>
+
+<p>
+USB represents the USB directory. This setting uses the PortableApps Documents Directory
+as the home-directory.  
+</p>
+<p>
+The USB directory is determined as follows:
+</p><ul>
+<li><i>Under Windows</i>
+<ul>
+<li>Checks each removable and hard drive for an <code>.emacs</code> or <code>_emacs</code>
+     file under the specified directory.  For example
+     EmacsPortable.App would check <code>e:\Documents\.emacs</code> and
+     <code>f:\Document\.emacs</code>.  If it found <code>f:\Document\.emacs</code>, If it
+     exists, it assumes that the USB drive is <code>f:\</code>
+</li>
+<li>Checks each drive for a <code>PortableApps</code> directory.  If found it
+     assumes that this is the usb drive
+</li>
+<li>Checks for <code>Apps</code>,=EmacsPortable.App= or <code>PortableApps</code>,
+     <code>LiberKey\Apps</code>, etc (the directories found in App/paths.ini
+     portable.dirs). When found, EmacsPortable.App assumes the drive
+     where the directory is found is the USB drive.
+</li>
+<li>If not found, it will set the USB directory to the installed directory.
+</li>
+</ul>
+
+</li>
+<li><i>Under Mac OS X</i>
+<ul>
+<li>Assumes the usb directory is the <code>/Volumes/USB-NAME/</code> directory.
+</li>
+</ul>
+
+</li>
+</ul>
+
+
+<p>
+The advantage of this methodology is that under windows, Emacs can be
+copied to the hard-drive to speed up the run-time, and the
+initialization from the hard drive. 
+</p>
+<p>
+<b>Home if Exists</b>
+</p>
+<p>
+If the <code>Data/ini/EmacsPortableApp.ini</code> file contains a full path, then
+the home is set when that file exists.  For example:
+</p>
+
+
+<pre class="src src-conf">[<span class="org-type">EmacsPortableApp</span>]
+<span class="org-variable-name">Home</span>=c:\
+</pre>
+
+
+<p>
+will set the home directory to <code>c:\</code> on Windows computers.  Currently,
+this is supported only on windows.
+</p>
+<p>
+<b>System home</b>
+</p>
+<p>
+If the <code>Data/ini/EmacsPortableApp.ini</code> file contains an ini Home Entry
+that doesn't start with either <code>EXEDIR:/</code> or <code>USB:/</code>, and doesn't
+exist then the
+original home directory is maintained.
+</p>
+
+
+<pre class="src src-conf">[<span class="org-type">EmacsPortableApp</span>]
+<span class="org-variable-name">Home</span>=Set as original
+</pre>
+
+
+<p>
+<b>Changing Home</b>
+</p>
+<p> 
+When using EmacsOptions.exe, you do not have to worry about selecting
+which type of file is used.  If you select a directory on the USB
+drive, the EmacsPortableApp is updated accordingly.  If you select
+location within the portable app directory, the <code>EXEDIR</code> is replaced.
+Note that any where else may change depending on the computer you use.
+</p>
+
+</li>
+</ul>
+</div>
+
+</div>
+
+<div id="outline-container-3-3-2" class="outline-4">
+<h4 id="sec-3-3-2"><span class="section-number-4">3.3.2</span> Integration Options</h4>
+<div class="outline-text-4" id="text-3-3-2">
+
+<ul>
+<li id="sec-3-3-2-1">Right-Click "Edit-With"<br/>
+This allows a right click to produce a "Edit with EmacsPortable.App"
+</li>
+</ul>
+<ul>
+<li id="sec-3-3-2-2">Org-protocol<br/>
+This registers Org-protocol and also associates org-protocol actions
+with adobe acrobat/adobe acrobat reader.
+</li>
+</ul>
+<ul>
+<li id="sec-3-3-2-3">Liberkey<br/>
+EmacsPortable.App will add LiberKey File associations when it locates
+LiberKey, and the LiberKey support is checked.  Note that you should
+restart LiberKey and make sure that the associations actually
+installed correctly.
+</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-3-4" class="outline-3">
+<h3 id="sec-3-4"><span class="section-number-3">3.4</span> Visual</h3>
+<div class="outline-text-3" id="text-3-4">
+
+<p>This allows the initial font/color and gemoetry options to be
+specified so that emacs will startup with these options enabled.
+</p>
+
+<p>
+These are called from the command line and do not affect the
+registry.
+</p>
+<p>
+In addition this tries to set an option to maximize new frames.
+</p></div>
+
+</div>
+
+<div id="outline-container-3-5" class="outline-3">
+<h3 id="sec-3-5"><span class="section-number-3">3.5</span> Download</h3>
+<div class="outline-text-3" id="text-3-5">
+
+<p>EmacsPortable.App can download and run the versions of Emacs from the
+mac repository and windows repository and package them so they work
+with the EmacsPortable.App launcher.
+</p>
+<p>
+If the EmacsOptions list of emacs versions is out of date, it can be
+updated by the following procedure:
+</p><ul>
+<li>Start EmacsPortable.App
+</li>
+<li>Type <code>M-x official-emacs</code>
+</li>
+</ul>
+
+
+<p>
+This will update the emacs list of official binaries from <a href="http://emacsformacosx.com/">GNU Emacs For Mac OS X</a> and <a href="http://www.gnu.org/software/emacs/">GNU Emacs</a> websites.
+</p>
+
+</div>
+
+</div>
+
+<div id="outline-container-3-6" class="outline-3">
+<h3 id="sec-3-6"><span class="section-number-3">3.6</span> Network Install</h3>
+<div class="outline-text-3" id="text-3-6">
+
+</div>
+
+</div>
+
+<div id="outline-container-3-7" class="outline-3">
+<h3 id="sec-3-7"><span class="section-number-3">3.7</span> Build Launcher</h3>
+<div class="outline-text-3" id="text-3-7">
+
+</div>
+
+</div>
+
+<div id="outline-container-3-8" class="outline-3">
+<h3 id="sec-3-8"><span class="section-number-3">3.8</span> Unix Components</h3>
+<div class="outline-text-3" id="text-3-8">
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Customizing</h2>
+<div class="outline-text-2" id="text-4">
+
+
+</div>
+
+<div id="outline-container-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> Startup Customization</h3>
+<div class="outline-text-3" id="text-4-1">
+
+<p>The <code>EmacsOptions.exe</code> allows you to set Emacs startup options via a
+GUI.  This is mirrored in the <code>Data/ini/EmacsPortable.ini</code> file. 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-4-2" class="outline-3">
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> Setting Startup Environment variables</h3>
+<div class="outline-text-3" id="text-4-2">
+
+<p>By creating or editing an environment ini file at
+<code>Data/ini/Environment.ini</code>, startup environmental variables may be set.
+For example, if you use the <code>colemak</code> keyboard with the ergoemacs
+package, the following ini-file will set the
+<code>ERGOEMACS_KEYBOARD_LAYOUT</code> to the proper value
+</p>
+
+
+
+<pre class="src src-conf">[<span class="org-type">Environment</span>]
+<span class="org-variable-name">ERGOEMACS_KEYBOARD_LAYOUT</span>=colemak
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4-3" class="outline-3">
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> Load Path</h3>
+<div class="outline-text-3" id="text-4-3">
+
+<p>Load Path for source directory is in <code>Data/src</code>.
+</p></div>
+
+</div>
+
+<div id="outline-container-4-4" class="outline-3">
+<h3 id="sec-4-4"><span class="section-number-3">4.4</span> Literate Initialization</h3>
+<div class="outline-text-3" id="text-4-4">
+
+<p>When using EmacsPortable.App's startup mechanism, t
+</p><ol>
+<li>Any <code>.org</code>, <code>.el</code> or <code>.elc</code> files in <code>Data/init</code> and loads them
+</li>
+<li>User-based <code>.org</code>, <code>.el</code>, or <code>.elc</code> files in <code>Data/init/user</code>.   
+</li>
+<li>System based <code>.org</code>, <code>.el</code> or <code>.elc</code> files in <code>Data/init/system</code>.
+</li>
+</ol>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Configuration</h2>
+<div class="outline-text-2" id="text-5">
+
+<p>Since EmacsPortable.App tries to run portably, there are a few things
+that are changed from a standard emacs distribution:
+</p>
+<ol>
+<li>Home directory is allowed to change based on different computers
+   (USB is e:, f:, etc)
+
+</li>
+<li>Directories that change can become aliases for convenience and to
+   allow recent files to save correctly (for instance ~usb for the usb
+   drive).
+
+</li>
+<li>Install fonts on different computers to allow a favorite font to be
+   used in emacs for all distributions.  In windows this is done by
+   making the font available to windows during the session.
+</li>
+</ol>
+
+
+</div>
+
+<div id="outline-container-5-1" class="outline-3">
+<h3 id="sec-5-1"><span class="section-number-3">5.1</span> Emacs aliases</h3>
+<div class="outline-text-3" id="text-5-1">
+
+<p>Emacs has a list of "home" directory aliases.  The absolute
+directories are:
+</p><table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<colgroup><col class="left" /><col class="left" /><col class="left" />
+</colgroup>
+<thead>
+<tr><th scope="col" class="left">Alias</th><th scope="col" class="left">True Directory</th><th scope="col" class="left">Directory Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td class="left">~ahk/</td><td class="left">Other/source/ahk</td><td class="left">AHK Sources Directory</td></tr>
+<tr><td class="left">~app/</td><td class="left">App/</td><td class="left">EmacsPortable.App Application Files</td></tr>
+<tr><td class="left">~doc/</td><td class="left">USB Drive Documents</td><td class="left">Documents Directory</td></tr>
+<tr><td class="left">~ep/</td><td class="left">.</td><td class="left">EmacsPortable.App Directory</td></tr>
+<tr><td class="left">~h/</td><td class="left">System Home Directory</td><td class="left">System Home Directory</td></tr>
+<tr><td class="left">~ini/</td><td class="left">Data/ini</td><td class="left">EmacsPortable.App ini files</td></tr>
+<tr><td class="left">~nsi/</td><td class="left">Other/source/nsi</td><td class="left">NSIS Sources Directory</td></tr>
+<tr><td class="left">~pa/</td><td class="left">USB Drive:/PortableApps</td><td class="left">Portable Apps</td></tr>
+<tr><td class="left">~shared/</td><td class="left">Data/start/shared</td><td class="left">Shared Customizations</td></tr>
+<tr><td class="left">~site-lisp/</td><td class="left">App/site-lisp</td><td class="left">Site Lisp Directory</td></tr>
+<tr><td class="left">~src/</td><td class="left">Data/src</td><td class="left">EmacsPortable.App lisp source files</td></tr>
+<tr><td class="left">~start/</td><td class="left">Data/start</td><td class="left">EmacsPortable.App Customizations</td></tr>
+<tr><td class="left">~system/</td><td class="left">Data/start/system</td><td class="left">System-based Customizations</td></tr>
+<tr><td class="left">~usb/</td><td class="left">USB Drive</td><td class="left">USB Drive</td></tr>
+<tr><td class="left">~user/</td><td class="left">Data/start/user</td><td class="left">User-based Customizations</td></tr>
+</tbody>
+</table>
+
+
+
+<p>
+Other aliases are added <code>~el-get/package/elpa</code> is changed to <code>~elpa</code>, as
+if it were a symbolic link.  Since symbolic links are not supported in
+windows, this is handled by emacs only.  This was implemented to allow
+files to remain the same between file systems.  <code>~usb/</code> will be the
+same on every system.
+</p>
+<p>
+In addition to these aliases, the following aliases are also defined:
+</p>
+<ul>
+<li><code>~el-get</code>, is an alias for the el-get package directory
+</li>
+<li><code>~elpa</code>, is an alias for the user elpa package directory
+</li>
+<li><code>~theme</code> or <code>~themes</code>, is an alias for the emacs24 themes directory,
+  (as long as the themes directory is <i>not</i> the <code>user-emacs-directory</code>).
+</li>
+<li><code>~snip</code>, <code>~snips</code>, <code>~snippets</code>, <code>~snippet</code>, is an alias for
+  yasnippets snippets.
+</li>
+<li>All the startup scripts in <code>Data/start</code> have an alias created for them.
+</li>
+</ul>
+
+
+<p>
+Custom aliases may be added by customizing <code>EmacsPortable-aliases</code>.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-5-2" class="outline-3">
+<h3 id="sec-5-2"><span class="section-number-3">5.2</span> Font installation</h3>
+<div class="outline-text-3" id="text-5-2">
+
+<p>Will install specific fonts, if needed.
+</p></div>
+
+</div>
+
+<div id="outline-container-5-3" class="outline-3">
+<h3 id="sec-5-3"><span class="section-number-3">5.3</span> Updating mirrors to the latest version of emacs</h3>
+<div class="outline-text-3" id="text-5-3">
+
+<p>You can update the current list of supported emacs versions by
+running <code>emacs-portable-update-offical-emacs-releases</code>.
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> How It Works</h2>
+<div class="outline-text-2" id="text-6">
+
+
+</div>
+
+<div id="outline-container-6-1" class="outline-3">
+<h3 id="sec-6-1"><span class="section-number-3">6.1</span> Fonts</h3>
+<div class="outline-text-3" id="text-6-1">
+
+
+</div>
+
+<div id="outline-container-6-1-1" class="outline-4">
+<h4 id="sec-6-1-1"><span class="section-number-4">6.1.1</span> Windows</h4>
+<div class="outline-text-4" id="text-6-1-1">
+
+<p>Under windows the fonts in the <code>App/fonts/</code> directory are temporarily
+installed/registered. Once Emacs Exits, the fonts are unregistered.
+</p></div>
+
+</div>
+
+<div id="outline-container-6-1-2" class="outline-4">
+<h4 id="sec-6-1-2"><span class="section-number-4">6.1.2</span> Mac OS X</h4>
+<div class="outline-text-4" id="text-6-1-2">
+
+<p>Copies fonts in the <code>App/fonts/</code> directory to <code>~/Library/Fonts/</code>
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-6-2" class="outline-3">
+<h3 id="sec-6-2"><span class="section-number-3">6.2</span> DOS Version</h3>
+<div class="outline-text-3" id="text-6-2">
+
+<p>The dos version starts up emacs in a dos command prompt window. When
+trying to do anything with the <code>EmacsPortableDOS</code> command, it will
+attempt to do that command in the initial <code>DOS</code> box.  This is just a
+test environment, and is likely not very reasonable to use.
+</p></div>
+
+</div>
+
+<div id="outline-container-6-3" class="outline-3">
+<h3 id="sec-6-3"><span class="section-number-3">6.3</span> Icons</h3>
+<div class="outline-text-3" id="text-6-3">
+
+<p>Icons came from various places:
+</p><ul>
+<li><a href="http://findicons.com/icon/93514/new_go_down?id=344599#">Download Icon</a>
+</li>
+<li>USB Icon
+<ul>
+<li><a href="http://www.clker.com/clipart-10031.html">http://www.clker.com/clipart-10031.html</a>
+</li>
+</ul>
+
+</li>
+<li>Modified Lady Bug <a href="http://www.clker.com/clipart-23283.html">http://www.clker.com/clipart-23283.html</a>
+</li>
+<li>Modified Uninstall Icon (original at
+  <a href="http://findicons.com/icon/127390/trash_empty">http://findicons.com/icon/127390/trash_empty</a>)
+</li>
+<li>Dos Box/Terminal <a href="http://www.clker.com/clipart-3716.html">http://www.clker.com/clipart-3716.html</a>
+</li>
+<li>Wrench <a href="http://www.clker.com/clipart-3716.html">http://www.clker.com/clipart-3716.html</a>
+</li>
+<li>Screw Driver <a href="http://www.clker.com/clipart-14895.html">http://www.clker.com/clipart-14895.html</a>
+</li>
+</ul>
+
+</div>
+
+</div>
+
+<div id="outline-container-6-4" class="outline-3">
+<h3 id="sec-6-4"><span class="section-number-3">6.4</span> NSIS Configuration</h3>
+<div class="outline-text-3" id="text-6-4">
+
+<p>EmacsPortable.App is built with NSIS with the following options:
+</p><ul>
+<li>NSIS 2.46
+</li>
+<li>Large String Support <a href="http://nsis.sourceforge.net/Special_Builds#Large_strings">http://nsis.sourceforge.net/Special_Builds#Large_strings</a>
+</li>
+<li>EnumINI <a href="http://nsis.sourceforge.net/EnumINI_plug-in">http://nsis.sourceforge.net/EnumINI_plug-in</a>
+</li>
+<li>Inetc <a href="http://nsis.sourceforge.net/Inetc_plug-in">http://nsis.sourceforge.net/Inetc_plug-in</a>
+</li>
+<li>Execdos <a href="http://nsis.sourceforge.net/ExecDos_plug-in">http://nsis.sourceforge.net/ExecDos_plug-in</a>
+</li>
+<li>Blowfish++ <a href="http://nsis.sourceforge.net/mediawiki/images/a/a7/BlowfishDLL.7z">http://nsis.sourceforge.net/mediawiki/images/a/a7/BlowfishDLL.7z</a>
+</li>
+<li>MD5 <a href="http://nsis.sourceforge.net/MD5_plugin">http://nsis.sourceforge.net/MD5_plugin</a>
+</li>
+<li>XML <a href="http://nsis.sourceforge.net/XML_plug-in">http://nsis.sourceforge.net/XML_plug-in</a>
+</li>
+<li>FindProcDLL <a href="http://nsis.sourceforge.net/FindProcDLL_plug-in">http://nsis.sourceforge.net/FindProcDLL_plug-in</a>
+</li>
+<li>LoadingBar UI <a href="http://nsis.sourceforge.net/LoadingBar_UI">http://nsis.sourceforge.net/LoadingBar_UI</a>
+</li>
+</ul>
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> Applications Support</h2>
+<div class="outline-text-2" id="text-7">
+
+
+</div>
+
+<div id="outline-container-7-1" class="outline-3">
+<h3 id="sec-7-1"><span class="section-number-3">7.1</span> Adding Paths (Windows Only)</h3>
+<div class="outline-text-3" id="text-7-1">
+
+<p>Most of the specific applications work by adding paths and changing
+environmental variables.  This is controlled by <code>App/ini/paths.ini</code>.
+EmacsPortableApp looks at the following sections
+</p>
+</div>
+
+<div id="outline-container-7-1-1" class="outline-4">
+<h4 id="sec-7-1-1"><span class="section-number-4">7.1.1</span> General Paths</h4>
+<div class="outline-text-4" id="text-7-1-1">
+
+<ul>
+<li id="sec-7-1-1-1">Local Paths [local]<br/>
+Local paths are paths that emacs checks that are locally available.
+They are specified by NAME=Local Path Snippet.  An example of this is:
+
+
+
+<pre class="src src-conf">[<span class="org-type">local</span>]
+<span class="org-variable-name">git</span>=msysgit\msysgit\bin
+<span class="org-variable-name">git2</span>=msysgit\bin
+<span class="org-variable-name">gitmsys</span>=msysgit\msysgit\mingw\bin
+<span class="org-variable-name">gitmsys2</span>=msysgit\mingw\bin
+</pre>
+
+
+<p>
+In this example <code>git</code> The following paths are checked:
+</p><ol>
+<li><code>c:\msysgit\msysgit\bin</code>
+<ul>
+<li>The root is set to <code>c:\</code>
+</li>
+</ul>
+
+</li>
+<li><code>%ProgramFiles%\msysgit\msysgit\bin</code>
+<ul>
+<li>The root is set to <code>%ProgramFiles%</code>
+</li>
+</ul>
+
+</li>
+</ol>
+
+
+<p>
+If they exist they are added to the path environment before starting
+emacs.  If the directory in fact <i>exists</i>, then two additional ini
+sections are checked, <code>[local.git.path]</code> and <code>[local.git.set]</code>.  
+</p>
+<p>
+For the <code>git</code> local setup, there are two sections.  The first
+<code>local.git.path</code> is specified as follows:
+</p>
+
+
+
+<pre class="src src-conf">[<span class="org-type">local.git.path</span>]
+<span class="org-variable-name">git_install_root</span>=msysgit\msysgit
+</pre>
+
+
+<p>
+Then each key is added to the environment putting the root location
+before the right handed value.  In this case, the environmental
+variable is set to <code>c:\msysgit\msysgit</code> or
+<code>%ProgramFiles%\msysgit\msysgit</code> depending on which path was found.   
+</p>
+<p>
+The other type of section that is used is the <code>[local.git.set]</code>.  In
+the case of <code>git</code> this section is defined as:
+</p>
+
+
+
+<pre class="src src-conf">[<span class="org-type">local.git.set</span>]
+<span class="org-variable-name">PLINK_PROTOCOL</span>=ssh
+</pre>
+
+
+<p>
+Therefore, if <code>git</code> is found then the environmental variable
+<code>PLINK_PROTOCOL</code> is set to <code>ssh</code>.
+</p>
+</li>
+</ul>
+<ul>
+<li id="sec-7-1-1-2">Portable Paths [portable]<br/>
+The portable paths are set in the same way as the local paths with the
+exception of the places they check for the existence of paths.  The
+<code>portable</code> section checks for paths in <code>USB:\</code>, and <code>USB:\PortableApps\</code>.
+</li>
+</ul>
+<ul>
+<li id="sec-7-1-1-3">Relative Paths [exedir]<br/>
+The <code>exedir</code> section checks for paths relative to the portable
+application. 
+</li>
+</ul>
+</div>
+
+</div>
+
+<div id="outline-container-7-1-2" class="outline-4">
+<h4 id="sec-7-1-2"><span class="section-number-4">7.1.2</span> Info Paths</h4>
+<div class="outline-text-4" id="text-7-1-2">
+
+<p>Emacs uses Info for most everything.  You can add <code>info</code> paths that
+Emacs doesn't know about by a similar manner as the general paths,
+above. 
+</p></div>
+
+</div>
+
+<div id="outline-container-7-1-3" class="outline-4">
+<h4 id="sec-7-1-3"><span class="section-number-4">7.1.3</span> Unix Manual Paths</h4>
+<div class="outline-text-4" id="text-7-1-3">
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-7-2" class="outline-3">
+<h3 id="sec-7-2"><span class="section-number-3">7.2</span> Java-based Apps</h3>
+<div class="outline-text-3" id="text-7-2">
+
+<p>EmacsPortable supports <a href="http://plantuml.sourceforge.net/download.html">PlantUML</a>, <a href="http://www.mathtoweb.com/cgi-bin/mathtoweb_home.pl">MathToWeb</a> and <a href="http://ditaa.sourceforge.net/">ditaa</a> for <a href="http://orgmode.org">org-mode</a> assuming that
+<a href="http://portableapps.com/apps/utilities/java_portable_launcher">JavaPortable</a> is installed.
+</p>
+
+<p>
+<a href="http://plantuml.sourceforge.net/download.html">PlantUML</a> requires <code>dot</code> from GraphViz.  Therefore, GraphVizPortable
+would need to be installed for <a href="http://plantuml.sourceforge.net/download.html">PlantUML</a> to work. 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-7-3" class="outline-3">
+<h3 id="sec-7-3"><span class="section-number-3">7.3</span> Imagemagick</h3>
+<div class="outline-text-3" id="text-7-3">
+
+<p>Imagemagick is used for many Emacs Applications.  EmacsPortableApp
+attempts to detect a portable version of EmacsPortableApp or see if
+Imagemagick is installed on the computer.
+</p>
+<p>
+A portable version of Imagemagic is found <a href="ftp://ftp.imagemagick.org/pub/ImageMagick/binaries/ImageMagick-6.7.9-3-Q16-windows.zip">at ftp.imagemagick.org</a>
+By extracting the portable version in the <code>PortableApps</code> or
+<code>LiberKey\MyApps</code> EmacsPortable.App will add this to the path.  This
+assumes the Imagemagick directory is <code>ImageMagick-6.7.9-3</code>
+</p></div>
+
+</div>
+
+<div id="outline-container-7-4" class="outline-3">
+<h3 id="sec-7-4"><span class="section-number-3">7.4</span> Python based Apps</h3>
+<div class="outline-text-3" id="text-7-4">
+
+<p>By installing <a href="http://www.portablepython.com">Python Portable</a> into your <code>PortableApps</code> Directory,
+python is available to Emacs.  This is useful for installing Bazaar,
+which Emacs uses as its version control.
+</p></div>
+
+</div>
+
+<div id="outline-container-7-5" class="outline-3">
+<h3 id="sec-7-5"><span class="section-number-3">7.5</span> Version control Software</h3>
+<div class="outline-text-3" id="text-7-5">
+
+
+</div>
+
+<div id="outline-container-7-5-1" class="outline-4">
+<h4 id="sec-7-5-1"><span class="section-number-4">7.5.1</span> Bazaar</h4>
+<div class="outline-text-4" id="text-7-5-1">
+
+<p>I have created a portable Bazaar.  EmacsPortable.App will recognize
+bazaar version
+</p></div>
+
+</div>
+
+<div id="outline-container-7-5-2" class="outline-4">
+<h4 id="sec-7-5-2"><span class="section-number-4">7.5.2</span> Subversion in Windows</h4>
+<div class="outline-text-4" id="text-7-5-2">
+
+<p>Not quite portable, but you can get the binaries <a href="http://www.visualsvn.com/downloads/">here</a>.
+</p>
+<p>
+Running in subversion from within EmacsPortable.App <i>is</i> portable,
+though.  Emacs will set the <code>%AppData%</code> Environment variable to
+<code>Data/AppData</code> and set <code>%ALLUSERSPROFILE%</code> to <code>Data/AppData</code>
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-7-5-3" class="outline-4">
+<h4 id="sec-7-5-3"><span class="section-number-4">7.5.3</span> Git</h4>
+<div class="outline-text-4" id="text-7-5-3">
+
+<p>EmacsPortable.App picks up both Git portable and locally installed
+installations.  Because of emacs version control, if Git is not
+installed locally, Emacs is slowed down substantially.
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-7-6" class="outline-3">
+<h3 id="sec-7-6"><span class="section-number-3">7.6</span> SumatraPDF Portable</h3>
+<div class="outline-text-3" id="text-7-6">
+
+<p>Using AUCTeX inverse-search and forward search is supported with
+<a href="http://portableapps.com/apps/office/sumatra_pdf_portable">SumatraPDFPortable</a>.  There should be no set-up, EmacsPortable.App with
+setup both Emacs and <a href="http://portableapps.com/apps/office/sumatra_pdf_portable">SumatraPDFPortable</a>.  
+</p></div>
+
+</div>
+
+<div id="outline-container-7-7" class="outline-3">
+<h3 id="sec-7-7"><span class="section-number-3">7.7</span> GPG for encryption</h3>
+<div class="outline-text-3" id="text-7-7">
+
+<p>EmacsPortableApp looks for the gpg package that is installed with
+Mozilla Thunderbird.  First install Thunderbird Portable:
+</p>
+<p>
+<a href="http://portableapps.com/support/thunderbird_portable">http://portableapps.com/support/thunderbird_portable</a>
+</p>
+<p>
+Then install gpg from here
+</p>
+<p>
+<a href="http://portableapps.com/support/thunderbird_portable#encryption">http://portableapps.com/support/thunderbird_portable#encryption</a>
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-7-8" class="outline-3">
+<h3 id="sec-7-8"><span class="section-number-3">7.8</span> MikTeX Portable</h3>
+<div class="outline-text-3" id="text-7-8">
+
+<p>If you extract MikTeX portable to <code>PortableApps/MikTexPortable/</code>,
+EmacsPortable.App will be recognized and used.
+</p></div>
+
+</div>
+
+<div id="outline-container-7-9" class="outline-3">
+<h3 id="sec-7-9"><span class="section-number-3">7.9</span> Unix Ports</h3>
+<div class="outline-text-3" id="text-7-9">
+
+
+</div>
+
+<div id="outline-container-7-9-1" class="outline-4">
+<h4 id="sec-7-9-1"><span class="section-number-4">7.9.1</span> Cygwin</h4>
+<div class="outline-text-4" id="text-7-9-1">
+
+</div>
+
+</div>
+
+<div id="outline-container-7-9-2" class="outline-4">
+<h4 id="sec-7-9-2"><span class="section-number-4">7.9.2</span> MSYS</h4>
+<div class="outline-text-4" id="text-7-9-2">
+
+<p>Supports MSYS portable.
+</p></div>
+
+</div>
+
+<div id="outline-container-7-9-3" class="outline-4">
+<h4 id="sec-7-9-3"><span class="section-number-4">7.9.3</span> GnuWin32</h4>
+<div class="outline-text-4" id="text-7-9-3">
+
+</div>
+
+</div>
+
+<div id="outline-container-7-9-4" class="outline-4">
+<h4 id="sec-7-9-4"><span class="section-number-4">7.9.4</span> EzWin</h4>
+<div class="outline-text-4" id="text-7-9-4">
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-7-10" class="outline-3">
+<h3 id="sec-7-10"><span class="section-number-3">7.10</span> PuTTY</h3>
+<div class="outline-text-3" id="text-7-10">
+
+
+</div>
+
+<div id="outline-container-7-10-1" class="outline-4">
+<h4 id="sec-7-10-1"><span class="section-number-4">7.10.1</span> PuTTY and magit</h4>
+<div class="outline-text-4" id="text-7-10-1">
+
+<p>Since magit and OpenSSH does not work correctly in windows, you can
+use PuTTY to connect to your host via plink.  Note that you must
+connect to the host first via PuTTY or you will get one of the
+following error messages:
+</p>
+<pre class="example">
+The server's host key is not cached in the registry. You
+have no guarantee that the server is the computer you
+think it is.
+The server's rsa2 key fingerprint is:
+ssh-rsa 2048 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+Connection abandoned.
+fatal: The remote end hung up unexpectedly
+</pre>
+
+
+<p>
+or
+</p>
+<pre class="example">
+WARNING - POTENTIAL SECURITY BREACH!
+The server's host key does not match the one PuTTY has
+cached in the registry. This means that either the
+server administrator has changed the host key, or you
+have actually connected to another computer pretending
+to be the server.
+The new rsa2 key fingerprint is:
+ssh-rsa 2048 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+Connection abandoned.
+fatal: The remote end hung up unexpectedly
+</pre>
+
+
+
+<p>
+The information about setting up GIT to use putty are located here.
+</p>
+<p>
+<a href="http://sitaramc.github.com/gitolite/contrib_putty.html">http://sitaramc.github.com/gitolite/contrib_putty.html</a>
+</p>
+<p>
+This is done automatically when running TRAMP.
+</p>
+<p>
+Therefore, if you want to use magit for github, you need open
+puttyportable and attempt to open <code>git@github.com</code> so it can cache the
+host id.
+</p></div>
+
+</div>
+
+<div id="outline-container-7-10-2" class="outline-4">
+<h4 id="sec-7-10-2"><span class="section-number-4">7.10.2</span> PuTTY and Tramp</h4>
+<div class="outline-text-4" id="text-7-10-2">
+
+<p>From Jeremy Engilsh there is a tutorial on how to get TRAMP to work
+with windows 2K.  This is adapted from <a href="http://www.jeremyenglish.org/docs/tramp_ntmacs.pdf">that tutorial</a>.
+</p>
+<p>
+EmacsPortable.App will download and setup the appropriate files for
+PuTTY portable, if you need them.  In addition to putty.exe, you will
+need:
+</p><ul>
+<li>puttygen.exe
+</li>
+<li>pageant.exe
+</li>
+<li>plink.exe
+</li>
+</ul>
+
+
+
+<ol>
+<li>Generate a Key
+</li>
+</ol>
+
+
+<p>
+Use Puttygen to generate a key.  Puttygen should be in the
+PuttyPortable application.
+</p>
+<p>
+<img src="./Other/img/PuTTYKeyGenerator0.png"  alt="./Other/img/PuTTYKeyGenerator0.png" />
+<img src="./Other/img/PuTTYKeyGenerator1.png"  alt="./Other/img/PuTTYKeyGenerator1.png" />
+</p>
+<ol>
+<li>Save the public key
+
+<p>   
+   This is under File-&gt;Save Private Key
+</p>
+</li>
+<li>Export the key to an open ssh key.
+
+<p>   
+   This is under Conversions-&gt;Export OpenSSH Key
+</p>
+</li>
+<li>Copy the key to the server.
+
+<p>
+   This can be done with a secure file transfer like FileZilla.
+</p>
+<p>
+   Or, if ssh is working for you, you can use the following shell
+   command
+</p></li>
+</ol>
+
+
+
+
+
+<pre class="src src-sh">scp key user@host:~/
+</pre>
+
+
+<ol>
+<li>Log into the host and add to authorized keys
+</li>
+</ol>
+
+
+
+
+
+<pre class="src src-sh">ssh example.server.com
+mkdir ~./ssh
+chmod 700 ~/.ssh
+cat ~/key &gt;&gt; ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+rm ~/key
+</pre>
+
+
+<ol>
+<li>Let EmacsPortable.App know about the key
+
+<p>   
+   Use EmacsOptions.exe to select the PuTTy key.  If you want it to be
+   portable keep the key on the USB drive <b>OR</b> in the executable
+   directory.
+</p>
+</li>
+<li>Run EmacsPortable.App. 
+
+<p>
+    EmacsPortable.App will start <code>pageant.exe</code> if it is not already
+    running and set up tramp to use plink.  This is done by the
+    site-start.
+</p></li>
+</ol>
+
+
+
+</div>
+
+</div>
+
+<div id="outline-container-7-10-3" class="outline-4">
+<h4 id="sec-7-10-3"><span class="section-number-4">7.10.3</span> PuTTYPortable</h4>
+<div class="outline-text-4" id="text-7-10-3">
+
+<p>To use the settings of PuTTYPortable, you have to have a PuTTYPortable
+session open.
+</p></div>
+
+</div>
+
+<div id="outline-container-7-10-4" class="outline-4">
+<h4 id="sec-7-10-4"><span class="section-number-4">7.10.4</span> PuTTY and Proxy settings</h4>
+<div class="outline-text-4" id="text-7-10-4">
+
+<p>PuTTY currently stores proxy settings in the registry. If
+EmacsPortable.App is started up AND PuTTY Pageant has not started up,
+then:
+</p><ul>
+<li>EmacsPortable.App will run Paegeant Portable
+</li>
+<li>Just after launching emacs, EmacsPortable.App will write the Proxy
+   settings to the registry
+</li>
+<li>When you exit PuttyPortable, these settings will be saved.
+</li>
+</ul>
+
+
+<p>
+Therefore, you do not need to always manually edit proxy settings, and
+plink should work most of the time.
+</p></div>
+
+</div>
+
+<div id="outline-container-7-10-5" class="outline-4">
+<h4 id="sec-7-10-5"><span class="section-number-4">7.10.5</span> PuTTY and R</h4>
+<div class="outline-text-4" id="text-7-10-5">
+
+<p>R can connect to remote sessions using ssh.el.  When you use PuTTY to
+connect you will need to set the following option:
+</p>
+
+
+
+<pre class="src src-emacs-lisp">(setq ssh-program <span class="org-string">"plink"</span>)
+</pre>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-7-11" class="outline-3">
+<h3 id="sec-7-11"><span class="section-number-3">7.11</span> Bleeding edge emacs (Not supported yet)</h3>
+<div class="outline-text-3" id="text-7-11">
+
+<p>These are notes to use the bleeding edge emacs.
+</p>
+<p>
+Goto the App directory, and under a command prompt that has bzr
+installed, type
+</p>
+
+
+
+<pre class="src src-ntcmd"><span class="org-builtin">bzr</span> branch --<span class="org-type">stacked</span> bzr://bzr.savannah.gnu.org/emacs/trunk emacs-bzr
+</pre>
+
+
+
+<p>
+If that has already been performed, to update just type:
+</p>
+
+
+
+<pre class="src src-ntcmd"><span class="org-builtin">bzr</span> pull
+</pre>
+
+
+<p>
+If you are behind a firewall you may wish to use git to get the latest
+sources.  Note that only the Bazaar repo is the official 
+</p>
+
+
+
+
+<pre class="src src-ntcmd"><span class="org-builtin">git</span> clone http://git.savannah.gnu.org/r/emacs.git emacs-git
+</pre>
+
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> Building an installer</h2>
+<div class="outline-text-2" id="text-8">
+
+<p>You can build an installer with the command <code>build-nsi</code> inside emacs.
+</p></div>
+</div>
+</div>
+
+</div></div></div></div><div id="footer">
+<p class="date">Date: 2013-07-01T10:46-0500</p>
+<p class="author">Author: Matthew L. Fidler</p>
+<p class="creator"><a href="http://orgmode.org">Org</a> version 7.9.3f with <a href="http://www.gnu.org/software/emacs/">Emacs</a> version 24</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>
