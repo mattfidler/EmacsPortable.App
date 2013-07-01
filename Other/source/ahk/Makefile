@@ -9,3 +9,5 @@ ${eps}: EmacsPortableServer.ahk
 
 clean:
 	rm ${eps}
+run: 
+	cmd /c "@${win_dir}\EmacsPortableServer.exe"

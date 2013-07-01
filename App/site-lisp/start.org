@@ -587,8 +587,8 @@ work correctly.
     (defun server-ensure-safe-dir (&rest args)
       t)
     (when (fboundp 'server-force-delete)
-      (server-force-delete))
-    (server-start)))
+      (server-force-delete))))
+  (server-start)
   
   ;; From http://www.emacswiki.org/emacs/EmacsAsDaemon
   (defun linux-client-save-kill-emacs (&optional display)

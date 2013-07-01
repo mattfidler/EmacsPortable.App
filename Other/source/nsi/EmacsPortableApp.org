@@ -1576,12 +1576,12 @@ From http://nsis.sourceforge.net/Explode
         ${Execute} '"$cmd" $cmd_args' "$home" $R1
         Goto end
       loop:
-        StrCmp "1" $option_daemon 0 found_running_emacs
-        StrCmp "" $option_q 0 found_running_emacs
+        #StrCmp "1" $option_daemon 0 found_running_emacs
+        #StrCmp "" $option_q 0 found_running_emacs
         StrCpy $cnt 300
         Exec "$EXEDIR\EmacsPortableServer.exe"
       look_for_running_emacs:
-        DetailPrint "Look For Runnind Emacs"
+        DetailPrint "Look For Running Emacs"
         FindProcDLL::FindProc "emacs-$option_version$epstart.exe"
         StrCmp "$R0" "1" found_running_emacs
         FindProcDLL::FindProc "emacs-$option_version$epstart-dos.exe"
