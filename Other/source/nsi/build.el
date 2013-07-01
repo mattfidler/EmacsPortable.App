@@ -129,7 +129,11 @@
         (menu "")
         p1 p2 p3)
     (find-file (concat build-dir "../../../README.org"))
-    (setq str (org-export-as-html 10 nil nil 'string nil (expand-file-name (concat build-dir "../../../"))))
+    (execute-kbd-macro (edmacro-parse-keys "C-c C-e h" t))
+    (with-temp-buffer
+      (insert-file-contents (concat build-dir "../../../README.html"))
+      (setq str (buffer-string)))
+    (delete-file (concat build-dir "../../../README.html"))
     (with-temp-file (concat build-dir "../../../help.html")
       (insert str)
       (goto-char (point-min))

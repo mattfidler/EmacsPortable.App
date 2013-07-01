@@ -351,6 +351,45 @@ FunctionEnd
                (delete-directory default-directory t)))))
        (directory-files "~ep/" t "EmacsInstall-.*exe$")))))
 
+;;;###autoload
+(defun build-nsi-publish-doc ()
+  "Publishes EmacsPortable.App Documentation."
+  (interactive)
+  ;; First publish to wiki
+  (require 'org-readme nil t)
+  (find-file "~ep/README.org")
+  (when (fboundp 'org-readme-convert-to-emacswiki)
+    (org-readme-convert-to-emacswiki))
+  ;; Publish to website as well
+  (when (file-exists-p "~ep/.git/config")
+    (when (with-temp-buffer
+            (insert-file-contents "~ep/.git/config")
+            (search-forward "git@github.com:mlf176f2/EmacsPortable.App.git"))
+      (unless (file-exists-p "~ep/pages")
+        (shell-command (concat "git clone git@github.com:mlf176f2/EmacsPortable.App.git " (expand-file-name "~ep/pages"))))
+      (find-file "~ep/pages")
+      (shell-command "git checkout gh-pages")
+      (load "~nsi/build")
+      (build-help)
+      (copy-file "~ep/help.html" "~ep/pages/index.html" t t)
+      (shell-command "git add index.html")
+      (copy-file "~ep/Other/style.css" "~ep/pages/Other/style.css" t t)
+      (shell-command "git add Other/style.css")
+      (mapc
+       (lambda(x)
+         (copy-file (concat "~ep/Other/img/" x) (concat "~ep/pages/Other/img/" x) t t)
+         (shell-command (concat "git add Other/img/" x)))
+       (remove-if (lambda(x) (string-match "^[.]*$" x))
+                  (directory-files "~ep/Other/img" nil)))
+      (mapc
+       (lambda(x)
+         (copy-file (concat "~ep/Other/images/" x) (concat "~ep/pages/Other/images/" x) t t)
+         (shell-command (concat "git add Other/images/" x)))
+       (remove-if (lambda(x) (string-match "^[.]*$" x))
+                  (directory-files "~ep/Other/images" nil)))
+      (shell-command (format "git commit -m \"%s\"" (format-time-string "Automatic Website Update %Y.%m.%d %T")))
+      (shell-command "git push origin gh-pages"))))
+
 (provide 'build-nsi)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; build-nsi.el ends here
