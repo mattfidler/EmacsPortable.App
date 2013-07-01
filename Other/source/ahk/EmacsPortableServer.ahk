@@ -220,7 +220,11 @@ If (A_ThisMenuItem == "Hidden Daemon"){
    ReqChangeMenu = 1
 } Else If (A_ThisMenuItem == "Start Psuedo-Daemon"){
   StringReplace J, A_ThisMenu, Menu
+  cArgs := args%J%
   Run %EPOTHER%..\EmacsPortableApp.exe %cArgs% --eval "(new-emacs t)", %EPOTHER%..\
+  cDid := did%J%
+  WinWait %cDid%
+  Reload
 } Else If (A_ThisMenuItem == "Refresh" && A_ThisMenu == "Tray"){
   IniWrite one, %TEMP%\ep-refresh-server.ini ,two, three
 } Else If (A_ThisMenuItem == "Options" && A_ThisMenu == "Tray"){
