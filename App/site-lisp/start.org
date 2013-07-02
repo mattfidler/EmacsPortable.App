@@ -248,7 +248,10 @@ EmacsPortableApp.exe launcher.
                                             (regexp-opt '("." "..") 'paren)) x)))
                 (directory-files (expand-file-name (concat usb-app-dir "../Data/start")))))))
     
-    (when (and (getenv "OHOME") (not (string= "" (getenv "OHOME"))) (file-exists-p (getenv "OHOME")))
+    (when (and (getenv "OHOME") (not (string= "" (getenv "OHOME")))
+               (not (string-match "^[.]*$" (getenv "OHOME")))
+               (not (string= (expand-file-name (getenv "HOME")) (expand-file-name (getenv "OHOME"))))
+               (file-exists-p (getenv "OHOME")))
       (add-to-list 'ep-start-dirs `("h" . ,(expand-file-name (getenv "OHOME")))))
     
     (when (getenv "MYDOC")
@@ -360,7 +363,7 @@ EmacsPortableApp.exe launcher.
       (setq file-name-handler-alist
             (cons `(,reg . ep-usb-file-name-handler)
                   file-name-handler-alist))
-      (when nil
+      (when nil 
         (mapc (lambda(test)
                 (message "%s\t%s\t%s\t%s\t%s" test
                          (expand-file-name test) (abbreviate-file-name (expand-file-name test))
@@ -373,6 +376,10 @@ EmacsPortableApp.exe launcher.
   (eval-after-load 'package (ep-rebuild-aliases))
   (add-hook 'after-init-hook 'ep-rebuild-aliases)
 #+end_src
+
+#+RESULTS:
+| ep-rebuild-aliases | w32-check-shell-configuration |
+
 *** Recent Files
 Recent files are saved to the =Other/saves/= directory.  Additionally,
 the saves are based on the computer name so that system idiosyncrasies
