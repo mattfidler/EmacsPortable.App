@@ -26,6 +26,7 @@ EmacsInstall*.zip
 /App/portable-starter-kit/*
 /EmacsPortableApp-*.exe
 /Data/*
+/pages/*
 /tmp/*
 Readme.org_archive
 
