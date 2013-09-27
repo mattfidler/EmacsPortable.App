@@ -41,14 +41,16 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
                (when (re-search-forward "^[ \t]*[fF]ont[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
                  (setq font-name (match-string 1)))
                (goto-char (point-min))
-               (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$")
-                 (setq font-size (match-string 1)))
+               (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
+                 (setq font-size (match-string 1))
+                 (unless (string-match "^[0-9]+$" font-size)
+                   (setq font-size "12")))
                (message "%s,%s" font-name font-size))
              (if (or (not font-name) (not (and (fboundp 'find-font)
                                                (find-font (font-spec :name font-name))))) nil
                (condition-case err
                    (progn
-                     (set-face-attribute 'default nil :font (format "%s-%s" font-name
+                     (set-facE-attribute 'default nil :font (format "%s-%s" font-name
                                                                     (or font-size "12")))
                      t)
                  (error
@@ -80,8 +82,8 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 * Increase defaults
 Increase default =max-lisp-eval-depth=
 #+BEGIN_SRC emacs-lisp
-(setq max-lisp-eval-depth 15000)
-(setq max-specpdl-size 15000)
+  ;; (setq max-lisp-eval-depth 15000)
+  ;; (setq max-specpdl-size 15000)
 #+END_SRC
 
 * Get the major and minor versions of emacs
@@ -1111,10 +1113,23 @@ Start the appropriate startup script
     (let ((start-dir (getenv "EPSTARTDIR")))
       (when start-dir
         (setq start-dir (expand-file-name (getenv "EPSTARTDIR")))
-        ;; Make sure that the ELPA directories are per each startup group.
-        (unless (file-exists-p (expand-file-name "elpa" (getenv "EPSTARTDIR")))
-          (make-directory (expand-file-name "elpa" (getenv "EPSTARTDIR")) t))
-        (setq package-user-dir (expand-file-name "elpa" (getenv "EPSTARTDIR")))
+        ;; Make sure that the ELPA directories are per each startup
+        ;; group.
+        (if (file-exists-p (expand-file-name
+                              "elpa"
+                              (expand-file-name
+                               ".emacs.d" (getenv "EPSTARTDIR"))))
+            (setq package-user-dir (expand-file-name
+                                    "elpa"
+                                    (expand-file-name
+                                     ".emacs.d"
+                                     (getenv "EPSTARTDIR"))))
+          
+          (unless (file-exists-p (expand-file-name "elpa" (getenv "EPSTARTDIR")))
+            (make-directory (expand-file-name "elpa" (getenv "EPSTARTDIR")) t))
+          (setq package-user-dir (expand-file-name "elpa" (getenv "EPSTARTDIR"))))
+        
+        
         (message "Using startup at %s" start-dir)
         (cond
          ((file-exists-p (expand-file-name ".emacs" start-dir))
@@ -1124,10 +1139,19 @@ Start the appropriate startup script
          ((file-exists-p (expand-file-name "init.el" start-dir))
           (load (concat (replace-regexp-in-string "/$" "" start-dir t t) "/init"))
           (message "Loaded %s/init" (replace-regexp-in-string "/$" "" start-dir t t)))
+         ((file-exists-p (expand-file-name ".emacs.d/init.el" start-dir))
+          (load (expand-file-name ".emacs.d/init.el" start-dir))
+          (message "Loaded %s/.emacs.d/init.el" start-dir))
          
          ((file-exists-p (expand-file-name  "site-start.el" (expand-file-name "site-lisp" start-dir)))
           (load (concat (expand-file-name "site-lisp" start-dir) "/site-start"))
-          (message "Loaded %s/site-start/site-lisp" start-dir))))))
+          (message "Loaded %s/site-start/site-lisp" start-dir))
+         (t
+          (let ((dir (file-expand-wildcards (format "%s/*.el" start-dir) t)))
+            (when (= 1 (length dir))
+              (setq dir (replace-regexp-in-string ".el$" "" (nth 0 dir)))
+              (load dir)
+              (message "Loaded %s" dir))))))))
   
   
 #+END_SRC
