@@ -403,6 +403,22 @@ This also attempts to speed up the recent files cleanup list by
     :type 'boolean
     :group 'EmacsPortable)
   
+  (defcustom EmacsPortable-recentf-cleanup-timeout 3
+    "Timeout before `recentf-cleanup' is interrupted."
+    :type 'integer
+    :group 'EmacsPortable)
+  
+  (defadvice recentf-cleanup (around EmacsPortable-timeout)
+    "Adds Timer for `recentf-cleanup'"
+    (condition-case err
+        (with-timeout EmacsPortable-recentf-cleanup-timeout
+          ad-do-it)
+      (error nil))
+    t)
+  
+  (ad-activate 'recentf-cleanup)
+  
+  
   (when EmacsPortable-start-recentf
     (condition-case err
         (progn
