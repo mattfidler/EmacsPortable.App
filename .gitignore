@@ -33,6 +33,7 @@ Readme.org_archive
 # Actual Emacs Files #
 ######################
 /App/emacs-*
+/App/emacs*
 
 # Add Emacs Temp Files #
 ########################

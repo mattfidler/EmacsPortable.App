@@ -67,6 +67,70 @@ Loop, %EPOTHER%..\App\emacs-*.*,2
                 }
         }
 }
+Loop, %EPOTHER%..\App\emacs\bin\emacs-*.*,2
+{
+        StringReplace EmacsVer, A_LoopFileName, `emacs-`
+        StringReplace EmacsVer, EmacsVer, `.exe`
+        PLst= %PLst%emacs-%EmacsVer%.exe`n
+        I += 1
+        did%I% := % "___EmacsPortableDaemon_" . EmacsVer . "___"
+        desc%I% := % "Emacs " . EmacsVer
+        menu%I% := % "Start Emacs " . EmacsVer
+        ver%I% := % EmacsVer
+        args%I% := % "/VERSION=" . EmacsVer . " /START=None"
+        pid%I% := 0
+        hideshow%I% := 1
+        NStart=0
+        Loop %EPOTHER%..\Data\start\*.*,2
+        {
+                If (A_LoopFileName == "shared" || A_LoopFileName == "system" || A_LoopFileName == "user"){
+                
+                } else {
+                    NStart := NStart + 1
+                    PLst= %PLst%emacs-%EmacsVer%-%A_LoopFileName%.exe`n
+                    I += 1
+                    did%I% := % "___EmacsPortableDaemon_" . EmacsVer . "_" . A_LoopFileName . "___"
+                    desc%I% := % "Emacs " . EmacsVer . " " . A_LoopFileName
+                    menu%I% := % "Start Emacs " . EmacsVer . " " . A_LoopFileName
+                    ver%I% := % EmacsVer
+                    args%I% := % "/VERSION=" . EmacsVer . " /START=" . A_LoopFileName
+                    pid%I% := 0
+                    hideshow%I% := 1
+                }
+        }
+}
+Loop, %EPOTHER%..\App\emacs\bare-bin-*.*,2
+{
+        StringReplace EmacsVer, A_LoopFileName, `emacs-`
+        StringReplace EmacsVer, EmacsVer, `.7z`
+        PLst= %PLst%emacs-%EmacsVer%.exe`n
+        I += 1
+        did%I% := % "___EmacsPortableDaemon_" . EmacsVer . "___"
+        desc%I% := % "Emacs " . EmacsVer
+        menu%I% := % "Start Emacs " . EmacsVer
+        ver%I% := % EmacsVer
+        args%I% := % "/VERSION=" . EmacsVer . " /START=None"
+        pid%I% := 0
+        hideshow%I% := 1
+        NStart=0
+        Loop %EPOTHER%..\Data\start\*.*,2
+        {
+                If (A_LoopFileName == "shared" || A_LoopFileName == "system" || A_LoopFileName == "user"){
+                
+                } else {
+                    NStart := NStart + 1
+                    PLst= %PLst%emacs-%EmacsVer%-%A_LoopFileName%.exe`n
+                    I += 1
+                    did%I% := % "___EmacsPortableDaemon_" . EmacsVer . "_" . A_LoopFileName . "___"
+                    desc%I% := % "Emacs " . EmacsVer . " " . A_LoopFileName
+                    menu%I% := % "Start Emacs " . EmacsVer . " " . A_LoopFileName
+                    ver%I% := % EmacsVer
+                    args%I% := % "/VERSION=" . EmacsVer . " /START=" . A_LoopFileName
+                    pid%I% := 0
+                    hideshow%I% := 1
+                }
+        }
+}
 MaxI := I
 ; Wait for at least one process to exist.
 Pexist=0

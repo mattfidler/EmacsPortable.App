@@ -278,7 +278,7 @@
                   <key>NSUserData</key>
                   <string>open-selection</string>
                   <key>NSPortName</key>
-                  <string>Emacs</string>
+                  <string>EmacsPortable.App</string>
                   <key>NSSendTypes</key>
                   <array>
                   <string>NSStringPboardType</string>
@@ -295,7 +295,7 @@
                   <key>NSUserData</key>
                   <string>open-file</string>
                   <key>NSPortName</key>
-                  <string>Emacs</string>
+                  <string>EmacsPortable.App</string>
                   <key>NSSendTypes</key>
                   <array>
                   <string>NSStringPboardType</string>
@@ -312,7 +312,7 @@
                   <key>NSUserData</key>
                   <string>mail-selection</string>
                   <key>NSPortName</key>
-                  <string>Emacs</string>
+                  <string>EmacsPortable.App</string>
                   <key>NSSendTypes</key>
                   <array>
                   <string>NSStringPboardType</string>
@@ -329,7 +329,7 @@
                   <key>NSUserData</key>
                   <string>mail-to</string>
                   <key>NSPortName</key>
-                  <string>Emacs</string>
+                  <string>EmacsPortable.App</string>
                   <key>NSSendTypes</key>
                   <array>
                   <string>NSStringPboardType</string>
@@ -344,11 +344,11 @@
                   <key>CFBundleIconFile</key>
                   <string>Emacs.icns</string>
                   <key>CFBundleIdentifier</key>
-                  <string>org.gnu.Emacs</string>
+                  <string>org.gnu.EmacsPortable.App</string>
                   <key>CFBundleInfoDictionaryVersion</key>
                   <string>6.0</string>
                   <key>CFBundleName</key>
-                  <string>EmacsPortable</string>
+                  <string>EmacsPortable.App</string>
                   <key>CFBundlePackageType</key>
                   <string>APPL</string>
                   <key>CFBundleShortVersionString</key>
@@ -358,7 +358,7 @@
                   <key>CFBundleVersion</key>
                   <string>1.0</string>
                   <key>NSPrincipalClass</key>
-                  <string>EmacsApp</string>
+                  <string>EmacsPortable.App</string>
                   <key>CFBundleURLTypes</key>
                   <array>
                   <dict>
@@ -382,7 +382,7 @@
       (nxml-mode)
       (indent-region (point-min) (point-max)))
     (with-temp-file (concat usb-app-dir "../Contents/Resources/English.lproj/InfoPlist.strings")
-      (insert "CFBundleName = \"EmacsPortable.App\";\nCFBundleShortVersionString = \"Version "
+      (insert "CFBundleName = \"Emacs\";\nCFBundleShortVersionString = \"Version "
               emacs-version "\";\n CFBundleGetInfoString = \"EmacsPortable.App version " emacs-version
               ", NS Windowing\";\n NSHumanReadableCopyright = \"Copyright (C) " (format-time-string "%Y")
               "Matthew Fidler &amp; Free Software Foundation, Inc.\";\n"))
