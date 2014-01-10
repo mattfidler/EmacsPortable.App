@@ -1,8 +1,8 @@
 (defvar usb-app-dir (if (getenv "EPOTHER")
                         (expand-file-name (concat (getenv "EPOTHER") "/../App/"))
-                      (let ((ret data-directory))
+                      (let ((ret (or buffer-file-name load-file-name)))
                         (when (string-match "EmacsPortable[.]App.*" ret)
-                          (setq ret (replace-match "EmacsPortable.App" nil nil ret)))
+                          (setq ret (replace-match "EmacsPortable.App/App/" nil nil ret)))
                         (symbol-value 'ret))))
 
 (defun ep-byte-compile-dest-file-function (file)

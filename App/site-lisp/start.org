@@ -24,79 +24,90 @@ This creates a timer to figure out how much time it takes to load EmacsPortable.
 #+END_SRC
 * Set Font
 #+BEGIN_SRC emacs-lisp
-    (when (getenv "EPSTART")
-      (setenv "EPSTART" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTART")))
-      (setenv "EPSTARTDIR" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTARTDIR"))))
-    
-    (let ((epi (expand-file-name (if (getenv "EPDATA")
-                                     (concat (getenv "EPDATA") "/ini/EmacsPortableApp.ini")
-                                   "../Data/ini/EmacsPortableApp.ini") (getenv "EPOTHER")))
-          font-name font-size)
-      (cond
-       ((and (getenv "EPOTHER")
-             (if (not (file-exists-p epi)) nil
-               (with-temp-buffer
-                 (insert-file-contents epi)
-                 (goto-char (point-min))
-                 (when (re-search-forward "^[ \t]*[fF]ont[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
-                   (setq font-name (match-string 1)))
-                 (goto-char (point-min))
-                 (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
-                   (setq font-size (match-string 1))
-                   (unless (string-match "^[0-9]+$" font-size)
-                     (setq font-size "12")))
-                 (message "%s,%s" font-name font-size))
-               (if (or (not font-name) (not (and (fboundp 'find-font)
-                                                 (find-font (font-spec :name font-name))))) nil
-                 (condition-case err
-                     (progn
-                       (set-face-attribute 'default nil :font (format "%s-%s" font-name
-                                                                      (or font-size "12")))
-                       t)
-                   (error
-                    (message "Error setting font %s" (error-message-string err))
-                    nil))))))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Anonymous Pro")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Anonymous Pro-%s" (or font-size "12")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Inconsolata")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Inconsolata-%s" (or font-size "12")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Consolas")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Consolas-%s" (or font-size "12")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Monaco")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Monaco-%s" (or font-size "15")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "DejaVu Sans Mono")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "DejaVu Sans Mono-%s" (or font-size "12")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Droid Sans Mono")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Droid Sans Mono-%s" (or font-size "12")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Andale Mono")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Andale Mono-%s" (or font-size "15")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Monofur")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Monofur-%s" (or font-size "15")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Proggy Clean")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Proggy Clean-%s" (or font-size "15")))
-          (error nil)))
-       ((and (fboundp 'find-font) (find-font (font-spec :name "Courier")))
-        (condition-case err
-            (set-face-attribute 'default nil :font (format "Courier-%s" (or font-size "15")))
-          (error nil)))))
+  (cond
+   ((getenv "EPSTART")
+    (setenv "EPSTART" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTART")))
+    (setenv "EPSTARTDIR" (replace-regexp-in-string (format "%s$" (char-to-string 13)) "" (getenv "EPSTARTDIR")))))
   
+  (unless (getenv "EPOTHER")
+    (setenv "EPOTHER" (replace-regexp-in-string "/App/" "/Other/" usb-app-dir))
+    (setenv "EPDATA" (replace-regexp-in-string "/App/" "/Data" usb-app-dir)))
+  
+  (let ((epi (concat (getenv "EPDATA") "/ini/EmacsPortableApp.ini"))
+        font-name font-size)
+    (unless (getenv "EPSTART")
+      (when (file-exists-p epi)
+        (with-temp-buffer
+          (insert-file-contents epi)
+          (goto-char (point-min))
+          (when (re-search-forward "^[ \t]*[Ss]tartup[ \t]*=[ \t]*\\(.*?\\)[ \t]*$" nil t)
+            (setenv "EPSTART" (match-string 1))
+            (setenv "EPSTARTDIR" (replace-regexp-in-string "/App/" (concat "/Data/start/" (getenv "EPSTART")) usb-app-dir))))))
+    (cond
+     ((and (getenv "EPOTHER")
+           (if (not (file-exists-p epi)) nil
+             (with-temp-buffer
+               (insert-file-contents epi)
+               (goto-char (point-min))
+               (when (re-search-forward "^[ \t]*[fF]ont[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
+                 (setq font-name (match-string 1)))
+               (goto-char (point-min))
+               (when (re-search-forward "^[ \t]*[Ff]ont[Ss]ize[ \t]*=[ \t]*\\(.*\\)[ \t]*$" nil t)
+                 (setq font-size (match-string 1))
+                 (unless (string-match "^[0-9]+$" font-size)
+                   (setq font-size "12")))
+               (message "%s,%s" font-name font-size))
+             (if (or (not font-name) (not (and (fboundp 'find-font)
+                                               (find-font (font-spec :name font-name))))) nil
+               (condition-case err
+                   (progn
+                     (set-face-attribute 'default nil :font (format "%s-%s" font-name
+                                                                    (or font-size "12")))
+                     t)
+                 (error
+                  (message "Error setting font %s" (error-message-string err))
+                  nil))))))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Anonymous Pro")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Anonymous Pro-%s" (or font-size "12")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Inconsolata")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Inconsolata-%s" (or font-size "12")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Consolas")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Consolas-%s" (or font-size "12")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Monaco")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Monaco-%s" (or font-size "15")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "DejaVu Sans Mono")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "DejaVu Sans Mono-%s" (or font-size "12")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Droid Sans Mono")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Droid Sans Mono-%s" (or font-size "12")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Andale Mono")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Andale Mono-%s" (or font-size "15")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Monofur")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Monofur-%s" (or font-size "15")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Proggy Clean")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Proggy Clean-%s" (or font-size "15")))
+        (error nil)))
+     ((and (fboundp 'find-font) (find-font (font-spec :name "Courier")))
+      (condition-case err
+          (set-face-attribute 'default nil :font (format "Courier-%s" (or font-size "15")))
+        (error nil)))))
+    
 #+END_SRC
 
 * Increase defaults
@@ -112,7 +123,9 @@ emacs-version strings.
 #+BEGIN_SRC emacs-lisp
   
   ;; Need to have Major and minor version 23.3 for example.
-  (defvar emacs-ver (getenv "EMACSVER"))
+  (defvar emacs-ver (or (getenv "EMACSVER") 
+                        (replace-regexp-in-string "\\([0-9]+\\.[0-9]\\).*" "\\1" 
+                                                  emacs-version)))
 #+END_SRC
 * Set EmacsPortable.App variables
 This sets the variables for EmacsPortable.App
@@ -130,7 +143,7 @@ This sets the variables for EmacsPortable.App
   
   (defvar usb-site-lisp-dir (or (and (getenv "EPOTHER")
                                      (expand-file-name (getenv "EPOTHER")))
-                                (expand-file-name "Other" usb-app-dir)))
+                                (concat (expand-file-name "Other" usb-app-dir) "/")))
   (defun ep-set-font ()
     (when (getenv "EPFONT")
       (set-frame-font (getenv "EPFONT"))
