@@ -1,8 +1,8 @@
 (defvar usb-app-dir (if (getenv "EPOTHER")
                         (expand-file-name (concat (getenv "EPOTHER") "/../App/"))
-                      (let ((ret data-directory))
+                      (let ((ret (or buffer-file-name load-file-name)))
                         (when (string-match "EmacsPortable[.]App.*" ret)
-                          (setq ret (replace-match "EmacsPortable.App" nil nil ret)))
+                          (setq ret (replace-match "EmacsPortable.App/App/" nil nil ret)))
                         (symbol-value 'ret))))
 
 (defun ep-byte-compile-dest-file-function (file)
@@ -99,7 +99,8 @@
            (normal-top-level-add-subdirs-to-load-path))
          load-path)))
 
-(require 'org nil t) 
+;; (require 'org nil t)
+
 
 (defun ep-load-org (file)
   "Loads Emacs Lisp source code blocks like `org-babel-load-file'.  However, byte-compiles the files as well as tangles them..."
@@ -115,6 +116,9 @@
         (message "Trying to Tangle %s" file)
         (condition-case err
             (progn
+	      (when (fboundp 'package-initialize)
+                (package-initialize))
+	      (require 'org)
               (org-babel-tangle-file file exported-file "emacs-lisp")
               (message (format "Tangled %s to %s"
                                      file exported-file)))

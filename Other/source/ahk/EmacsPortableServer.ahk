@@ -67,7 +67,7 @@ Loop, %EPOTHER%..\App\emacs-*.*,2
                 }
         }
 }
-Loop, %EPOTHER%..\App\emacs\bin\emacs-*.*,2
+Loop, %EPOTHER%..\App\emacs\bin\emacs-*.exe,0
 {
         StringReplace EmacsVer, A_LoopFileName, `emacs-`
         StringReplace EmacsVer, EmacsVer, `.exe`
@@ -99,7 +99,7 @@ Loop, %EPOTHER%..\App\emacs\bin\emacs-*.*,2
                 }
         }
 }
-Loop, %EPOTHER%..\App\emacs\bare-bin-*.*,2
+Loop, %EPOTHER%..\App\emacs\bare-bin-*.7z,0
 {
         StringReplace EmacsVer, A_LoopFileName, `emacs-`
         StringReplace EmacsVer, EmacsVer, `.7z`
