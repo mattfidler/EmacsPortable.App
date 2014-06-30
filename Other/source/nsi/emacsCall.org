@@ -48,7 +48,7 @@ Allows NSIS to call emacs for batch processing.
       ExecWait '"$EXEDIR\..\7z\7zG.exe" x "$INSTDIR\App\emacs-$option_version\bare-bin.7z" -o$TEMP\ep'
       ExecWait '"$EXEDIR\..\7z\7zG.exe" x "$INSTDIR\App\emacs-$option_version\ext-bin.7z" -o$TEMP\ep"'
     ${EndIf}
-  
+    
     ${IfNot} ${FileExists} "$TEMP\ep\emacs-$option_version\bin"
     ${AndIf} ${FileExists} "$EXEDIR\..\emacs\bare-bin-$option_version.7z"
     ${AndIf} ${FileExists} "$EXEDIR\..\emacs\ext-bin-$option_version.7z"
@@ -72,13 +72,10 @@ Allows NSIS to call emacs for batch processing.
     
     StrCpy $R1 ""
     ${Locate} "$INSTDIR\App" "/L=D /M=emacs-* /S= /G=0" "SetEmacs"
-    ${If} $R1 == ""
-      ${Locate} "$INSTDIR\App\emacs\bin" "/L=F /M=emacs-*.exe /S= /G=0" "SetEmacs1"
-      ${If} $R1 == ""
-        MessageBox MB_OK "Could not Locate Emacs."
-        Goto end
-      ${EndIf}
-    ${EndIf}
+    StrCpy $found_emacs $R1
+    StrCmp $found_emacs "" 0 +3
+    MessageBox MB_OK "Could not Locate Emacs."
+    Goto end
     StrCmp $R2 "zip" use_zip use_bin
     use_zip:
       StrLen $R3 "$INSTDIR\App\emacs-"
@@ -88,12 +85,9 @@ Allows NSIS to call emacs for batch processing.
       StrCpy $R3 $R3 -8
       IfFileExists "$TEMP\ep\emacs-$R3\bin\emacs.exe" unzipped
       Call ExtractZip
-      IfFileExists "$TEMP\ep\emacs-$R3\etc\DOC-X" +3 0
-      Sleep 500
-      Goto -2
-      IfFileExists "$TEMP\ep\emacs-$R3\bin\emacs.exe" +3 0
-      Sleep 500
-      Goto -2
+      ; ${While} ${Not} ${FileExists} "$TEMP\Ep\Emacs-$R3\Bin\Emacs.Exe"
+      ;   Sleep 500
+      ; ${EndWhile}
       SetOutPath "$TEMP\ep"
       ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$R1" -o$TEMP\ep'
       StrCpy $extracted_emacs "1"
@@ -103,23 +97,18 @@ Allows NSIS to call emacs for batch processing.
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$INSTDIR\App\emacs-$R3\etc").r0'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$INSTDIR\App\emacs-$R3\lisp").r0'
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$INSTDIR\App\emacs-$R3\info").r0'
-        StrCpy  $found_emacs "$TEMP\ep\emacs-$R3\bin"
-      ${ElseIf} ${FileExists} "$INSTDIR\App\emacs\bin\emacs-$R3.exe"
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$INSTDIR\App\emacs\share\emacs\$R3\etc").r0'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$INSTDIR\App\emacs\share\emacs\$R3\etc").r0'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$INSTDIR\App\emacs\share\emacs\$R3\lisp").r0'
-        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$INSTDIR\App\emacs\share\info").r0'
-        StrCpy  $found_emacs "$TEMP\ep\emacs-$R3\bin"
+      ${ElseIf} ${FileExists} "$INSTDIR\App\emacs-$R3\share\emacs\$R3\etc"
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$INSTDIR\App\emacs-$R3\share\emacs\$R3\etc").r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$INSTDIR\App\emacs-$R3\share\emacs\$R3\etc").r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$INSTDIR\App\emacs-$R3\share\emacs\$R3\lisp").r0'
+        System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$INSTDIR\App\emacs-$R3\share\info").r0'
       ${EndIf}
+      StrCpy  $found_emacs "$TEMP\ep\emacs-$R3\bin"
       Goto use_bin
     use_bin:
       ${pifex} "$found_emacs"
     end:
       ClearErrors
-  FunctionEnd
-  
-  Function SetEmacs1
-    StrCpy $R1 "$R9"
   FunctionEnd
   
   

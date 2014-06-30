@@ -845,7 +845,11 @@ From http://nsis.sourceforge.net/Explode
         FindFirst $0 $1 $EXEDIR\App\emacs-*.*
         loop_emacs:
           StrCmp $1 "" done_emacs
+          ;;FIXME
           ${If} ${FileExists} $EXEDIR\App\$1\etc
+            StrCpy $2 "1"
+          ${EndIf}
+          ${If} ${FileExists} $EXEDIR\App\share
             StrCpy $2 "1"
           ${EndIf}
           FindNext $0 $1
@@ -969,6 +973,11 @@ From http://nsis.sourceforge.net/Explode
         StrCmp $2 $3 0 +2
         StrCpy $4 $2
       ${EndIf}
+      ${If} ${FileExists} "$EXEDIR\App\emacs-$1\share"
+        ${NSD_CB_AddString} $hCtl_behavior_DefaultVersion $1
+        StrCmp $2 $3 0 +2
+        StrCpy $4 $2
+      ${EndIf}
       ${If} ${FileExists} "$EXEDIR\App\emacs-$1\MacOS"
         ${NSD_CB_AddString} $hCtl_behavior_MacVersion $1
         StrCpy $5 $2
@@ -984,6 +993,10 @@ From http://nsis.sourceforge.net/Explode
       ${If} ${FileExists} "$EXEDIR\App\emacs-$R0\etc\DOC-X"
         ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $R0
       ${ElseIf} ${FileExists} "$EXEDIR\App\emacs-$4\etc\DOC-X"
+        ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $4
+      ${ElseIf} ${FileExists} "$EXEDIR\App\emacs-$R0\share\emacs\$R0\etc\DOC"
+        ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $R0
+      ${ElseIf} ${FileExists} "$EXEDIR\App\emacs-$4\share\emacs\$4\etc\DOC"
         ${NSD_CB_SelectString} $hCtl_behavior_DefaultVersion $4
       ${EndIf}
       ClearErrors
@@ -3010,6 +3023,9 @@ FunctionEnd
         loop_emacs_build:
           StrCmp $1 "" done_emacs_build
           ${If} ${FileExists} "$EXEDIR\App\$1\etc"
+            StrCpy $7 $1
+          ${EndIf}
+          ${If} ${FileExists} "$EXEDIR\App\$1\share"
             StrCpy $7 $1
           ${EndIf}
           FindNext $0 $1

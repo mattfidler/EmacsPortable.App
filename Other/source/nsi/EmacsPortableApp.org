@@ -508,82 +508,85 @@ From http://nsis.sourceforge.net/Explode
 * Command Line Options
 ** Get Command Line Options
 #+BEGIN_SRC nsis
-  
-  !define GetCmdOptions "!insertmacro GetCmdOptions"
-  
-  !macro GetCmdOptions
-    Call GetCmdOptions
-  !macroend
-Function GetCmdOptions
-    ## Gets Command LiFunctions
-    Push $R0
     
-    ; /? param (help)
-    ClearErrors
-    ${GetOptions} $cmdLineParams '/?' $R0
-    IfErrors +3 0
-    MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-FILENAME]...$\n$\n\
-        /?$\t$\tShow this help$\n\
-        /CMD$\t$\tRuns Command Prompt with Emacs Environment\
-        /UPDATEPROXY$\tUpdates the Proxy settings of running emacs sessions.$\n\
-        /COLORSYNC$\tSync the fonts and display colors with the startup options$\n\
-        /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
-        /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
-        /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
-        /SILENT$\t$\tRun --batch files without showing command prompt.$\n\
-        /VERSION=ver$\tRun using Emacs versionver if exists.$\n\
-        $\n\
-        Also accepts standard emacs arguments or emacsclient arguments depending on$\n\
-        if the launcher has detected a running emacs."
-    Abort
+    !define GetCmdOptions "!insertmacro GetCmdOptions"
     
-    
-    Pop $R0
-    
-    ; Initialize options
-    
-    
-    StrCpy $option_fullwidth 0
-    StrCpy $option_fullheight 1
-    StrCpy $option_maximized 0
-    StrCpy $option_geometry "80x70+0+0"
-    StrCpy $option_background "black"
-    StrCpy $option_foreground "white"
-    StrCpy $option_daemon "1"             
-    StrCpy $option_debug ""
-    StrCpy $option_debug_from_ini ""
-    StrCpy $option_dos ""
-    StrCpy $option_q ""
-    StrCpy $option_version "24.1"
-    FindFirst $0 $1 $EXEDIR\..\emacs-*.*
-    ${While} $1 != ""
-      ${If} ${FileExists} $EXEDIR\..\$1\etc
+    !macro GetCmdOptions
+      Call GetCmdOptions
+    !macroend
+  Function GetCmdOptions
+      ## Gets Command LiFunctions
+      Push $R0
+      
+      ; /? param (help)
+      ClearErrors
+      ${GetOptions} $cmdLineParams '/?' $R0
+      IfErrors +3 0
+      MessageBox MB_OK "Usage: EmacsPortableApp.exe [OPTION-FILENAME]...$\n$\n\
+          /?$\t$\tShow this help$\n\
+          /CMD$\t$\tRuns Command Prompt with Emacs Environment\
+          /UPDATEPROXY$\tUpdates the Proxy settings of running emacs sessions.$\n\
+          /COLORSYNC$\tSync the fonts and display colors with the startup options$\n\
+          /DEBUG$\t$\tStart Emacs in debugger mode on initial startup.$\n\
+          /DOS$\t$\tStart Emacs in DOS mode on initial startup.$\n\
+          /Q$\t$\tStart Emacs with NO site file and NO splash screen.$\n\
+          /SILENT$\t$\tRun --batch files without showing command prompt.$\n\
+          /VERSION=ver$\tRun using Emacs versionver if exists.$\n\
+          $\n\
+          Also accepts standard emacs arguments or emacsclient arguments depending on$\n\
+          if the launcher has detected a running emacs."
+      Abort
+      
+      
+      Pop $R0
+      
+      ; Initialize options
+      
+      
+      StrCpy $option_fullwidth 0
+      StrCpy $option_fullheight 1
+      StrCpy $option_maximized 0
+      StrCpy $option_geometry "80x70+0+0"
+      StrCpy $option_background "black"
+      StrCpy $option_foreground "white"
+      StrCpy $option_daemon "1"             
+      StrCpy $option_debug ""
+      StrCpy $option_debug_from_ini ""
+      StrCpy $option_dos ""
+      StrCpy $option_q ""
+      StrCpy $option_version "24.1"
+      FindFirst $0 $1 $EXEDIR\..\emacs-*.*
+      ${While} $1 != ""
+        ${If} ${FileExists} $EXEDIR\..\$1\etc
+          StrCpy $option_version $1 "" 6
+        ${EndIf}
+        ${If} ${FileExists} $EXEDIR\..\$1\share
+          StrCpy $option_version $1 "" 6
+        ${EndIf}
+        FindNext $0 $1 
+      ${EndWhile}
+      
+      FindFirst $0 $1 $EXEDIR\..\emacs\bin\emacs-*.exe
+      ${While} $1 != ""
         StrCpy $option_version $1 "" 6
-      ${EndIf}
-      FindNext $0 $1 
-    ${EndWhile}
-  
-    FindFirst $0 $1 $EXEDIR\..\emacs\bin\emacs-*.exe
-    ${While} $1 != ""
-      StrCpy $option_version $1 "" 6
-      StrCpy $option_version $option_version -4
-      FindNext $0 $1
-    ${EndWhile}
+        StrCpy $option_version $option_version -4
+        FindNext $0 $1
+      ${EndWhile}
+      
+      StrCpy $option_font "Inconsolata"
+      StrCpy $option_font_size 18
+      StrCpy $option_colorsync ""    
+      StrCpy $option_cmd ""
+      StrCpy $option_updateproxy ""
+      StrCpy $option_silent ""
+      
+      StrCpy $emacs_client_exe "emacsclient.exe"
+      ; Parse Parameters
+      Push $R0
+      Call parseParameters
+      Pop $R0
+    FunctionEnd
     
-    StrCpy $option_font "Inconsolata"
-    StrCpy $option_font_size 18
-    StrCpy $option_colorsync ""    
-    StrCpy $option_cmd ""
-    StrCpy $option_updateproxy ""
-    StrCpy $option_silent ""
-    
-    StrCpy $emacs_client_exe "emacsclient.exe"
-    ; Parse Parameters
-    Push $R0
-    Call parseParameters
-    Pop $R0
-  FunctionEnd
-  
 #+END_SRC
 ** Parse Parameters
 #+BEGIN_SRC nsis  
@@ -608,11 +611,26 @@ Function GetCmdOptions
         CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
         StrCpy $3 "1"
       ${EndIf}
+  
+      ${If} $2 != ""
+      ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
+      ${AndIf} ${FileExists} $EXEDIR\..\emacs-$2\share\emacs\$2\etc
+        CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
+        StrCpy $3 "1"
+      ${EndIf}
+      
       ${If} $3 != ""
       ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
       ${AndIf} ${FileExists} $EXEDIR\..\emacs-$1\etc
         CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
       ${EndIf}
+  
+      ${If} $3 != ""
+      ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
+      ${AndIf} ${FileExists} $EXEDIR\..\emacs-$1\share\emacs\$1\etc
+        CopyFiles /SILENT "$EXEDIR\ver-shortcut.exe" "$EXEDIR\..\..\EmacsPortableApp-$1.exe"
+      ${EndIf}
+      
       FindProcDLL::FindProc "emacs-$1.exe"
       ${If} $R0 == "1"
         StrCpy $option_version $1
@@ -645,7 +663,7 @@ Function GetCmdOptions
     loop_next_type_of_run:
       StrCmp "$1" "" third_type_of_run  0
       StrCpy $1 $1 "" 6
-      StrCpy $1 $1 -4
+      StrCpy $1 $1 "" -4
       ${If} $2 != ""
       ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
       ${AndIf} ${FileExists} $EXEDIR\..\emacs\bin\emacs-$2.exe
@@ -688,7 +706,7 @@ Function GetCmdOptions
     loop_third:
       StrCmp "$1" "" not_running  0
       StrCpy $1 $1 "" 9
-      StrCpy $1 $1 -3
+      StrCpy $1 $1 "" -3
       ${If} $2 != ""
       ${AndIfNot} ${FileExists} "$EXEDIR\..\..\EmacsPortableApp-$2.exe"
       ${AndIf} ${FileExists} $EXEDIR\..\emacs\bare-bin-$2.7z
@@ -732,7 +750,6 @@ Function GetCmdOptions
       ${AndIf} ${FileExists} "$real_temp\ep\ep-rm.exe"
         ExecWait "$real_temp\ep\ep-rm.exe /SKIP"
       ${EndIf}
-      
     already_running:
       
       ${ReadINIStrWithDefault} $option_geometry $epdata\ini\EmacsPortableApp.ini \
@@ -789,7 +806,7 @@ Function GetCmdOptions
         StrCpy $epstart $R0
         ${StrRep} $cmdLineParams $cmdLineParams "/START=$epstart" ""
       ${EndIf}
-      
+  
       ;; Setup environmental variables for startup
       ${If} $epstart == "None"
         StrCpy $epstart ""
@@ -810,7 +827,7 @@ Function GetCmdOptions
           StrCpy $epstart ""
         ${EndIf}
       ${EndIf}
-      
+  
       ${If} $epstart == "-"
         StrCpy $epstart ""
       ${EndIf}
@@ -825,60 +842,33 @@ Function GetCmdOptions
       StrCpy $option_version $R0
       ${StrRep} $cmdLineParams $cmdLineParams "/VERSION=$option_version" ""
       ## Check to see if any of the known 
-      
+  
     read_cmd_line_ver:
       ClearErrors
       StrCpy $emacs_exe "emacs-$option_version$epstart.exe"
       IfFileExists "$EXEDIR\..\emacs-$option_version\lisp" emacs_ver_done
-      IfFileExists "$EXEDIR\..\emacs\bin\emacs-$option_version.exe" emacs_ver_done
-      IfFileExists "$EXEDIR\..\emacs\bare-bin-$option_version.7z" emacs_ver_done
+      IfFileExists "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\lisp" emacs_ver_done
       
       IfFileExists "$EXEDIR\..\..\EmacsPortableApp-$option_version.exe" 0 +2
       Delete "$EXEDIR\..\..\EmacsPortableApp-$option_version.exe"
       
       FindFirst $0 $1 $EXEDIR\..\emacs-*.*
-      
     loop_ver:
-      StrCmp $1 "" ver2
-      DetailPrint "Looking for emacs version in emacs- ($1)"
+      StrCmp $1 "" done_ver
       ${If} ${FileExists} $EXEDIR\..\$1\etc
         StrCpy $1 $1 "" 6
         StrCpy $2 $1
       ${EndIf}
-      DetailPrint "($1-> $2)"
+      
+      ${If} ${FileExists} $EXEDIR\..\$1\share
+        StrCpy $1 $1 "" 6
+        StrCpy $2 $1
+      ${EndIf}
       FindNext $0 $1
       Goto loop_ver
-      
-    ver2:
-      FindFirst $0 $1 $EXEDIR\..\emacs\bin\emacs-*.exe
-      
-    loop_ver2:
-      StrCmp $1 "" ver3
-      DetailPrint "Looking for emacs version in emacs\bin\emacs- ($1)"
-      StrCpy $1 $1 "" 6
-      StrCpy $1 $1 -4
-      StrCpy $2 $1
-      DetailPrint "($1-> $2)"
-      FindNext $0 $1
-      Goto loop_ver2
-      
-    ver3:
-      FindFirst $0 $1 $EXEDIR\..\emacs\bare-bin-*.7z
-      
-    loop_ver3:
-      StrCmp $1 "" done_ver
-      DetailPrint "Looking for emacs version in emacs\bare-bin-* ($1)"
-      StrCpy $1 $1 "" 9
-      StrCpy $1 $1 -3
-      StrCpy $2 $1
-      DetailPrint "($1-> $2)"
-      FindNext $0 $1
-      Goto loop_ver3
-      
     done_ver:
       FindClose $0
       MessageBox MB_YESNO|MB_ICONEXCLAMATION "Emacs $option_version not found!$\n$\n Run emacs $2 instead?" IDYES set_new_ver IDNO abort_run
-      
     set_new_ver:
       ## Save known version string if it is not saved correctly.
       ReadIniStr $1 "$epdata\ini\EmacsPortableApp.ini" "EmacsPortableApp" "Version"
@@ -1180,11 +1170,11 @@ Function GetCmdOptions
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\lisp").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\info").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\..\..\Other\").r0'
-    ${ElseIf} ${FileExists} "$EXEDIR\..\emacs\share\emacs\$option_version\etc"
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs\share\emacs\$option_version\etc").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs\share\emacs\$option_version\etc").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs\share\emacs\$option_version\lisp").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs\share\info").r0'
+    ${ElseIf} ${FileExists} "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\lisp").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\share\info").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\..\..\Other\").r0'
     ${EndIf}
   FunctionEnd
@@ -1317,20 +1307,15 @@ Function GetCmdOptions
         SetOutPath $TEMP\epz\emacs-$option_version\share\emacs\$option_version\etc
         SetOutPath $TEMP\epz\emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32
         
-        CopyFiles /SILENT $EXEDIR\..\emacs\bin\emacs-$option_version.exe $TEMP\epz\emacs-$option_version\bin\emacs.exe
+        CopyFiles /SILENT $EXEDIR\..\emacs-$option_version\bin\emacs-$option_version.exe $TEMP\epz\emacs-$option_version\emacs.exe
+        CopyFiles /SILENT $EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc\DOC* $TEMP\epz\emacs-$option_version\share\emacs\$option_version\etc
         
-        CopyFiles /SILENT $EXEDIR\..\emacs\share\emacs\$option_version\etc\DOC* $TEMP\epz\emacs-$option_version\share\emacs\$option_version\etc
-        
-        CopyFiles /SILENT $EXEDIR\..\emacs\bin\emacsclient.exe $TEMP\epz\emacs-$option_version\bin\emacsclient.exe
-        
-        CopyFiles /SILENT $EXEDIR\..\emacs\bin\runemacs.exe $TEMP\epz\emacs-$option_version\bin\runemacs.exe
-        
-        CopyFiles /SILENT $EXEDIR\..\emacs\bin\*tags* $TEMP\epz\emacs-$option_version\bin
-        
-        CopyFiles /SILENT $EXEDIR\..\emacs\libexec\emacs\$option_version\i686-pc-mingw32\* $TEMP\epz\emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32
-        
+        CopyFiles /SILENT $EXEDIR\..\emacs-$option_version\bin\emacsclient.exe $TEMP\epz\emacs-$option_version\emacsclient.exe
+        CopyFiles /SILENT $EXEDIR\..\emacs-$option_version\bin\runemacs.exe $TEMP\epz\emacs-$option_version\runemacs.exe
+        CopyFiles /SILENT $EXEDIR\..\emacs-$option_version\bin\runemacs.exe $TEMP\epz\emacs-$option_version\runemacs.exe
+        CopyFiles /SILENT $EXEDIR\..\emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32\* $TEMP\epz\emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32
         SetOutPath $TEMP\epz
-        ExecWait '"$EXEDIR\..\7z\7zG.exe" a -mx9 -t7z bare-bin-$option_version.7z emacs-$option_version\bin\emacs.exe emacs-$option_version\share\emacs\$option_version\etc\DOC* -mmt -ms=on -m0=PPMd'
+        ExecWait '"$EXEDIR\..\7z\7zG.exe" a -mx9 -t7z bare-bin-$option_version.7z emacs-$option_version\bin\emacs.exe emacs-$option_version\etc\DOC-X -mmt -ms=on -m0=PPMd'
         ExecWait '"$EXEDIR\..\7z\7zG.exe"  a -mx9 -t7z ext-bin-$option_version.7z \
             emacs-$option_version\bin\emacsclient.exe \
             emacs-$option_version\bin\runemacs.exe \
@@ -1341,15 +1326,10 @@ Function GetCmdOptions
             emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32\*tags*.exe \
             emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32\dd*.exe \
             emacs-$option_version\libexec\emacs\$option_version\i686-pc-mingw32\dd*.exe -mmt -m0=PPMd -ms=off'
-        
-         CopyFiles /SILENT $TEMP\epz\bare-bin-$option_version.7z $EXEDIR\..\emacs\bare-bin-$option_version.7z
-         
-         CopyFiles /SILENT $TEMP\epz\ext-bin-$option_version.7z $EXEDIR\..\emacs\ext-bin-$option_version.7z
-         
-         RmDir /R "$EXEDIR\..\emacs\libexec\emacs\$option_version"
-         
-         Delete "$EXEDIR\..\emacs\emacs-$option_version.exe"
-         
+        CopyFiles /SILENT $TEMP\epz\bare-bin-$option_version.7z $EXEDIR\..\emacs\bare-bin-$option_version.7z
+        CopyFiles /SILENT $TEMP\epz\ext-bin-$option_version.7z $EXEDIR\..\emacs\ext-bin-$option_version.7z
+        RmDir /R "$EXEDIR\..\emacs-$option_version\libexec\emacs\$option_version"
+        Delete "$EXEDIR\..\emacs-$option_version\emacs-$option_version.exe"
       ${EndIf}
     end:
       ClearErrors
@@ -1715,6 +1695,7 @@ Function GetCmdOptions
       loop_proxy:
         HideWindow
         StrCmp $1 "" done_proxy
+        ;; FIXME etc
         ${If} ${FileExists} $EXEDIR\..\$1\etc
           DetailPrint "Checking for running $1.exe"
           FindProcDLL::FindProc "$1.exe"
@@ -1734,29 +1715,7 @@ Function GetCmdOptions
         Goto loop_proxy
       done_proxy:
         ;; FIXME look for other versions...
-        FindFirst $0 $1 "$EXEDIR\..\emacs\bin\emacs-*.exe"
-      loop_proxy2:
-        HideWindow
-        StrCmp $1 "" done_proxy2
-        DetailPrint "Checking for running $1.exe"
-        FindProcDLL::FindProc "$1.exe"
-        StrCmp "$R0" "1" 0 loop_next2
-        DetailPrint "$1 is running"
-        StrCpy $2 $1 "" 6
-        StrCpy $2 $2 -4
-        IfFileExists "$EXEDIR\..\emacs\bin\emacsclient.exe" 0 +3
-        StrCpy $3 "$EXEDIR\..\emacs\bin\emacsclient.exe"
-        Goto +3
-        IfFileExists "$real_temp\ep\emacs-$2\bin\emacsclient.exe" 0 loop_next2
-        StrCpy $3 "$real_temp\ep\emacs-$2\bin\emacsclient.exe"
-        SetOutPath $home
-        Exec '"$3" --server-file "$real_temp\ep\EmacsPortable.App-Server-$option_version$epstart\server" --eval "(if (fboundp $\'refresh-proxy) (refresh-proxy))"'
-      loop_next2:
-        FindNext $0 $1
-        Goto loop_proxy2
-      done_proxy2:
         Goto end
-        
       start_emacs:
         DetailPrint "Start Emacs"
         StrCmp $option_colorsync "" 0 cant_sync
