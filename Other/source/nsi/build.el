@@ -99,7 +99,7 @@
       (load (concat org-dir "/lisp/org-install"))
       (setq load-path (cons (concat org-dir "/lisp") load-path))
       (setq load-path (cons (concat org-dir "/lisp/contrib") load-path)))
-    (require 'org)(require 'org-exp)(require 'ob)(require 'ob-tangle)
+    (require 'org)(require 'org-exp nil t)(require 'ob nil t)(require 'ob-tangle nil t)
     (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp . t)))
     (mapc
      (lambda(file)
@@ -129,7 +129,7 @@
         (menu "")
         p1 p2 p3)
     (find-file (concat build-dir "../../../README.org"))
-    (execute-kbd-macro (edmacro-parse-keys "C-c C-e h" t))
+    (execute-kbd-macro (kbd "C-c C-e h"))
     (with-temp-buffer
       (insert-file-contents (concat build-dir "../../../README.html"))
       (setq str (buffer-string)))
