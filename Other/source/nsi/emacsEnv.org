@@ -213,25 +213,32 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
       ## Searches for ${WHAT} Appliactions to add to the directory
       ; $9 -- Drive Letter
       ; $R1 -- ${WHAT} Directories
+      ${If} "$R1" == ""
+        StrCpy $8 "$9"
+      ${Else}
+        StrCpy $8 "$R1"
+      ${EndIf}
       DetailPrint "Checking $9$R1"
-      IfFileExists "$9$R1" 0 not_found
+      StrCmp "$R1" "" enum_${WHAT}
+      IfFileExists "$9$R1" 0 not_found_${WHAT}
       ${GetMD5} "$9$R1" $R3 
       DetailPrint "MD5: $R3"
-      ReadIniStr $R4 "${CACHE}" "$R1" "MD5"
-      StrCmp $R4 $R3 done
-      DeleteIniSec "${CACHE}" "$R1"
-      WriteIniStr "${CACHE}" "$R1" "MD5" "$R3"
-      WriteIniStr "${CACHE}" "$R1" "Drive" "$9"
-      EnumINI::Section "${PATHS}" "${WHAT}"
-      Pop $R3
-      StrCmp $R3 "error" done_${WHAT}
+      ReadIniStr $R4 "${CACHE}" "$8" "MD5"
+      StrCmp $R4 $R3 done__${WHAT}
+      DeleteIniSec "${CACHE}" "$8"
+      WriteIniStr "${CACHE}" "$8" "MD5" "$R3"
+      WriteIniStr "${CACHE}" "$8" "Drive" "$9"
+      enum_${WHAT}:
+        EnumINI::Section "${PATHS}" "${WHAT}"
+        Pop $R3
+        StrCmp $R3 "error" _done_${WHAT}
       loop_${WHAT}:
-        IntCmp $R3 "0" done_${WHAT} done_${WHAT} 0    
+        IntCmp $R3 "0" _done_${WHAT} _done_${WHAT} 0    
         Pop $R4
         ReadINIStr $R5 "${PATHS}" "${WHAT}" "$R4"
         DetailPrint "Checking $9$R1\$R5"
         IfFileExists "$9$R1\$R5" 0 next_${WHAT}
-        ReadIniStr $R6 "${CACHE}" "$R1" "PATH"
+        ReadIniStr $R6 "${CACHE}" "$8" "PATH"
         ClearErrors
         GetFullPathName /SHORT $R7 "$9$R1\$R5"
         ${If} $R6 == ""
@@ -239,35 +246,37 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         ${Else}
           StrCpy "$R6" "$R6;$R7"
         ${EndIf}
-        WriteIniStr "${CACHE}" "$R1" "PATH" "$R6"
+        WriteIniStr "${CACHE}" "$8" "PATH" "$R6"
         EnumINI::Section "${PATHS}" "${WHAT}.$R4.path"
         Pop $R5
-        StrCmp $R5 "error" done_env
-      loop_env:
-        IntCmp $R5 "0" done_env done_env 0
+        StrCmp $R5 "error" done_env_${WHAT}
+      loop_env_${WHAT}:
+        IntCmp $R5 "0" done_env_${WHAT} done_env_${WHAT} 0
         Pop $R6
         ReadIniStr $R7 "${PATHS}" "${WHAT}.$R4.path" "$R6"
+        DetailPrint "Checking $R7"
         GetFullPathName /SHORT $R7 "$9$R1\$R7"
-        WriteIniStr "${CACHE}" "$R1" "$R6" "$R7"
+        WriteIniStr "${CACHE}" "$8" "$R6" "$R7"
         IntOp $R5 $R5 - 1
-        Goto loop_env
-      done_env:
+        Goto loop_env_${WHAT}
+      done_env_${WHAT}:
         EnumINI::Section "${PATHS}" "${WHAT}.$R4.set"
         Pop $R5
-        StrCmp $R5 "error" done_set
-      loop_set:
-        IntCmp $R5 "0" done_set done_set 0
+        StrCmp $R5 "error" done_set_${WHAT}
+      loop_set_${WHAT}:
+        IntCmp $R5 "0" done_set_${WHAT} done_set_${WHAT} 0
         Pop $R6
         ReadIniStr $R7 "${PATHS}" "${WHAT}.$R4.set" "$R6"
-        WriteIniStr "${CACHE}" "$R1" "$R6" "$R7"
+        DetailPrint "Check Set $R7"
+        WriteIniStr "${CACHE}" "$8" "$R6" "$R7"
         IntOp $R5 $R5 - 1
-        Goto loop_set
-      done_set:
+        Goto loop_set_${WHAT}
+      done_set_${WHAT}:
         
       next_${WHAT}:
         IntOp $R3 $R3 - 1
         Goto loop_${WHAT}
-      done_${WHAT}:
+      _done_${WHAT}:
         EnumINI::Section "${PATHS}" "${WHAT}.man"
         Pop $R3
         StrCmp "$R3" "error" done_man_${WHAT}
@@ -277,15 +286,16 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         ReadINIStr $R5 "${PATHS}" "${WHAT}.man" "$R4"
         DetailPrint "Checking $9$R1\$R5"
         IfFileExists "$9$R1\$R5" 0 next_man_${WHAT}
-        ReadIniStr $R6 "${CACHE}" "$R1" "MANPATH"
+        ReadIniStr $R6 "${CACHE}" "$8" "MANPATH"
         ClearErrors
+        DetailPrint "Looking at $9$R1\$R5"
         GetFullPathName /SHORT $R7 "$9$R1\$R5"
         ${If} $R6 == ""
           StrCpy "$R6" "$R7"
         ${Else}
           StrCpy "$R6" "$R6;$R7"
         ${EndIf}
-        WriteIniStr "${CACHE}" "$R1" "MANPATH" "$R6"
+        WriteIniStr "${CACHE}" "$8" "MANPATH" "$R6"
       next_man_${WHAT}:
         IntOp $R3 $R3 - 1
         Goto loop_man_${WHAT}
@@ -298,9 +308,9 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         IntCmp $R3 "0" done_info_${WHAT} done_info_${WHAT} 0
         Pop $R4
         ReadINIStr $R5 "${PATHS}" "${WHAT}.info" "$R4"
-        DetailPrint "Checking $9$R1\$R5"
+        DetailPrint "Info Checking $R5"
         IfFileExists "$9$R1\$R5" 0 next_info_${WHAT}
-        ReadIniStr $R6 "${CACHE}" "$R1" "INFOPATH"
+        ReadIniStr $R6 "${CACHE}" "$8" "INFOPATH"
         ClearErrors
         GetFullPathName /SHORT $R7 "$9$R1\$R5"
         ${If} $R6 == ""
@@ -308,7 +318,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         ${Else}
           StrCpy "$R6" "$R6;$R7"
         ${EndIf}
-        WriteIniStr "${CACHE}" "$R1" "INFOPATH" "$R6"
+        WriteIniStr "${CACHE}" "$8" "INFOPATH" "$R6"
       next_info_${WHAT}:
         IntOp $R3 $R3 - 1
         Goto loop_info_${WHAT}
@@ -323,7 +333,7 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         ReadINIStr $R5 "${PATHS}" "${WHAT}.dic" "$R4"
         DetailPrint "Checking $9$R1\$R5"
         IfFileExists "$9$R1\$R5" 0 next_dic_${WHAT}
-        ReadIniStr $R6 "${CACHE}" "$R1" "DICPATH"
+        ReadIniStr $R6 "${CACHE}" "$8" "DICPATH"
         ClearErrors
         GetFullPathName /SHORT $R7 "$9$R1\$R5"
         ${If} $R6 == ""
@@ -331,19 +341,19 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
         ${Else}
           StrCpy "$R6" "$R6;$R7"
         ${EndIf}
-        WriteIniStr "${CACHE}" "$R1" "DICPATH" "$R6"
+        WriteIniStr "${CACHE}" "$8" "DICPATH" "$R6"
       next_dic_${WHAT}:
         IntOp $R3 $R3 - 1
         Goto loop_dic_${WHAT}
       done_dic_${WHAT}:
         
         StrCpy $R9 "StopGetDrives"
-        Goto done
-      not_found:
+        Goto done__${WHAT}
+      not_found_${WHAT}:
         StrCpy $R9 ""
         DetailPrint "Not found, Delete cache $R1"
-        DeleteIniSec "${CACHE}" "$R1"
-      done:
+        DeleteIniSec "${CACHE}" "$8"
+      done__${WHAT}:
         ClearErrors
     FunctionEnd
   !macroend
@@ -363,22 +373,30 @@ Adapted from http://nsis.sourceforge.net/Your_Computer_Name
   Function GetLocaldir
     ${GetComputerName} $0
     DetailPrint "Computer Name: $0"
-  
+    
     GetFullPathName /SHORT $R1  $PROGRAMFILES
+    DetailPrint "PROGRAMFILES: $PROGRAMFILES"
     StrCpy $9 $R1 3
     StrCpy $R1 "$R1" "" 3
     Call AddLocal
     
     GetFullPathName /SHORT $R1  $PROGRAMFILES32
+    DetailPrint "PROGRAMFILES32: $PROGRAMFILES32"
     StrCpy $9 $R1 3
     StrCpy $R1 "$R1" "" 3
     Call AddLocal
     
     GetFullPathName /SHORT $R1  $PROGRAMFILES64
+    DetailPrint "PROGRAMFILES64: $PROGRAMFILES64"
     StrCpy $9 $R1 3
     StrCpy $R1 "$R1" "" 3
     Call AddLocal
-  
+    
+    DetailPrint "C:"
+    StrCpy $9 "C:\"
+    StrCpy $R1 ""
+    Call AddLocal
+   
   FunctionEnd
   
   
