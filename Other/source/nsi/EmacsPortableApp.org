@@ -1167,7 +1167,7 @@ From http://nsis.sourceforge.net/Explode
     ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\etc"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs-$option_version\etc").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs-$option_version\etc").r0'
-      ${If} ${FileExists} "$EXEDIR\..\leim"
+      ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\leim"
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\lisp;$EXEDIR\..\emacs-$option_version\leim").r0'
       ${Else}
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\lisp").r0'
