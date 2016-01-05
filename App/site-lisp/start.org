@@ -170,12 +170,12 @@ EmacsPortableApp.exe launcher.
   (setq ep-start-dirs nil)
   (setq ep-start-reg "^~~~~~~~~~~$")
   ;; On windows convert ~/Dropbox to %MY Documents% dropbox
-  
+
   (defcustom EmacsPortable-aliases nil
     "Emacs Portable custom aliaess.  For example you my wish to have ~/org/ be aliased to ~org/ Directory Alias=org and Actual Directory=~/org/"
     :type '(alist :key-type (string :tag "Directory Alias") :value-type (directory :tag "Actual Directory"))
     :group 'EmacsPortable)
-  
+
   (defun ep-usb-convert-file-name (name)
     "Converts a usb filename to a regular file-name"
     (save-match-data
@@ -202,7 +202,7 @@ EmacsPortableApp.exe launcher.
         (while (string-match "//+" ret)
           (setq ret (replace-match "/" t t ret)))
         (symbol-value 'ret))))
-  
+
   ;; Modified from cygwin-mount.
   (defun ep-usb-file-name-handler (operation name &rest args)
     "Run OPERATION on usb NAME with ARGS.
@@ -222,7 +222,7 @@ EmacsPortableApp.exe launcher.
                (cons (ep-usb-convert-file-name (car args))
                      (cdr args))
              args))))
-  
+
   (defun ep-usb-real-file-name-handler (operation args)
     "Run OPERATION with ARGS."
     (let ((inhibit-file-name-handlers
@@ -231,7 +231,7 @@ EmacsPortableApp.exe launcher.
                         inhibit-file-name-handlers)))
           (inhibit-file-name-operation operation))
       (apply operation args)))
-  
+
   (defun ep-rebuild-aliases ()
     "A function to rebuild the Emacs Portable aliases.  Should be loaded after package, el-get, and yasnippet."
     (interactive)
@@ -264,24 +264,25 @@ EmacsPortableApp.exe launcher.
                             (car (cdr x))
                           (cdr x)))))
                EmacsPortable-aliases)
-            ,@(mapcar
-               (lambda(x)
-                 `(,(format "%s"
-                            (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
-                                (match-string 1 x) x)) .
-                                ,(if (not (string-match (regexp-opt '("user" "system" "shared") 'paren) x))
-                                     (format "%s/"
-                                             (expand-file-name x (concat usb-app-dir "../Data/start")))
-                                   (format "%s/"
-                                           (expand-file-name x (if (getenv "EPDATA")
-                                                                   (concat (getenv "EPDATA") "/start")
-                                                                 (concat usb-app-dir "../Data/start")))))))
-               (remove-if
-                (lambda(x)
-                  (or (not (file-directory-p (expand-file-name x (concat usb-app-dir "../Data/start"))))
-                      (string-match (format "^%s$"
-                                            (regexp-opt '("." "..") 'paren)) x)))
-                (directory-files (expand-file-name (concat usb-app-dir "../Data/start")))))))
+            ,@(remove-if (lambda(x) (and (stringp (car x)) (string= (car x) "")))
+                         (mapcar
+                          (lambda(x)
+                            `(,(format "%s"
+                                       (if (string-match "^\\(.*?\\)[0-9_.-]*$" x)
+                                           (match-string 1 x) x)) .
+                                           ,(if (not (string-match (regexp-opt '("user" "system" "shared") 'paren) x))
+                                                (format "%s/"
+                                                        (expand-file-name x (concat usb-app-dir "../Data/start")))
+                                              (format "%s/"
+                                                      (expand-file-name x (if (getenv "EPDATA")
+                                                                              (concat (getenv "EPDATA") "/start")
+                                                                            (concat usb-app-dir "../Data/start")))))))
+                          (remove-if
+                           (lambda(x)
+                             (or (not (file-directory-p (expand-file-name x (concat usb-app-dir "../Data/start"))))
+                                 (string-match (format "^%s$"
+                                                       (regexp-opt '("." "..") 'paren)) x)))
+                           (directory-files (expand-file-name (concat usb-app-dir "../Data/start"))))))))
     
     (when (and (getenv "OHOME") (not (string= "" (getenv "OHOME")))
                (not (string-match "^[.]*$" (getenv "OHOME")))
@@ -300,14 +301,14 @@ EmacsPortableApp.exe launcher.
       (when (file-exists-p (concat usb-drive-letter "LiberKey/MyDocuments"))
         (add-to-list 'ep-start-dirs `("doc" . ,(expand-file-name (concat usb-drive-letter "LiberKey/MyDocuments"))))))
     
-    (when (and (boundp 'custom-theme-directory)
-               (boundp 'user-emacs-directory)
-               (not (string= (expand-file-name user-emacs-directory)
-                             (expand-file-name custom-theme-directory)))
-               (file-exists-p custom-theme-directory))
+    ;; (when (and (boundp 'custom-theme-directory)
+    ;;            (boundp 'user-emacs-directory)
+    ;;            (not (string= (expand-file-name user-emacs-directory)
+    ;;                          (expand-file-name custom-theme-directory)))
+    ;;            (file-exists-p custom-theme-directory))
       
-      (add-to-list 'ep-start-dirs `("themes" . ,custom-theme-directory))
-      (add-to-list 'ep-start-dirs `("theme" . ,custom-theme-directory)))
+    ;;   (add-to-list 'ep-start-dirs `("themes" . ,custom-theme-directory))
+    ;;   (add-to-list 'ep-start-dirs `("theme" . ,custom-theme-directory)))
     
     (when (and (boundp 'package-user-dir) (file-exists-p package-user-dir))
       (add-to-list 'ep-start-dirs `("elpa" . ,package-user-dir)))
@@ -364,7 +365,7 @@ EmacsPortableApp.exe launcher.
                        (file-readable-p (concat (getenv "MYDOC") "\\My Dropbox")))
                   (concat "\\`" (expand-file-name (concat (getenv "MYDOC") "\\My Dropbox")))
                 "\\`~/Dropbox/") . "~/Dropbox/")))
-  
+
     (when (eq system-type 'windows-nt)
       (when (and (getenv "TEMP")
                        (file-readable-p (getenv "TEMP")))
@@ -398,7 +399,7 @@ EmacsPortableApp.exe launcher.
       (setq file-name-handler-alist
             (cons `(,reg . ep-usb-file-name-handler)
                   file-name-handler-alist))
-      (when nil 
+      (when t 
         (mapc (lambda(test)
                 (message "%s\t%s\t%s\t%s\t%s" test
                          (expand-file-name test) (abbreviate-file-name (expand-file-name test))
@@ -973,78 +974,6 @@ ECB and emacswiki frame-cmds, http://www.emacswiki.org/emacs/frame-cmds.el
     (setq frame-title-format (list "EmacsPortable %b" '(buffer-file-name ": %f"))))
   
 #+end_src
-* Miscellaneous
-** Spell Checking
-*** Hunspell
-:PROPERTIES:
-:ID: 65a4feb0-5ec6-47aa-af4f-f99200144497
-:END:
-Hunspell is supposed to be a better spell-checker than apsell.  It is
-what firefox and open office use.
-#+begin_src emacs-lisp
-  (condition-case err
-      (progn
-        (setenv "LANG" "en")
-        (require 'rw-language-and-country-codes nil t)
-        (require 'rw-ispell nil t)
-        (require 'rw-hunspell nil t)
-        (setq rw-hunspell-make-dictionary-menu t)
-        (setq rw-hunspell-use-rw-ispell t)
-        (setq ispell-program-name (executable-find "hunspell"))
-        ;;(setq rw-hunspell-dicpath-list (list (getenv "DICPATH")))
-        (rw-hunspell-setup))
-    (error nil))  
-#+end_src
-*** Flyspell
-:PROPERTIES:
-:ID: 5503a001-551f-4692-9b67-33a69832ea61
-:END:
-I prefer right-click for correct word.
-#+begin_src emacs-lisp
-  (require 'flyspell)
-  (define-key flyspell-mouse-map  [down-mouse-3] #'flyspell-correct-word)
-#+end_src
-** Other Options
-:PROPERTIES:
-:ID: fe11bef7-d27f-4fc1-a769-b02504d8a4dd
-:END:
-#+begin_src emacs-lisp
-  (setq message-log-max 10000)
-
-  ;; Keep cursor out of the prompt
-  (setq minibuffer-prompt-properties
-        (plist-put minibuffer-prompt-properties
-                   'point-entered 'minibuffer-avoid-prompt))
-#+end_src
-
-** Display Options
-:PROPERTIES:
-:ID: dc551326-c4b8-46a2-8a9c-21e872da6af6
-:END:
-#+begin_src emacs-lisp
-(setq default-indicate-empty-lines t)
-(setq mode-line-in-non-selected-windows  t)
-(setq default-indicate-buffer-boundaries  t)
-(setq overflow-newline-into-fringe  t)
-#+end_src
-*** Mode Line
-:PROPERTIES:
-:ID: 7f6f9885-e1eb-47af-bd32-2877aef7e2a7
-:END:
-Put current line number and column in the mode line
-#+begin_src emacs-lisp
-(line-number-mode 1)
-(setq column-number-mode t)
-#+end_src
-** Update Paths
-:PROPERTIES:
-:ID: 9f86eea2-d782-479e-b0ab-24360af6d529
-:END:
-Make sure the Emacs Path environment matches the command environment
-path.
-
-All paths should be in the nsis startup script.
-
 * Fix problems with some crossover problems.
 Unfortunately, running EmacsPortable.App from the same location on
 different systems can cause some problems for Mac OSX.  It doesn't
@@ -1506,3 +1435,81 @@ distributions.
      (when (fboundp 'yas/load-directory)
        (yas/load-directory  (expand-file-name "~data/snippets"))))
  #+END_SRC
+* Miscellaneous
+** Spell Checking
+*** Hunspell
+:PROPERTIES:
+:ID: 65a4feb0-5ec6-47aa-af4f-f99200144497
+:END:
+Hunspell is supposed to be a better spell-checker than apsell.  It is
+what firefox and open office use.
+#+begin_src emacs-lisp
+  (require 'rw-language-and-country-codes)
+  (require 'rw-ispell)
+  (require 'rw-hunspell)
+  ;; The following is set via custom
+  (setq ispell-program-name "hunspell")
+  (setq ;; rw-hunspell-default-dictionary ""
+   rw-hunspell-make-dictionary-menu t
+   rw-hunspell-use-rw-ispell t)
+  (rw-hunspell-setup)
+  ;; For Emacs 24.4+, need to add to `ispell-hunspell-dict-paths-alist'.
+  (let (file lst)
+    (dolist (elt rw-hunspell-dictionary-alist)
+      (when (ignore-errors (file-exists-p (setq file (concat (nth 1 (nth 5 elt)) ".aff"))))
+        (unless (member (setq lst (list (nth 0 elt) file)) ispell-hunspell-dict-paths-alist)
+       (push lst ispell-hunspell-dict-paths-alist)))))
+  (ispell-find-hunspell-dictionaries)
+  (setq ispell-hunspell-dictionary-alist rw-hunspell-dictionary-alist)
+
+#+end_src
+*** Flyspell
+:PROPERTIES:
+:ID: 5503a001-551f-4692-9b67-33a69832ea61
+:END:
+I prefer right-click for correct word.
+#+begin_src emacs-lisp
+  (require 'flyspell)
+  (define-key flyspell-mouse-map  [down-mouse-3] #'flyspell-correct-word)
+#+end_src
+** Other Options
+:PROPERTIES:
+:ID: fe11bef7-d27f-4fc1-a769-b02504d8a4dd
+:END:
+#+begin_src emacs-lisp
+  (setq message-log-max 10000)
+
+  ;; Keep cursor out of the prompt
+  (setq minibuffer-prompt-properties
+        (plist-put minibuffer-prompt-properties
+                   'point-entered 'minibuffer-avoid-prompt))
+#+end_src
+
+** Display Options
+:PROPERTIES:
+:ID: dc551326-c4b8-46a2-8a9c-21e872da6af6
+:END:
+#+begin_src emacs-lisp
+(setq default-indicate-empty-lines t)
+(setq mode-line-in-non-selected-windows  t)
+(setq default-indicate-buffer-boundaries  t)
+(setq overflow-newline-into-fringe  t)
+#+end_src
+*** Mode Line
+:PROPERTIES:
+:ID: 7f6f9885-e1eb-47af-bd32-2877aef7e2a7
+:END:
+Put current line number and column in the mode line
+#+begin_src emacs-lisp
+(line-number-mode 1)
+(setq column-number-mode t)
+#+end_src
+** Update Paths
+:PROPERTIES:
+:ID: 9f86eea2-d782-479e-b0ab-24360af6d529
+:END:
+Make sure the Emacs Path environment matches the command environment
+path.
+
+All paths should be in the nsis startup script.
+
