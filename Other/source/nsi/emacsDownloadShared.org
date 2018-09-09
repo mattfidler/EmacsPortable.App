@@ -11,19 +11,31 @@
     ## Some emacs releases (Like Emacs 24.1-rc) extract to a different version.
     SetOutPath "$TEMP\ep\em"
     ExecWait '"$EXEDIR\App\7z\7zG.exe" x "$TEMP\emacs.zip" -o"$TEMP\ep\em"'
-    FindFirst $0 $1 $TEMP\ep\em\emacs-*.*
-    loop_ver_emacs_win:
-      StrCmp $1 "" done_ver_emacs_win
-      IfFileExists "$INSTDIR\App\emacs-${VER}" +2 0 
-      CopyFiles "$TEMP\ep\em\$1" "$INSTDIR\App\emacs-${VER}"
-      FindNext $0 $1
-      Goto loop_ver_emacs_win
-    done_ver_emacs_win:
-      FindClose $0
+    ## Emacs 26.1 doesn't extract to emacs-26.1 any longer but to separate directories...
+    ${If} ${FileExists} "$TEMP\ep\em\bin"
+      CreateDirectory "$INSTDIR\App\emacs-${VER}"
+      CopyFiles "$TEMP\ep\em\bin" "$INSTDIR\App\emacs-${VER}\bin"
+      CopyFiles "$TEMP\ep\em\etc" "$INSTDIR\App\emacs-${VER}\etc"
+      CopyFiles "$TEMP\ep\em\include" "$INSTDIR\App\emacs-${VER}\include"
+      CopyFiles "$TEMP\ep\em\lib" "$INSTDIR\App\emacs-${VER}\lib"
+      CopyFiles "$TEMP\ep\em\libexec" "$INSTDIR\App\emacs-${VER}\libexec"
+      CopyFiles "$TEMP\ep\em\share" "$INSTDIR\App\emacs-${VER}\share"
+      CopyFiles "$TEMP\ep\em\ssl" "$INSTDIR\App\emacs-${VER}\ssl"
+    ${Else}
+      FindFirst $0 $1 $TEMP\ep\em\emacs-*.*
+      loop_ver_emacs_win:
+        StrCmp $1 "" done_ver_emacs_win
+        IfFileExists "$INSTDIR\App\emacs-${VER}" +2 0 
+        CopyFiles "$TEMP\ep\em\$1" "$INSTDIR\App\emacs-${VER}"
+        FindNext $0 $1
+        Goto loop_ver_emacs_win
+      done_ver_emacs_win:
+        FindClose $0
+    ${EndIf}
       RmDir /r "$TEMP\ep\em"
       Delete "$TEMP\emacs.zip"
   !macroend
-  
+
   !define getEmacsMac `!insertmacro getEmacsMac`
   !macro getEmacsMac VER
     ${If} ${FileExists} "$INSTDIR\App\emacs-${VER}"
@@ -53,7 +65,7 @@
     ${EndIf}
     
   !macroend
-  
+
 #+END_SRC
 
 
@@ -361,7 +373,7 @@ it alone when OTHER_SEC is read-only.
     g32exist_skip:
       ClearErrors
   !macroend
-  
+
   !macro g32down WHAT
     ReadINIStr $R0 "$EPEXE\App\ini\gw32-install.ini" "gw32:${WHAT}" "bin.exe"
     IfErrors g32_zip
@@ -422,7 +434,7 @@ it alone when OTHER_SEC is read-only.
     g32_exit:
       ClearErrors
   !macroend
-  
+
   Function AddGW
     StrLen $0 "$TEMP\ep-gw32\"
     StrCpy "$R4" "$R8" "" $0
@@ -444,7 +456,7 @@ it alone when OTHER_SEC is read-only.
       StrCpy $0 1
       Push $0
   FunctionEnd
-  
+
 #+END_SRC
 
 *** GnuWin32 Set for download

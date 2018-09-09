@@ -1164,7 +1164,13 @@ From http://nsis.sourceforge.net/Explode
 ** Setup Emacs Specific Environment Variables
 #+BEGIN_SRC nsis
   Function SetupDirs
-    ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\etc"
+    ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc"
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\lisp").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\share\info").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\..\..\Other\").r0'
+    ${ElseIf} ${FileExists} "$EXEDIR\..\emacs-$option_version\etc"
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs-$option_version\etc").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs-$option_version\etc").r0'
       ${If} ${FileExists} "$EXEDIR\..\emacs-$option_version\leim"
@@ -1172,15 +1178,9 @@ From http://nsis.sourceforge.net/Explode
       ${Else}
         System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\lisp").r0'
       ${EndIf}
-   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\info").r0'
+      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\info").r0'
       System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\..\..\Other\").r0'
-    ${ElseIf} ${FileExists} "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc"
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDATA", "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSDOC", "$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\etc").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EMACSLOADPATH", "$EXEDIR\..\site-lisp;$EXEDIR\..\emacs-$option_version\share\emacs\$option_version\lisp").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("INFOPATH", "$EXEDIR\..\emacs-$option_version\share\info").r0'
-      System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("EPOTHER","$EXEDIR\..\..\Other\").r0'
-    ${EndIf}
+   ${EndIf}
   FunctionEnd
   !define SetupDirs "Call SetupDirs"
 #+END_SRC

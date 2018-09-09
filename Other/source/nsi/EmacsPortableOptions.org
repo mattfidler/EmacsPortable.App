@@ -14,6 +14,14 @@ This provides an interface to the Emacs Startup options
   SetCompressorDictSize 32
   SetDatablockOptimize On
 #+END_SRC
+** Fix for invalid verbosity level
+See https://stackoverflow.com/questions/47691702/nsis-script-failed-invalid-verbose-level
+#+BEGIN_SRC nsis
+!include "CommCtrl.nsh"
+!ifndef _COMMCTRL_NSH_VERBOSE
+!define _COMMCTRL_NSH_VERBOSE ${_COMMCTRL_VERBOSE} 
+!endif
+#+END_SRC
 ** Definitions and Variables
 #+BEGIN_SRC nsis
   !define TEMP1 $R0 ;Temp variable
