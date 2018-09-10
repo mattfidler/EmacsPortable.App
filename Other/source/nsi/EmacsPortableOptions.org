@@ -768,9 +768,9 @@ From http://nsis.sourceforge.net/Explode
     ReadINIStr $0 "$EXEDIR\App\ini\apps.ini" nsis url
     ClearErrors
     ${If} $0 != ""
-      Inetc::get "$0" "$TEMP\ep\ep\NSIS.zip"
-      ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.zip" -o"$EXEDIR\App"'
-      Delete "$TEMP\ep\ep\NSIS.zip"
+      Inetc::get "$0" "$TEMP\ep\ep\NSIS.7z"
+      ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\ep\NSIS.7z" -o"$EXEDIR\App"'
+      Delete "$TEMP\ep\ep\NSIS.7z"
     ${EndIf}
   FunctionEnd
 #+END_SRC

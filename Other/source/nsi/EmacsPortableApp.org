@@ -212,28 +212,28 @@ FunctionEnd
     StrCmp "" $option_dos setupwin setupdos
     setupdos:
       IfFileExists "$emacs_dir\emacs-$option_version$epstart-dos.exe" end
-      
+
       IfFileExists "$emacs_dir\emacs-$option_version.exe" 0 +3
       CopyFiles /SILENT "$emacs_dir\emacs-$option_version.exe" "$emacs_dir\emacs-$option_version$epstart-dos.exe"
       Goto end
-      
+
       IfFileExists "$emacs_dir\emacs.exe" 0 not_found
       CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version$epstart-dos.exe"
       Goto end
-      
+
     setupwin:
       IfFileExists "$emacs_dir\emacs-$option_version$epstart.exe" end
-  
+
       IfFileExists "$emacs_dir\emacs-$option_version.exe" 0 +3
       CopyFiles /SILENT "$emacs_dir\emacs-$option_version.exe" "$emacs_dir\emacs-$option_version$epstart.exe"
       Goto end
-      
+
       IfFileExists "$emacs_dir\emacs.exe" 0 not_found
       CopyFiles /SILENT "$emacs_dir\emacs.exe" "$emacs_dir\emacs-$option_version$epstart.exe"
-      
+
       Goto end
     not_found:
-      
+
       MessageBox MB_OK|MB_ICONEXCLAMATION "Could not find Emacs...$\nInstallation may be corrupt.$\nSelect or download appropriate version$\nEmacs Version: $option_version$\nEmacs Dir: $emacs_dir"
       ExecWait "$EXEDIR\..\..\EmacsOptions.exe"
       ExecWait "$EXEDIR\..\..\EmacsPortableApp.exe"
@@ -242,7 +242,7 @@ FunctionEnd
       #
   FunctionEnd
   !define SetupEmacsExe "Call SetupEmacsExe"
-  
+
 #+END_SRC
 ** Get Windows Version
 From http://nsis.sourceforge.net/Get_Windows_version
@@ -366,25 +366,25 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
   !define STARTF_USESHOWWINDOW 0x00000001
   !define STARTF_USECOUNTCHARS 0x00000008
   !define /math STARTF_HIDE ${STARTF_USESHOWWINDOW} | ${STARTF_USECOUNTCHARS}
-  
+
   !macro ExecHide_
     System::Store "s" ; store registers in System's private stack
     Pop $0 ; cmdline
     Pop $1 ; wrkdir
-  
+
     System::Alloc 68 ; 4*16 + 2*2 / STARTUPINFO structure = $2
     Pop $2
     ##
-    
+
     System::Call '*(i 68, w,w,w, i 0,i 0, i 80,i 60, i 80,i 25, i,i ${STARTF_HIDE}, i 0x00)i .r2' ; set cb = sizeof(STARTUPINFO)
     System::Call '*(i,i,i,i)i .r3' ; PROCESS_INFORMATION structure = $3
-    
+
     ${If} $1 == ""
       StrCpy $1 "i"
     ${Else}
       StrCpy $1 'w "$1"'
     ${EndIf}
-    
+
     System::Call `kernel32::CreateProcessW(i, w '$0', i, i, i 0, i 0, i, $1, i r2, i r3)i .r4` ; return 0 if fail
     ${Unless} $4 = 0 ; failed to create process
       System::Call '*$3(i .r4, i .r5, i .r6)' ; read handles and PID
@@ -394,12 +394,12 @@ This is based on the procfunc.nsh file modified to start hidden dos boxes.
     ${Else}
       Push 0 ; return val if failed
     ${EndUnless}
-    
+
     System::Free $2 ; free STARTUPINFO struct
     System::Free $3 ; free PROCESS_INFORMATION struct
     System::Store "l" ; restore registers
   !macroend
-  
+
 #+END_SRC
 
 ** Get Disk Volume Serial Number

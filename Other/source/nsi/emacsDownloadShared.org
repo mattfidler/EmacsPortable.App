@@ -56,14 +56,23 @@
                 "$INSTDIR\App\emacs-${VER}\MacOS"
           ${EndIf}
         ${Else}
-          DetailPrint "Could not find 2.hfs"
+          ExecWait '"$EXEDIR\App\7z\7zG.exe" e EmacsMac.dmg 4.hfs'
+          ${If} ${FileExists} "$TEMP\emacsMac\4.hfs"
+            ExecWait  '"$EXEDIR\App\7z\7zG.exe" x -y 4.hfs"'
+            ${If} ${FileExists} "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS"
+              CopyFiles /SILENT "$TEMP\emacsMac\Emacs\Emacs.app\Contents\MacOS" \
+                  "$INSTDIR\App\emacs-${VER}\MacOS"
+            ${Else}
+              DetailPrint "Could not find mac binaries"
+            ${EndIf}
+          ${EndIf}
         ${EndIf}
         RmDir /R "$TEMP\emacsMac"
       ${EndIf}
     ${Else}
       DetailPrint "Cannot Locate Windows Emacs Binaries for Emacs ${VER}, Skipping Mac install."
     ${EndIf}
-    
+
   !macroend
 
 #+END_SRC
