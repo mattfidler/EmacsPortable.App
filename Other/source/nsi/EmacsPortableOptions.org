@@ -2511,13 +2511,13 @@ FunctionEnd
           ${install7z}        
           ${SetEnv}
           ${SetupProxy}
-  
+
           ${If} $option_net == "1"
             CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$TEMP\EmacsOptions.exe"
             ExecWait "$TEMP\EmacsOptions.exe"
             Delete "$TEMP\EmacsOptions.exe"
           ${EndIf}
-          
+
           ${If} $option_assoc == "1"
             md5dll::GetMD5File "$EPEXE\Data\ini\assoc.ini"
             Pop $R0
@@ -2527,7 +2527,7 @@ FunctionEnd
               ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
             ${EndIf}
           ${EndIf}
-          
+
           ${If} $option_proxy == "1"
             IfFileExists "$EXEDIR\EmacsPortableApp.exe" app_exists noapp
             app_exists:
@@ -2535,7 +2535,7 @@ FunctionEnd
             noapp:
               ClearErrors
           ${EndIf}
-          
+
           ${If} $option_download == "1"
             Call downloadEmacs
             ${If} $download_startup != "(Select)"
@@ -2638,7 +2638,7 @@ FunctionEnd
                   ${EndIf}
                 ${Else}
                   DetailPrint "Assume this is a single file, like a .emacs file."
-                  
+
                   RmDir /r "$EXEDIR\Data\start\$download_startup"
                   SetOutPath "$EXEDIR\Data\start"
                   ${Explode} $0 "/" "$R0"
@@ -2660,12 +2660,12 @@ FunctionEnd
               ClearErrors
               ${If} $0 != ""
                 SetOutPath $TEMP\ep
-                Inetc::get "$0" "$TEMP\ep\hunspell.zip"
-                SetOutPath "$EXEDIR\App\hunspell\bin"
-                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.zip" -o"$EXEDIR\App\hunspell\bin"'
+                Inetc::get "$0" "$TEMP\ep\hunspell.7z"
+                SetOutPath "$EXEDIR\App"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.7z" -o"$EXEDIR\App"'
                 SetOutPath "$EXEDIR\App\hunspell\epdic"
-                CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
-                Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
+                ; CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
+                ; Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
               ${EndIf}
             ${EndIf}
             ${If} $download_dict != "(Select)"
@@ -2770,13 +2770,13 @@ FunctionEnd
               WriteIniStr "$EXEDIR\Data\ini\EmacsPortableApp.ini" "EmacsPortableApp" \
                   "MacVersion" "$download_emacs_version"
             ${EndIf}
-            
+
             FindProcDLL::FindProc "EmacsPortableServer.exe"
-            
+
             ${If} $R0 == "1"
               WriteIniStr "$TEMP\ep\ep-refresh-server.ini" "one" "one" "one"
             ${EndIf}
-            
+
             ${If} ${FileExists} "$EXEDIR\EmacsPortableApp.exe"
               ExecWait "$EXEDIR\EmacsPortableApp.exe --batch --load $EXEDIR\App\MacOS\build-pilst.el -f build-app-info"
             ${Else}
@@ -2812,10 +2812,10 @@ FunctionEnd
               FindClose $0
               ${CopyFolder}  "$TEMP\ep\ep\$R1\" "$EXEDIR\" "*.*"
               RmDir /r "$TEMP\ep\ep"
-              
+
               # Now request the build.
               CopyFiles /SILENT "$EXEDIR\EmacsOptions.exe" "$EXEDIR\EmacsBuild.exe"
-              
+
               Exec "$EXEDIR\EmacsBuild.exe"
               SetAutoClose true
           ${EndIf}
@@ -2847,20 +2847,20 @@ FunctionEnd
               ClearErrors
               ${If} $0 != ""
                 SetOutPath $TEMP\ep
-                Inetc::get "$0" "$TEMP\ep\hunspell.zip"
-                SetOutPath "$EXEDIR\App\hunspell\bin"
-                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.zip" -o"$EXEDIR\App\hunspell\bin"'
-                SetOutPath "$EXEDIR\App\hunspell\epdic"
-                CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
-                Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
+                Inetc::get "$0" "$TEMP\ep\hunspell.7z"
+                SetOutPath "$EXEDIR\App"
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.7z" -o"$EXEDIR\App"'
+                ; SetOutPath "$EXEDIR\App\hunspell\epdic"
+                ; CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
+                ; Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
               ${EndIf}
             ${EndIf}
-            
-            
+
+
             ${IfNot} ${FileExists} "$EXEDIR\App\ahk\App\AutoHotKey\Compiler\Ahk2Exe.exe"
               Call DownloadAHK
             ${EndIf}
-            
+
             ${IfNot} ${FileExists} "$EXEDIR\App\NSIS\makensis.exe"
               Call DownloadNSIS
             ${EndIf}
@@ -2997,7 +2997,7 @@ FunctionEnd
             SetOutPath "$EXEDIR\App\gw32\bin"
             File "..\..\..\App\gw32\bin\make.exe"
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.bin" "bin\make.exe" "1"
-            
+
             SetOutPath "$EXEDIR\App\gw32\manifest"
             File "..\..\..\App\gw32\manifest\make-3.81-dep.mft"
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.dep" "manifest\make-3.81-dep.mft" "1"
@@ -3010,12 +3010,12 @@ FunctionEnd
             SetOutPath "$EXEDIR\App\gw32\bin"
             File "..\..\..\App\gw32\bin\libintl3.dll"
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "make.dep" "bin\libintl3.dll" "1"
-            
+
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "manifest\make-3.81-dep.mft" "make" "1"
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "manifest\make-3.81-dep.ver" "make" "1"
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "bin\libiconv2.dll" "make" "1"
             WriteIniStr "$EXEDIR\App\ini\gw32.ini" "bin\libintl3.dll" "make" "1"
-            
+
             Exec "$EXEDIR\EmacsOptions.exe"
             SetAutoClose true
         ${EndIf}
@@ -3085,6 +3085,6 @@ FunctionEnd
       ${EndIf}
     ${EndIf}
   SectionEnd
-  
+
 #+END_SRC
 
