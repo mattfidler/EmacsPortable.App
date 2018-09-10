@@ -2662,7 +2662,7 @@ FunctionEnd
                 SetOutPath $TEMP\ep
                 Inetc::get "$0" "$TEMP\ep\hunspell.7z"
                 SetOutPath "$EXEDIR\App"
-                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.7z" -o"$EXEDIR\App"'
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\hunspell.7z" -o"$EXEDIR\App"'
                 SetOutPath "$EXEDIR\App\hunspell\epdic"
                 ; CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
                 ; Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
@@ -2849,7 +2849,7 @@ FunctionEnd
                 SetOutPath $TEMP\ep
                 Inetc::get "$0" "$TEMP\ep\hunspell.7z"
                 SetOutPath "$EXEDIR\App"
-                ExecWait '"$EXEDIR\App\7z\7zG.exe" e -y "$TEMP\ep\hunspell.7z" -o"$EXEDIR\App"'
+                ExecWait '"$EXEDIR\App\7z\7zG.exe" x -y "$TEMP\ep\hunspell.7z" -o"$EXEDIR\App"'
                 ; SetOutPath "$EXEDIR\App\hunspell\epdic"
                 ; CopyFiles /SILENT "$EXEDIR\App\hunspell\bin\en_us*.*" "$EXEDIR\App\hunspell\epdic"
                 ; Delete "$EXEDIR\App\hunspell\bin\en_us*.*"
