@@ -5,9 +5,9 @@ win_dir=..\..\..\App\eps
 all:  ${eps}
 
 ${eps}: EmacsPortableServer.ahk
-	cmd /c "@..\..\..\App\AutoHotkey\Compiler\ahk2exe /in EmacsPortableServer.ahk /out ${win_dir}\EmacsPortableServer.exe /icon ${e_ico}"
+	..\..\..\App\ahk\App\AutoHotkey\Compiler\ahk2exe /in EmacsPortableServer.ahk /out ..\..\..\App\eps\EmacsPortableServer.exe /icon ..\img\ico\appicon.ico
 
 clean:
 	rm ${eps}
 run: 
-	cmd /c "@${win_dir}\EmacsPortableServer.exe"
+	${win_dir}\EmacsPortableServer.exe
