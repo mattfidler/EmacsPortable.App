@@ -3,7 +3,7 @@ emacs_extras=../../../App/eps/ep-reg.exe emacsproxy.nsh emacsPathIfExists.nsh se
 EMACS=emacs
 MAKENSIS=makensis
 
-all: ../../../EmacsPortableApp.exe ../../../App/eps/ep.exe ../../../App/eps/epl.exe ../../../EmacsOptions.exe  ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/ep-local.exe ../../../App/eps/ep-sendto.exe
+all: ../../../EmacsPortableApp.exe ../../../App/eps/ep.exe ../../../App/eps/epl.exe ../../../EmacsOptions.exe  ../../../EmacsDos.exe ../../../EmacsDebug.exe ../../../Emacs-Q.exe ../../../App/eps/ep-reg.exe ../../../App/eps/ep-font.exe ../../../App/eps/ver-shortcut.exe ../../../App/eps/ep-assoc.exe ../../../App/eps/ep-liberkey.exe ../../../App/eps/ep-proxy.exe ../../../App/eps/EmacsDoc.exe ../../../App/eps/download-unix.exe ../../../App/eps/ep-local.exe ../../../App/eps/ep-sendto.exe ../../../help.html
 
 ../../../EmacsPortableApp.exe: emacsportableLaunch.nsi
 	$(MAKENSIS) emacsportableLaunch.nsi
@@ -100,8 +100,8 @@ EmacsPortableDebugLaunch.nsi: EmacsPortableDebugLaunch.org
 ../../../Emacs-Q.exe: Emacs-Q.nsi 
 	$(MAKENSIS) Emacs-Q.nsi
 
-# ../../../help.html: ../../../README.org ../../style.css
-# 	$(EMACS) -Q --batch -l ./build.el --eval "(build-help)"
+../../../help.html: ../../../README.org ../../style.css
+	$(EMACS) -Q --batch -l ./build.el --eval "(build-help)"
 
 EmacsDos.nsi: EmacsShortcuts.el
 	$(EMACS) -Q --batch -l ./EmacsShortcuts.el 

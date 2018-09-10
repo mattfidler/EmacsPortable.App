@@ -129,7 +129,9 @@
         (menu "")
         p1 p2 p3)
     (find-file (concat build-dir "../../../README.org"))
-    (execute-kbd-macro (kbd "C-c C-e h"))
+    (load (concat build-dir "htmlize.el"))
+    (execute-kbd-macro (kbd "C-c C-e h h"))
+    
     (with-temp-buffer
       (insert-file-contents (concat build-dir "../../../README.html"))
       (setq str (buffer-string)))
