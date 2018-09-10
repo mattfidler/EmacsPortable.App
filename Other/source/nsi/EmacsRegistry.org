@@ -1,6 +1,6 @@
 #+TITLE: Emacs Registry Settings
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsRegistry.nsi
+#+PROPERTY: header-args :tangle EmacsRegistry.nsi
 * Introduction
 These are the registry settings that EmacsPortable.App manages.
 Depending on how EmacsPortable.App is launched the registry settings

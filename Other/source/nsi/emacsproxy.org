@@ -1,6 +1,6 @@
 #+TITLE: Shared Proxy Code
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsproxy.nsh
+#+PROPERTY: header-args :tangle emacsproxy.nsh
 * Proxy
 ** Variables
 #+BEGIN_SRC nsis

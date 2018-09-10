@@ -1,6 +1,6 @@
 #+TITLE: Emacs Proxy Configuration Plugin
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsproxyplugin.nsi
+#+PROPERTY: header-args :tangle emacsproxyplugin.nsi
 * Introduction
 This allows the proxy configuration to be specified and read by
 emacs.  It still allows the dynamic proxy configuration supported by

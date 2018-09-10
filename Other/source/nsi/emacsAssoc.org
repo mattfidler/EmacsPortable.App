@@ -1,6 +1,6 @@
 #+TITLE: Emacs Association Settings
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsAssoc.nsi
+#+PROPERTY: header-args :tangle emacsAssoc.nsi
 * Introduction
 These are file associations handled by EmacsPortableApp.exe
 * Launcher Properties

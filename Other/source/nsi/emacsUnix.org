@@ -1,6 +1,6 @@
 #+TITLE: Unix Tools Download
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsUnix.nsi
+#+PROPERTY: header-args :tangle EmacsUnix.nsi
 * Introduction
 This is a dialog to change which Unix utilities will be downloaded.
 * Installer Properties

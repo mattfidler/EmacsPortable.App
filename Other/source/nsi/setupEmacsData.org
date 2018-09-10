@@ -1,6 +1,6 @@
 #+TITLE: Setup Emacs Data Directory
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle setupEmacsData.nsh
+#+PROPERTY: header-args :tangle setupEmacsData.nsh
 * Introduction
 This sets up Emacs Data Directory according to PAF specifications.
 

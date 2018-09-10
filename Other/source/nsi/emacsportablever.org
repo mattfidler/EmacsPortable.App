@@ -1,6 +1,6 @@
 #+TITLE: Portable Shortcut to EmacsPortable.App
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsportablever.nsi
+#+PROPERTY: header-args :tangle emacsportablever.nsi
 This is to create a portable shortcut to a EmacsPortable.App /VERSION
 so that the larger EmacsPortableApp.exe doesn't need to be copied as
 many times.

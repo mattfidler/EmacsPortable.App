@@ -1,6 +1,6 @@
 #+TITLE: Call Emacs for Batch Processing
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsCall.nsh
+#+PROPERTY: header-args :tangle emacsCall.nsh
 * Introduction
 Allows NSIS to call emacs for batch processing.
 * Adding to Path

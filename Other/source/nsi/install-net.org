@@ -1,6 +1,6 @@
 #+TITLE: Network Install
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle install-net.nsi
+#+PROPERTY: header-args :tangle install-net.nsi
 * Introduction
 Install via the network
 * Header

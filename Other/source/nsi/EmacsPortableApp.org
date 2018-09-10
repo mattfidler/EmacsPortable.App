@@ -1,6 +1,6 @@
 #+TITLE: EmacsPortable.App
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsPortableApp.nsi
+#+PROPERTY: header-args :tangle EmacsPortableApp.nsi
 * Launcher Properties
 ** Setup Options
 I want:

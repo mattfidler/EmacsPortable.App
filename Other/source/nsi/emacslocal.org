@@ -1,6 +1,6 @@
 #+TITLE: Local Emacs Install
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsLocal.nsi
+#+PROPERTY: header-args :tangle emacsLocal.nsi
 * Introduction
 This is the file to install EmacsPortable.App locally.
 * Launcher Properties

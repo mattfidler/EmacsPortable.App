@@ -1,6 +1,6 @@
 #+TITLE: Emacs Send To
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsSendTo.nsi
+#+PROPERTY: header-args :tangle emacsSendTo.nsi
 * Introduction
 Create a Shortcut to the Send To folder to EmacsPortable.App.
 * Launcher Properties

@@ -1,6 +1,6 @@
 #+TITLE: Install Fonts for Emacs
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsFonts.nsi
+#+PROPERTY: header-args :tangle EmacsFonts.nsi
 * Introduction
 If you like a particular font for editing with, it would be nice to
 have it on all platforms.  This allows you to have the font on all

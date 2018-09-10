@@ -1,6 +1,6 @@
 #+TITLE: EmacsPortable.App Compile Tools
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsCompileTools.nsi
+#+PROPERTY: header-args :tangle EmacsCompileTools.nsi
 * Introduction
 This downloads everything needed to compile EmacsPortable.App windows
 executables.

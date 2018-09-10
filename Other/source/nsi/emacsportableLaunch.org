@@ -1,6 +1,6 @@
 #+title: Launch EmacsPortable.App
 #+author: Matthew L. Fidler
-#+PROPERTY: tangle emacsportableLaunch.nsi
+#+PROPERTY: header-args :tangle emacsportableLaunch.nsi
 * Introduction
 Select Emacs Portable App based on whether the debug launcher is
 selected.

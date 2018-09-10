@@ -1,6 +1,6 @@
 #+TITLE: Emacs LiberKey Settings
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsLiberKey.nsi
+#+PROPERTY: header-args :tangle emacsLiberKey.nsi
 * Introduction
 LiberKey is a PortableApps Launcher that includes KeyFile Association
 as well as 

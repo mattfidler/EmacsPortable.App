@@ -1,6 +1,6 @@
 #+TITLE: Emacs Putty Setup
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle: emacsputty.nsi
+#+PROPERTY: header-args :tangle: emacsputty.nsi
 * Launch PuTTy
 Writes the appropriate Proxy settings to PuTTy.  
 1) Get the putty key from the saved options

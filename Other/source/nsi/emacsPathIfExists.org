@@ -1,6 +1,6 @@
 #+TITLE: Add To Path If Exists
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle emacsPathIfExists.nsh
+#+PROPERTY: header-args :tangle emacsPathIfExists.nsh
 * Intro
 Changed NSIS compiler to support larger strings.
 ** Path If Exist

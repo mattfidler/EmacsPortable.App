@@ -1,6 +1,6 @@
 #+TITLE: Emacs Download Script    
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsDownload.nsi
+#+PROPERTY: header-args :tangle EmacsDownload.nsi
 * Installer Properties
 ** Setup Options
 I want:

@@ -1,6 +1,6 @@
 #+TITLE: Environment Setup
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsEnv.nsh
+#+PROPERTY: header-args :tangle EmacsEnv.nsh
 * Introduction
 This sets up the Emacs Path and environment.  
 * Find Environment Information

@@ -1,6 +1,6 @@
 #+TITLE: Shared Download Code
 #+AUTHOR: Matthew L. Fidler
-#+PROPERTY: tangle EmacsDownloadShared.nsh
+#+PROPERTY: header-args :tangle EmacsDownloadShared.nsh
 * Macros
 ** Download Emacs Binaries
 #+BEGIN_SRC nsis
